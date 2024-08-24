@@ -23,7 +23,7 @@ public class SchedulerConfig {
         userService.assignDailyQuests(questService.getTop10PercentQuests());
     }
 
-    @Scheduled(cron = "0 0 0 * * ?") // Runs at 0:00 every day
+    @Scheduled(cron = "0 0 0 * * ?")
     public void assignDailyQuest() {
         userService.assignDailyQuests(questService.getTop10PercentQuests());
     }
