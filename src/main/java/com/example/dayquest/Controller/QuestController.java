@@ -141,8 +141,6 @@ public class QuestController {
         prohibitedPatterns.add(Pattern.compile("\\bmissbrauchen\\b", Pattern.CASE_INSENSITIVE));
         prohibitedPatterns.add(Pattern.compile("\\bbelästigen\\b", Pattern.CASE_INSENSITIVE));
         prohibitedPatterns.add(Pattern.compile("\\bmisshandeln\\b", Pattern.CASE_INSENSITIVE));
-
-        // Extremismus und Terrorismus
         prohibitedPatterns.add(Pattern.compile("\\bterror\\b", Pattern.CASE_INSENSITIVE));
         prohibitedPatterns.add(Pattern.compile("\\bjihad\\b", Pattern.CASE_INSENSITIVE));
         prohibitedPatterns.add(Pattern.compile("\\bextremism\\b", Pattern.CASE_INSENSITIVE));

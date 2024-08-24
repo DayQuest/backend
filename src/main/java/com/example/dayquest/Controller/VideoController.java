@@ -44,6 +44,12 @@ public class VideoController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload video");
         }
     }
+    @PostMapping("/delete")
+    public ResponseEntity<String> deleteVideo(@RequestParam("id") Long id) {
+        VideoService videoService = new VideoService();
+        videoService.deleteVideo(id);
+        return ResponseEntity.ok("Video deleted");
+    }
 
     @PostMapping("/nextVid")
     public ResponseEntity<Video> nextVid(@RequestBody Map<String, Long> request) {

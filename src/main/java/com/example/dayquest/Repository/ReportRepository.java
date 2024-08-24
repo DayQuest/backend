@@ -1,9 +1,9 @@
 package com.example.dayquest.Repository;
 
-import com.example.dayquest.model.Quest;
+import com.example.dayquest.model.Report;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface ReportRepository extends JpaRepository<Quest, Long> {
+public interface ReportRepository extends JpaRepository<Report, Long> {
 }

@@ -61,6 +61,22 @@ public class VideoService {
         return compressedFile.getName();
     }
 
+    public void deleteVideo(Long id) {
+        Video video = videoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Video not found"));
+        String filePath = VIDEO_DIRECTORY + video.getFilePath().replace(VIDEO_URL_PREFIX, "");
+        File file = new File(filePath);
+        if (file.exists()) {
+            if (file.delete()) {
+                System.out.println("File deleted successfully");
+            } else {
+                System.out.println("Failed to delete the file");
+            }
+        }
+        videoRepository.delete(video);
+        videos--;
+    }
+
     private File compressVideo(File source) {
         File target = new File(VIDEO_DIRECTORY + "compressed_" + source.getName());
 
