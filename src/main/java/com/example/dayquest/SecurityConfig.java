@@ -15,7 +15,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/users/register", "/api/users/login", "/api/videos/upload", "/api/videos", "/api/videos/stream/**", "/api/quests", "/api/quests/**", "/api/videos/**", "/api/**").permitAll()
+                        .requestMatchers("/api/users/register", "/api/users/login", "/api/videos/upload", "/api/videos", "/api/videos/stream/**", "/api/quests", "/api/quests/**", "/api/videos/**", "/api/**", "/api/report").permitAll()
                         .anyRequest().authenticated()
                 )
                 .csrf(csrf -> csrf.disable()); // CSRF-Schutz ist deaktiviert

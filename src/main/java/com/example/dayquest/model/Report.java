@@ -22,7 +22,7 @@ public class Report {
     @Column(nullable = false)
     private Long userId;
 
-    // Getter und Setter
+    // Getters and Setters
     public Long getId() {
         return id;
     }

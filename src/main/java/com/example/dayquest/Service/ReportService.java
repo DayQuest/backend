@@ -25,7 +25,20 @@ public class ReportService {
         if (reportRepository.existsById(id)) {
             reportRepository.deleteById(id);
         } else {
-            throw new RuntimeException("Report not found");
+            throw new RuntimeException("Report not found with id: " + id);
         }
+    }
+
+    public Report getReportById(Long id) {
+        return reportRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Report not found with id: " + id));
+    }
+
+    public List<Report> getReportsByUserId(Long userId) {
+        return reportRepository.findByUserId(userId);
+    }
+
+    public List<Report> getReportsByVideoId(Long videoId) {
+        return reportRepository.findByVideoId(videoId);
     }
 }

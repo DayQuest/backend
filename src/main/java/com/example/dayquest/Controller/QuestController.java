@@ -155,6 +155,7 @@ public class QuestController {
         prohibitedPatterns.add(Pattern.compile("\\bhazard\\b", Pattern.CASE_INSENSITIVE));
         prohibitedPatterns.add(Pattern.compile("\\brisk\\b", Pattern.CASE_INSENSITIVE));
         prohibitedPatterns.add(Pattern.compile("\\bdanger\\b", Pattern.CASE_INSENSITIVE));
+        prohibitedPatterns.add(Pattern.compile("\\bcock\\b", Pattern.CASE_INSENSITIVE));
         prohibitedPatterns.add(Pattern.compile("\\bherausforderung\\b", Pattern.CASE_INSENSITIVE));
         prohibitedPatterns.add(Pattern.compile("\\bwagnis\\b", Pattern.CASE_INSENSITIVE));    }
     @Autowired

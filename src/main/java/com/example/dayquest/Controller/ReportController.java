@@ -21,7 +21,7 @@ public class ReportController {
         Report newReport = reportService.createReport(report);
         return ResponseEntity.status(HttpStatus.CREATED).body(newReport);
     }
-    
+
     @GetMapping
     public ResponseEntity<List<Report>> getAllReports() {
         List<Report> reports = reportService.getAllReports();
@@ -34,4 +34,3 @@ public class ReportController {
         return ResponseEntity.noContent().build();
     }
 }
-
