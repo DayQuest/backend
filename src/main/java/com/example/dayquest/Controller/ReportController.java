@@ -16,19 +16,19 @@ public class ReportController {
     @Autowired
     private ReportService reportService;
 
-    @PostMapping
+    @PostMapping("/create")
     public ResponseEntity<Report> createReport(@RequestBody Report report) {
         Report newReport = reportService.createReport(report);
         return ResponseEntity.status(HttpStatus.CREATED).body(newReport);
     }
 
-    @GetMapping
+    @PostMapping("/get")
     public ResponseEntity<List<Report>> getAllReports() {
         List<Report> reports = reportService.getAllReports();
         return ResponseEntity.ok(reports);
     }
 
-    @DeleteMapping("/{id}")
+    @PostMapping("/delete/{id}")
     public ResponseEntity<Void> deleteReport(@PathVariable Long id) {
         reportService.deleteReport(id);
         return ResponseEntity.noContent().build();
