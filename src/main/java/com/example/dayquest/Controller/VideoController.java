@@ -76,6 +76,11 @@ public class VideoController {
         return ResponseEntity.ok(updatedVideo);
     }
 
+    @PostMapping("/{id}")
+    public ResponseEntity<Video> getVideoById(@PathVariable Long id) {
+        return ResponseEntity.ok(videoService.getAllVideos().toArray(new Video[0])[id.intValue()]);
+    }
+
     @PostMapping("/{id}/downvote")
     public ResponseEntity<Video> downvoteVideo(@PathVariable Long id) {
         Video updatedVideo = videoService.downvoteVideo(id);

@@ -44,6 +44,12 @@
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>org.jcodec</groupId>
+			<artifactId>jcodec</artifactId>
+			<version>0.2.5</version> <!-- Überprüfe die neueste Version auf Maven Central -->
+		</dependency>
+
+		<dependency>
 			<groupId>ws.schild</groupId>
 			<artifactId>jave-core</artifactId>
 			<version>3.1.1</version>

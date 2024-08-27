@@ -11,16 +11,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import ws.schild.jave.*;
-import ws.schild.jave.encode.AudioAttributes;
-import ws.schild.jave.encode.EncodingAttributes;
-import ws.schild.jave.encode.VideoAttributes;
-import ws.schild.jave.info.VideoSize;
+
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+
 
 @Service
 public class VideoService {
     public int videos;
     private static final String VIDEO_DIRECTORY = "E:\\dayquest\\src\\main\\resources\\uploads\\";
-    private static final String VIDEO_URL_PREFIX = "http://192.168.178.58:8080/api/videos/stream/";
+    private static final String VIDEO_URL_PREFIX = "http://192.168.178.58:8090/api/videos/stream/";
 
     @Autowired
     private VideoRepository videoRepository;
@@ -76,31 +79,38 @@ public class VideoService {
         videoRepository.delete(video);
         videos--;
     }
-
-    private File compressVideo(File source) {
+    public File compressVideo(File source) {
         File target = new File(VIDEO_DIRECTORY + "compressed_" + source.getName());
 
-        // Define the video attributes
-        VideoAttributes video = new VideoAttributes();
-        video.setCodec("h264");
-        video.setBitRate(1200000);
-        video.setFrameRate(30); // 30 fps
-        video.setSize(new VideoSize(720, 1280));
+        String[] command = {
+                "ffmpeg",
+                "-i", source.getAbsolutePath(),
+                "-c:v", "libx264",
+                "-preset", "medium",
+                "-crf", "23",
+                "-c:a", "aac",
+                "-b:a", "128k",
+                "-movflags", "+faststart",
+                "-vf", "scale=720:-2",
+                target.getAbsolutePath()
+        };
 
-        // Set encoding attributes
-        EncodingAttributes attrs = new EncodingAttributes();
-        attrs.setOutputFormat("mp4");
-        attrs.setVideoAttributes(video);
-
-        // Encode the video
-        Encoder encoder = new Encoder();
         try {
-            encoder.encode(new MultimediaObject(source), target, attrs);
-        } catch (IllegalArgumentException | EncoderException e) {
-            e.printStackTrace();
-        }
+            ProcessBuilder processBuilder = new ProcessBuilder(command);
+            Process process = processBuilder.start();
+            int exitCode = process.waitFor();
 
-        return target;
+            if (exitCode == 0) {
+                System.out.println("Video compression completed successfully.");
+                return target;
+            } else {
+                System.err.println("Video compression failed with exit code: " + exitCode);
+                return null;
+            }
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
 }
