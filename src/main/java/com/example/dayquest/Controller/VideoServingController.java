@@ -14,7 +14,7 @@ import java.nio.file.Paths;
 @RequestMapping("/api/videos")
 public class VideoServingController {
 
-    private static final String VIDEO_DIRECTORY = "E:\\dayquest\\src\\main\\resources\\uploads\\";
+    private static final String VIDEO_DIRECTORY = "/root/uploads";
 
     @GetMapping("/stream/{filename}")
     public ResponseEntity<Resource> streamVideo(@PathVariable String filename) {

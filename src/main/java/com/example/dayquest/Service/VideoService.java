@@ -12,18 +12,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import ws.schild.jave.*;
 
-import java.awt.Graphics2D;
-import java.awt.Image;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
-
 
 @Service
 public class VideoService {
     public int videos;
-    private static final String VIDEO_DIRECTORY = "E:\\dayquest\\src\\main\\resources\\uploads\\";
-    private static final String VIDEO_URL_PREFIX = "http://192.168.178.58:8090/api/videos/stream/";
+    private static final String VIDEO_DIRECTORY = "/root/uploads";
+    private static final String VIDEO_URL_PREFIX = "http://77.90.21.53:8090/api/videos/stream/";
 
     @Autowired
     private VideoRepository videoRepository;
@@ -48,7 +42,7 @@ public class VideoService {
 
     public String uploadVideo(MultipartFile file, String title, String description) throws IOException {
         String filename = UUID.randomUUID().toString() + ".mp4";
-        File targetFile = new File(VIDEO_DIRECTORY + filename);
+        File targetFile = new File(VIDEO_DIRECTORY + "/" + filename);
 
         file.transferTo(targetFile);
 
@@ -82,35 +76,7 @@ public class VideoService {
     public File compressVideo(File source) {
         File target = new File(VIDEO_DIRECTORY + "compressed_" + source.getName());
 
-        String[] command = {
-                "ffmpeg",
-                "-i", source.getAbsolutePath(),
-                "-c:v", "libx264",
-                "-preset", "medium",
-                "-crf", "23",
-                "-c:a", "aac",
-                "-b:a", "128k",
-                "-movflags", "+faststart",
-                "-vf", "scale=720:-2",
-                target.getAbsolutePath()
-        };
-
-        try {
-            ProcessBuilder processBuilder = new ProcessBuilder(command);
-            Process process = processBuilder.start();
-            int exitCode = process.waitFor();
-
-            if (exitCode == 0) {
-                System.out.println("Video compression completed successfully.");
-                return target;
-            } else {
-                System.err.println("Video compression failed with exit code: " + exitCode);
-                return null;
-            }
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-            return null;
-        }
+        return target;
     }
 
 }
