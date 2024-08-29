@@ -26,6 +26,9 @@ public class QuestController {
         prohibitedPatterns = new HashSet<>();
         // Gewalt und Aggression
         prohibitedPatterns.add(Pattern.compile("\\bkill\\b", Pattern.CASE_INSENSITIVE));
+        prohibitedPatterns.add(Pattern.compile("\\bpisse\\b", Pattern.CASE_INSENSITIVE));
+        prohibitedPatterns.add(Pattern.compile("\\bpissen\\b", Pattern.CASE_INSENSITIVE));
+        prohibitedPatterns.add(Pattern.compile("\\bcock\\b", Pattern.CASE_INSENSITIVE));
         prohibitedPatterns.add(Pattern.compile("\\bmurder\\b", Pattern.CASE_INSENSITIVE));
         prohibitedPatterns.add(Pattern.compile("\\battack\\b", Pattern.CASE_INSENSITIVE));
         prohibitedPatterns.add(Pattern.compile("\\bstab\\b", Pattern.CASE_INSENSITIVE));

@@ -1,7 +1,10 @@
 package com.example.dayquest.Service;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.UUID;
 
@@ -10,28 +13,43 @@ import com.example.dayquest.model.Video;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import ws.schild.jave.*;
-
 
 @Service
 public class VideoService {
     public int videos;
-    private static final String VIDEO_DIRECTORY = "/root/uploads";
-    private static final String VIDEO_URL_PREFIX = "http://77.90.21.53:8090/api/videos/stream/";
+    private static final String VIDEO_DIRECTORY = "uploads";
+    private static final String VIDEO_URL_PREFIX = "/api/videos/stream/";
+    private final Path rootLocation;
 
     @Autowired
     private VideoRepository videoRepository;
 
+    public VideoService() {
+        this.rootLocation = Paths.get(System.getProperty("user.dir"), VIDEO_DIRECTORY);
+        createVideoDirectory();
+    }
+    public Path getVideoPath(String filename) {
+        return this.rootLocation.resolve(filename).normalize();
+    }
+
+    private void createVideoDirectory() {
+        try {
+            Files.createDirectories(rootLocation);
+        } catch (IOException e) {
+            throw new RuntimeException("Konnte Verzeichnis nicht erstellen: " + rootLocation, e);
+        }
+    }
+
     public Video upvoteVideo(Long id) {
         Video video = videoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Video not found"));
+                .orElseThrow(() -> new RuntimeException("Video nicht gefunden"));
         video.setUpvotes(video.getUpvotes() + 1);
         return videoRepository.save(video);
     }
 
     public Video downvoteVideo(Long id) {
         Video video = videoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Video not found"));
+                .orElseThrow(() -> new RuntimeException("Video nicht gefunden"));
         video.setDownvotes(video.getDownvotes() + 1);
         return videoRepository.save(video);
     }
@@ -42,43 +60,30 @@ public class VideoService {
 
     public String uploadVideo(MultipartFile file, String title, String description) throws IOException {
         String filename = UUID.randomUUID().toString() + ".mp4";
-        File targetFile = new File(VIDEO_DIRECTORY + "/" + filename);
+        Path targetPath = this.rootLocation.resolve(filename);
 
-        file.transferTo(targetFile);
-
-        File compressedFile = compressVideo(targetFile);
-        targetFile.delete();
+        Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
         Video video = new Video();
         video.setTitle(title);
         video.setDescription(description);
-        video.setFilePath(VIDEO_URL_PREFIX + compressedFile.getName());
+        video.setFilePath(filename); // Speichern Sie nur den Dateinamen, nicht den ganzen Pfad
         videoRepository.save(video);
         videos++;
-        return compressedFile.getName();
+        return filename;
     }
 
     public void deleteVideo(Long id) {
         Video video = videoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Video not found"));
-        String filePath = VIDEO_DIRECTORY + video.getFilePath().replace(VIDEO_URL_PREFIX, "");
-        File file = new File(filePath);
-        if (file.exists()) {
-            if (file.delete()) {
-                System.out.println("File deleted successfully");
-            } else {
-                System.out.println("Failed to delete the file");
-            }
+                .orElseThrow(() -> new RuntimeException("Video nicht gefunden"));
+        Path filePath = this.rootLocation.resolve(video.getFilePath().replace(VIDEO_URL_PREFIX, ""));
+        try {
+            Files.deleteIfExists(filePath);
+            System.out.println("Datei erfolgreich gelöscht");
+        } catch (IOException e) {
+            System.out.println("Fehler beim Löschen der Datei: " + e.getMessage());
         }
         videoRepository.delete(video);
         videos--;
     }
-    public File compressVideo(File source) {
-        File target = new File(VIDEO_DIRECTORY + "compressed_" + source.getName());
-
-        return target;
-    }
-
 }
-
-
