@@ -1,16 +1,15 @@
 package com.example.dayquest.Controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.example.dayquest.Service.VideoService;
+import com.example.dayquest.model.Video;
 
-import java.net.MalformedURLException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.Base64;
 
 @RestController
 @RequestMapping("/api/videos")
@@ -23,22 +22,24 @@ public class VideoServingController {
         this.videoService = videoService;
     }
 
-    @GetMapping("/stream/{filename}")
-    public ResponseEntity<Resource> streamVideo(@PathVariable String filename) {
+    @GetMapping("/stream/{videoId}")
+    public ResponseEntity<byte[]> streamVideo(@PathVariable String videoId) {
         try {
-            Path filePath = videoService.getVideoPath(filename);
-            Resource resource = new UrlResource(filePath.toUri());
+            Video video = VideoService.getVideoById(videoId);
+            if (video != null && video.getVideo64() != null) {
+                byte[] videoBytes = Base64.getDecoder().decode(video.getVideo64());
 
-            if (resource.exists() && resource.isReadable()) {
-                return ResponseEntity.ok()
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
-                        .header(HttpHeaders.CONTENT_TYPE, "video/mp4")
-                        .body(resource);
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.parseMediaType("video/mp4"));
+                headers.setContentDispositionFormData("attachment", video.getTitle() + ".mp4");
+                headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
+
+                return new ResponseEntity<>(videoBytes, headers, HttpStatus.OK);
             } else {
                 return ResponseEntity.notFound().build();
             }
-        } catch (MalformedURLException e) {
-            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }

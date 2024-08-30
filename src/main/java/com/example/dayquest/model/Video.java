@@ -1,33 +1,29 @@
 package com.example.dayquest.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Column;
+import jakarta.persistence.*;
 
 @Entity
 public class Video {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     private String title;
     private String description;
     private String filePath;
 
-    public String[] getHashtags() {
-        return hashtags;
-    }
-
-    public void setHashtags(String[] hashtags) {
-        this.hashtags = hashtags;
-    }
-
+    @ElementCollection
     private String[] hashtags;
+
     private int upvotes;
     private int downvotes;
 
-    // Getters and setters
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String video64;
+
+    // Getter und Setter
+
     public Long getId() {
         return id;
     }
@@ -60,6 +56,14 @@ public class Video {
         this.filePath = filePath;
     }
 
+    public String[] getHashtags() {
+        return hashtags;
+    }
+
+    public void setHashtags(String[] hashtags) {
+        this.hashtags = hashtags;
+    }
+
     public int getUpvotes() {
         return upvotes;
     }
@@ -74,5 +78,13 @@ public class Video {
 
     public void setDownvotes(int downvotes) {
         this.downvotes = downvotes;
+    }
+
+    public String getVideo64() {
+        return video64;
+    }
+
+    public void setVideo64(String video64) {
+        this.video64 = video64;
     }
 }
