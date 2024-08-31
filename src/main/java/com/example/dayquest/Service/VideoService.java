@@ -16,7 +16,7 @@ public class VideoService {
     public int videos;
 
     @Autowired
-    private VideoRepository videoRepository;
+    private static VideoRepository videoRepository;
 
     public Video upvoteVideo(Long id) {
         Video video = videoRepository.findById(id)

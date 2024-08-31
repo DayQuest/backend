@@ -1,5 +1,6 @@
 package com.example.dayquest.Controller;
 
+import com.example.dayquest.Repository.VideoRepository;
 import com.example.dayquest.model.Video;
 import com.example.dayquest.model.User;
 import com.example.dayquest.VideoSelection;
@@ -20,11 +21,13 @@ import java.util.Map;
 public class VideoController {
     private final VideoService videoService;
     private final UserService userService;
+    private final VideoRepository videoRepository;
 
     @Autowired
-    public VideoController(VideoService videoService, UserService userService) {
+    public VideoController(VideoService videoService, UserService userService, VideoRepository videoRepository) {
         this.videoService = videoService;
         this.userService = userService;
+        this.videoRepository = videoRepository;
     }
 
     @GetMapping
@@ -78,7 +81,7 @@ public class VideoController {
 
     @PostMapping("/{id}")
     public ResponseEntity<Video> getVideoById(@PathVariable Long id) {
-        return ResponseEntity.ok(videoService.getAllVideos().toArray(new Video[0])[id.intValue()]);
+        return ResponseEntity.ok(videoRepository.findById(id).orElse(null));
     }
 
     @PostMapping("/{id}/downvote")
