@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/users")
@@ -43,9 +44,24 @@ public class UserController {
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Login successful");
             response.put("userId", user.getId());
+            response.put("uuid", user.getUuid());
             return ResponseEntity.ok(response);
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Collections.singletonMap("message", "Invalid credentials"));
+        }
+    }
+    @PostMapping("/ban")
+    public ResponseEntity<String> banUser(@RequestBody long id) {
+        userService.banUser(id);
+        return ResponseEntity.ok("User banned");
+    }
+    @PostMapping("/auth")
+    public ResponseEntity<String> UUIDAuth(@RequestBody String uuid) {
+        boolean result = userService.UUIDAuth(UUID.fromString(uuid));
+        if (result) {
+            return ResponseEntity.ok("Authentication successful");
+        } else {
+            return ResponseEntity.badRequest().body("Authentication failed");
         }
     }
 }

@@ -2,6 +2,8 @@ package com.example.dayquest.model;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 
+import java.util.UUID;
+
 
 @Entity
 @Table(name = "users")
@@ -28,6 +30,26 @@ public class User {
     @ManyToOne
     @JoinColumn(name = "daily_quest_id")
     private Quest dailyQuest;
+
+    public UUID getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(UUID uuid) {
+        this.uuid = uuid;
+    }
+
+    private UUID uuid;
+
+    public boolean isBanned() {
+        return banned;
+    }
+
+    public void setBanned(boolean banned) {
+        this.banned = banned;
+    }
+
+    private boolean banned;
 
     // Getter und Setter
 

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 
 @Service
 public class UserService {
@@ -33,7 +34,7 @@ public class UserService {
         User newUser = new User();
         newUser.setUsername(username);
         newUser.setEmail(email);
-        newUser.setPassword(passwordEncoder.encode(password)); // Passwort verschlüsseln
+        newUser.setPassword(passwordEncoder.encode(password));
 
         userRepository.save(newUser);
 
@@ -42,8 +43,27 @@ public class UserService {
 
     public boolean authenticateUser(String username, String password) {
         User user = userRepository.findByUsername(username);
-        return user != null && passwordEncoder.matches(password, user.getPassword()); // Passwort überprüfen
+        if(user.isBanned())
+        {
+            return false;
+        }
+        else{
+            return user != null && passwordEncoder.matches(password, user.getPassword()); // Passwort überprüfen
+        }
     }
+
+    public boolean UUIDAuth(UUID uuid)
+    {
+        User user = userRepository.findByUuid(uuid);
+        if(user.isBanned())
+        {
+            return false;
+        }
+        else{
+            return user != null;
+        }
+    }
+
     @Autowired
     private QuestRepository questRepository;
 
@@ -63,7 +83,13 @@ public class UserService {
             userRepository.save(user);
         }
     }
-
+    public void banUser(Long id) {
+        User user = userRepository.findById(id).orElse(null);
+        if (user != null) {
+            user.setBanned(true);
+            userRepository.save(user);
+        }
+    }
 
     public User getUserById(Long id) {
         return userRepository.findById(id).orElse(null);
