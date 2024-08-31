@@ -44,7 +44,7 @@ public class UserController {
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Login successful");
             response.put("userId", user.getId());
-            response.put("uuid", user.getUuid());
+            response.put("uuid", user.getUuid().toString());
             return ResponseEntity.ok(response);
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Collections.singletonMap("message", "Invalid credentials"));
