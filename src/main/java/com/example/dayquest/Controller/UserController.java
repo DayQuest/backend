@@ -1,6 +1,7 @@
 package com.example.dayquest.Controller;
 
 import com.example.dayquest.Service.UserService;
+import com.example.dayquest.dto.UuidDTO;
 import com.example.dayquest.model.User;
 import com.example.dayquest.dto.LoginDTO;
 import com.example.dayquest.dto.UserDTO;
@@ -56,12 +57,18 @@ public class UserController {
         return ResponseEntity.ok("User banned");
     }
     @PostMapping("/auth")
-    public ResponseEntity<String> UUIDAuth(@RequestBody String uuid) {
-        boolean result = userService.UUIDAuth(UUID.fromString(uuid));
-        if (result) {
-            return ResponseEntity.ok("Authentication successful");
-        } else {
-            return ResponseEntity.badRequest().body("Authentication failed");
+    public ResponseEntity<String> UUIDAuth(@RequestBody UuidDTO uuidDto) {
+        try {
+            UUID validUuid = UUID.fromString(uuidDto.getUuid());
+            boolean result = userService.UUIDAuth(validUuid);
+            if (result) {
+                return ResponseEntity.ok("Authentication successful");
+            } else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication failed");
+            }
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Invalid UUID format");
         }
     }
+
 }

@@ -23,19 +23,27 @@ public class UserService {
     private BCryptPasswordEncoder passwordEncoder;
 
     public boolean registerUser(String username, String email, String password) {
+        // Check for null or empty fields
         if (username == null || email == null || password == null || username.isEmpty() || email.isEmpty() || password.isEmpty()) {
             return false;
         }
 
+        // Check if the username is already taken
         if (userRepository.findByUsername(username) != null) {
-            return false; // Benutzername bereits vergeben
+            return false; // Username already taken
         }
 
+        // Create a new User object
         User newUser = new User();
         newUser.setUsername(username);
         newUser.setEmail(email);
         newUser.setPassword(passwordEncoder.encode(password));
 
+        // Generate and set a new UUID
+        UUID uuid = UUID.randomUUID();
+        newUser.setUuid(uuid);
+
+        // Save the new user to the repository
         userRepository.save(newUser);
 
         return true;
@@ -43,25 +51,18 @@ public class UserService {
 
     public boolean authenticateUser(String username, String password) {
         User user = userRepository.findByUsername(username);
-        if(user.isBanned())
-        {
-            return false;
+        if (user == null || user.isBanned()) {
+            return false; // User not found or banned
         }
-        else{
-            return user != null && passwordEncoder.matches(password, user.getPassword()); // Passwort überprüfen
-        }
+        return passwordEncoder.matches(password, user.getPassword()); // Check password
     }
 
-    public boolean UUIDAuth(UUID uuid)
-    {
+    public boolean UUIDAuth(UUID uuid) {
         User user = userRepository.findByUuid(uuid);
-        if(user.isBanned())
-        {
-            return false;
+        if (user == null || user.isBanned()) {
+            return false; // User not found or banned
         }
-        else{
-            return user != null;
-        }
+        return true;
     }
 
     @Autowired
@@ -83,6 +84,7 @@ public class UserService {
             userRepository.save(user);
         }
     }
+
     public void banUser(Long id) {
         User user = userRepository.findById(id).orElse(null);
         if (user != null) {
@@ -94,8 +96,8 @@ public class UserService {
     public User getUserById(Long id) {
         return userRepository.findById(id).orElse(null);
     }
-    public User getUserByUsername(String username)
-    {
+
+    public User getUserByUsername(String username) {
         return userRepository.findByUsername(username);
     }
 }
