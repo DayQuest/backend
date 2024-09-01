@@ -2,6 +2,7 @@ package com.example.dayquest.model;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 
+import java.util.List;
 import java.util.UUID;
 
 
@@ -21,11 +22,20 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    @Nullable
-    private String[] disliked;
 
-    @Nullable
-    private String[] likedHashtags;
+    public List<Long> getLikedVideos() {
+        return likedVideos;
+    }
+
+    public void setLikedVideos(List<Long> likedVideos) {
+        this.likedVideos = likedVideos;
+    }
+
+    @ElementCollection
+    @CollectionTable(name = "liked_videos", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "video_id")
+    private List<Long> likedVideos;
+
 
     @ManyToOne
     @JoinColumn(name = "daily_quest_id")
@@ -85,21 +95,6 @@ public class User {
         this.password = password;
     }
 
-    public String[] getDisliked() {
-        return disliked;
-    }
-
-    public void setDisliked(String[] disliked) {
-        this.disliked = disliked;
-    }
-
-    public String[] getLikedHashtags() {
-        return likedHashtags;
-    }
-
-    public void setLikedHashtags(String[] likedHashtags) {
-        this.likedHashtags = likedHashtags;
-    }
 
     public Quest getDailyQuest() {
         return dailyQuest;

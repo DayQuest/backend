@@ -51,10 +51,24 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Collections.singletonMap("message", "Invalid credentials"));
         }
     }
-    @PostMapping("/ban")
-    public ResponseEntity<String> banUser(@RequestBody long id) {
-        userService.banUser(id);
-        return ResponseEntity.ok("User banned");
+    @PostMapping("/ban/{uuid}")
+    public ResponseEntity<String> banUser(@RequestBody UuidDTO uuidDto) {
+        UUID validUuid = UUID.fromString(uuidDto.getUuid());
+        if(userService.getUserByUuid(validUuid) == null) {
+            return ResponseEntity.badRequest().body("User not found");
+        }
+        else if(userService.getUserByUuid(validUuid).isBanned()) {
+            return ResponseEntity.badRequest().body("User is already banned");
+        }
+        else {
+            userService.banUser(validUuid);
+            return ResponseEntity.ok("User banned");
+        }
+    }
+    @PostMapping("/unban")
+    public ResponseEntity<String> unbanUser(@RequestBody long id) {
+        userService.unbanUser(id);
+        return ResponseEntity.ok("User unbanned");
     }
     @PostMapping("/auth")
     public ResponseEntity<String> UUIDAuth(@RequestBody UuidDTO uuidDto) {

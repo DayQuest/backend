@@ -25,7 +25,8 @@ public class VideoServingController {
     @GetMapping("/stream/{videoId}")
     public ResponseEntity<byte[]> streamVideo(@PathVariable String videoId) {
         try {
-            Video video = VideoService.getVideoById(videoId);
+            // Use the videoService instance to call getVideoById
+            Video video = videoService.getVideoById(videoId);
             if (video != null && video.getVideo64() != null) {
                 byte[] videoBytes = Base64.getDecoder().decode(video.getVideo64());
 

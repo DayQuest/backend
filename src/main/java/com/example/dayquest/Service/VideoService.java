@@ -16,7 +16,7 @@ public class VideoService {
     public int videos;
 
     @Autowired
-    private static VideoRepository videoRepository;
+    private VideoRepository videoRepository;
 
     public Video upvoteVideo(Long id) {
         Video video = videoRepository.findById(id)
@@ -62,7 +62,7 @@ public class VideoService {
         return videoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Video nicht gefunden"));
     }
-    public static Video getVideoById(String videoId) {
+    public Video getVideoById(String videoId) {
         return videoRepository.findByFilePath(videoId)
                 .orElseThrow(() -> new RuntimeException("Video nicht gefunden"));
     }

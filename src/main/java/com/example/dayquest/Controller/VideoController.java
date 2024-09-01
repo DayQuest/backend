@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/videos")
@@ -66,7 +67,7 @@ public class VideoController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
         System.out.println(user.getUsername());
-        String[] likedHashtags = user.getLikedHashtags();
+        String[] likedHashtags = null;
         int vidIndex = VideoSelection.nextVideo(videoService.getAllVideos().toArray(new Video[0]),
                 likedHashtags == null ? new String[0] : likedHashtags, 10);
 
@@ -74,9 +75,17 @@ public class VideoController {
     }
 
     @PostMapping("/{id}/upvote")
-    public ResponseEntity<Video> upvoteVideo(@PathVariable Long id) {
-        Video updatedVideo = videoService.upvoteVideo(id);
-        return ResponseEntity.ok(updatedVideo);
+    public ResponseEntity<Video> upvoteVideo(@PathVariable Long id, @RequestParam String uuid) {
+        User user = userService.getUserByUuid(UUID.fromString(uuid));
+        if(user.getLikedVideos().contains(id)) {
+            return ResponseEntity.badRequest().body(null);
+        }
+        else {
+            user.getLikedVideos().add(id);
+            Video updatedVideo = videoService.upvoteVideo(id);
+            return ResponseEntity.ok(updatedVideo);
+        }
+
     }
 
     @PostMapping("/{id}")
