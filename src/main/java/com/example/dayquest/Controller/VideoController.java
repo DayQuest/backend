@@ -7,10 +7,26 @@ import com.example.dayquest.VideoSelection;
 import com.example.dayquest.Service.VideoService;
 import com.example.dayquest.Service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.core.io.UrlResource;
+import org.springframework.core.io.support.ResourceRegion;
+import org.springframework.http.*;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.StreamUtils;
+import org.springframework.web.bind.annotation.*;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.Base64;
+import java.util.Map;
+import com.github.benmanes.caffeine.cache.Cache;
 
 import java.io.IOException;
 import java.util.List;
@@ -25,6 +41,7 @@ public class VideoController {
     private final VideoRepository videoRepository;
 
     @Autowired
+    private Cache<Integer, String> videoCache;
     public VideoController(VideoService videoService, UserService userService, VideoRepository videoRepository) {
         this.videoService = videoService;
         this.userService = userService;
@@ -56,46 +73,117 @@ public class VideoController {
     }
 
     @PostMapping("/nextVid")
-    public ResponseEntity<Video> nextVid(@RequestBody Map<String, Long> request) {
-        Long id = request.get("userId");
-        if (id == null) {
-            return ResponseEntity.badRequest().body(null);
+    public ResponseEntity<?> nextVid(@RequestBody Map<String, Long> request) {
+        Long userId = request.get("userId");
+        if (userId == null) {
+            return ResponseEntity.badRequest().body("User ID is missing");
         }
 
-        User user = userService.getUserById(id);
+        User user = userService.getUserById(userId);
         if (user == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
         }
-        System.out.println(user.getUsername());
-        String[] likedHashtags = null;
-        int vidIndex = VideoSelection.nextVideo(videoService.getAllVideos().toArray(new Video[0]),
-                likedHashtags == null ? new String[0] : likedHashtags, 10);
 
-        return ResponseEntity.ok(videoService.getAllVideos().toArray(new Video[0])[vidIndex]);
+        int vidIndex = VideoSelection.nextVideo(videoService.getAllVideos().toArray(new Video[0]),
+                new String[0], 10);
+
+        Video video = videoService.getAllVideos().toArray(new Video[0])[vidIndex];
+        String cachedFilePath = videoCache.getIfPresent(video.getId().intValue());
+
+        if (cachedFilePath == null) {
+            // Dekodieren und im temporären Verzeichnis speichern
+            try {
+                byte[] decodedBytes = Base64.getDecoder().decode(video.getVideo64());
+                File tempFile = File.createTempFile("video_" + video.getId(), ".mp4");
+                try (FileOutputStream fos = new FileOutputStream(tempFile)) {
+                    fos.write(decodedBytes);
+                }
+                cachedFilePath = tempFile.getAbsolutePath();
+                videoCache.put(video.getId().intValue(), cachedFilePath);
+            } catch (IOException e) {
+                e.printStackTrace();
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error decoding video");
+            }
+        }
+
+        // Erstelle eine URL zum Streamen des Videos
+        String videoUrl = "/api/videos/stream/" + video.getId();
+        video.setFilePath(videoUrl); // Setze die Datei-URL im Video-Objekt
+
+        return ResponseEntity.ok(video);
     }
 
+    @GetMapping("/stream/{id}")
+    public ResponseEntity<ResourceRegion> streamVideo(@PathVariable int id, @RequestHeader HttpHeaders headers) throws IOException {
+        String filePath = videoCache.getIfPresent(id);
+        if (filePath == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        UrlResource video = new UrlResource("file:" + filePath);
+        ResourceRegion region = resourceRegion(video, headers);
+
+        return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT)
+                .contentType(MediaTypeFactory.getMediaType(video).orElse(MediaType.APPLICATION_OCTET_STREAM))
+                .body(region);
+    }
+
+    private ResourceRegion resourceRegion(UrlResource video, HttpHeaders headers) throws IOException {
+        long contentLength = video.contentLength();
+        HttpRange httpRange = headers.getRange().stream().findFirst().orElse(null);
+        if (httpRange != null) {
+            long start = httpRange.getRangeStart(contentLength);
+            long end = httpRange.getRangeEnd(contentLength);
+            long rangeLength = Math.min(1 * 1024 * 1024, end - start + 1);
+            return new ResourceRegion(video, start, rangeLength);
+        } else {
+            long rangeLength = Math.min(1 * 1024 * 1024, contentLength);
+            return new ResourceRegion(video, 0, rangeLength);
+        }
+    }
+
+    @Async
     @PostMapping("/{id}/upvote")
     public ResponseEntity<Video> upvoteVideo(@PathVariable Long id, @RequestParam String uuid) {
-        User user = userService.getUserByUuid(UUID.fromString(uuid));
-        if(user.getLikedVideos().contains(id)) {
+        try {
+            UUID userUuid = UUID.fromString(uuid);
+            User user = userService.getUserByUuid(userUuid);
+            if (user == null) {
+                return ResponseEntity.badRequest().body(null);
+            }
+            if (user.getLikedVideos().contains(id)) {
+                return ResponseEntity.badRequest().body(null);
+            } else {
+                user.getLikedVideos().add(id);
+                Video updatedVideo = videoService.upvoteVideo(id);
+                return ResponseEntity.ok(updatedVideo);
+            }
+        } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(null);
         }
-        else {
-            user.getLikedVideos().add(id);
-            Video updatedVideo = videoService.upvoteVideo(id);
-            return ResponseEntity.ok(updatedVideo);
-        }
-
     }
-
     @PostMapping("/{id}")
     public ResponseEntity<Video> getVideoById(@PathVariable Long id) {
         return ResponseEntity.ok(videoRepository.findById(id).orElse(null));
     }
 
     @PostMapping("/{id}/downvote")
-    public ResponseEntity<Video> downvoteVideo(@PathVariable Long id) {
-        Video updatedVideo = videoService.downvoteVideo(id);
-        return ResponseEntity.ok(updatedVideo);
+    public ResponseEntity<Video> downvoteVideo(@PathVariable Long id, @RequestParam String uuid) {
+        try {
+            UUID userUuid = UUID.fromString(uuid);
+            User user = userService.getUserByUuid(userUuid);
+            if (user == null) {
+                return ResponseEntity.badRequest().body(null);
+            }
+            if (user.getDislikedVideos().contains(id)) {
+                return ResponseEntity.badRequest().body(null);
+            } else {
+                user.getDislikedVideos().add(id);
+                Video updatedVideo = videoService.downvoteVideo(id);
+                return ResponseEntity.ok(updatedVideo);
+            }
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null);
+        }
     }
 }

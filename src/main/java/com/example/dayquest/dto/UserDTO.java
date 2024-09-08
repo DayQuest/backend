@@ -5,8 +5,14 @@ public class UserDTO {
     private String email;
     private String password;
 
-    // Getter und Setter
+    // Constructor with correct parameters
+    public UserDTO(String username, String email, String password) {
+        this.username = username;
+        this.email = email;
+        this.password = password;
+    }
 
+    // Getters and Setters
     public String getUsername() {
         return username;
     }

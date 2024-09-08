@@ -8,6 +8,7 @@ import java.util.UUID;
 import com.example.dayquest.Repository.VideoRepository;
 import com.example.dayquest.model.Video;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -36,6 +37,7 @@ public class VideoService {
         return videoRepository.findAll();
     }
 
+    @Async
     public String uploadVideo(MultipartFile file, String title, String description) throws IOException {
         String videoId = UUID.randomUUID().toString();
 

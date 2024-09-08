@@ -89,11 +89,12 @@ public class UserService {
         User user = userRepository.findByUuid(id);
         if (user != null) {
             user.setBanned(true);
+            user.setUsername(user.getUsername() + "_banned");
             userRepository.save(user);
         }
     }
-    public void unbanUser(Long id) {
-        User user = userRepository.findById(id).orElse(null);
+    public void unbanUser(UUID id) {
+        User user = userRepository.findByUuid(id);
         if (user != null) {
             user.setBanned(false);
             userRepository.save(user);
@@ -110,5 +111,15 @@ public class UserService {
 
     public User getUserByUuid(UUID uuid) {
         return userRepository.findByUuid(uuid);
+    }
+    public boolean updateUserProfile(UUID uuid, String username, String email) {
+        User user = userRepository.findByUuid(uuid);
+        if (user != null) {
+            user.setUsername(username);
+            user.setEmail(email);
+            userRepository.save(user);  // Benutzer speichern
+            return true;
+        }
+        return false;
     }
 }

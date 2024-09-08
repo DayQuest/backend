@@ -5,15 +5,14 @@ import com.example.dayquest.Service.VideoService;
 import com.example.dayquest.model.Quest;
 import com.example.dayquest.Service.QuestService;
 import com.example.dayquest.model.User;
+import com.example.dayquest.model.Video;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.example.dayquest.Repository.QuestRepository;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
 import java.util.regex.Pattern;
 
 @RestController
@@ -58,8 +57,6 @@ public class QuestController {
         prohibitedPatterns.add(Pattern.compile("\\bself[- ]?harm\\b", Pattern.CASE_INSENSITIVE));
         prohibitedPatterns.add(Pattern.compile("\\bcut\\b", Pattern.CASE_INSENSITIVE));
         prohibitedPatterns.add(Pattern.compile("\\boverdose\\b", Pattern.CASE_INSENSITIVE));
-        prohibitedPatterns.add(Pattern.compile("\\bjump\\b", Pattern.CASE_INSENSITIVE));
-        prohibitedPatterns.add(Pattern.compile("\\bhang\\b", Pattern.CASE_INSENSITIVE));
         prohibitedPatterns.add(Pattern.compile("\\bpoison\\b", Pattern.CASE_INSENSITIVE));
         prohibitedPatterns.add(Pattern.compile("\\bsuffocate\\b", Pattern.CASE_INSENSITIVE));
         prohibitedPatterns.add(Pattern.compile("\\bdrown\\b", Pattern.CASE_INSENSITIVE));
@@ -67,7 +64,6 @@ public class QuestController {
         prohibitedPatterns.add(Pattern.compile("\\bselbstverletzung\\b", Pattern.CASE_INSENSITIVE));
         prohibitedPatterns.add(Pattern.compile("\\britzen\\b", Pattern.CASE_INSENSITIVE));
         prohibitedPatterns.add(Pattern.compile("\\büberdosis\\b", Pattern.CASE_INSENSITIVE));
-        prohibitedPatterns.add(Pattern.compile("\\bspringen\\b", Pattern.CASE_INSENSITIVE));
         prohibitedPatterns.add(Pattern.compile("\\berhängen\\b", Pattern.CASE_INSENSITIVE));
         prohibitedPatterns.add(Pattern.compile("\\bvergiften\\b", Pattern.CASE_INSENSITIVE));
         prohibitedPatterns.add(Pattern.compile("\\bersticken\\b", Pattern.CASE_INSENSITIVE));
@@ -184,21 +180,57 @@ public class QuestController {
     }
 
     @PostMapping("/{id}/like")
-    public ResponseEntity<Void> likeQuest(@PathVariable Long id) {
-        questRepository.findById(id).ifPresent(quest -> {
-            quest.setLikes(quest.getLikes() + 1);
-            questRepository.save(quest);
-        });
-        return ResponseEntity.ok().build();
+    public ResponseEntity<Void> likeQuest(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        String uuid = body.get("uuid");
+        if (uuid == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        try {
+            UUID userUuid = UUID.fromString(uuid);
+            User user = userService.getUserByUuid(userUuid);
+            if (user == null) {
+                return ResponseEntity.badRequest().body(null);
+            }
+            if (user.getLikedQuests().contains(id)) {
+                return ResponseEntity.badRequest().body(null);
+            } else {
+                user.getLikedQuests().add(id);
+                questRepository.findById(id).ifPresent(quest -> {
+                    quest.setLikes(quest.getLikes() + 1);
+                    questRepository.save(quest);
+                });
+                return ResponseEntity.ok().build();
+            }
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null);
+        }
     }
 
     @PostMapping("/{id}/dislike")
-    public ResponseEntity<Void> dislikeQuest(@PathVariable Long id) {
-        questRepository.findById(id).ifPresent(quest -> {
-            quest.setDislikes(quest.getDislikes() + 1);
-            questRepository.save(quest);
-        });
-        return ResponseEntity.ok().build();
+    public ResponseEntity<Void> dislikeQuest(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        String uuid = body.get("uuid");
+        if (uuid == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        try {
+            UUID userUuid = UUID.fromString(uuid);
+            User user = userService.getUserByUuid(userUuid);
+            if (user == null) {
+                return ResponseEntity.badRequest().body(null);
+            }
+            if (user.getDislikedQuests().contains(id)) {
+                return ResponseEntity.badRequest().body(null);
+            } else {
+                user.getDislikedQuests().add(id);
+                questRepository.findById(id).ifPresent(quest -> {
+                    quest.setDislikes(quest.getDislikes() + 1);
+                    questRepository.save(quest);
+                });
+                return ResponseEntity.ok().build();
+            }
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null);
+        }
     }
     @PostMapping("/getquest")
     public ResponseEntity<String> getQuest(@RequestBody Map<String, Long> request)

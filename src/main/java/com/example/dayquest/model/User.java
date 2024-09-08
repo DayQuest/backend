@@ -22,6 +22,41 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    public List<Long> getDislikedVideos() {
+        return dislikedVideos;
+    }
+
+    public void setDislikedVideos(List<Long> dislikedVideos) {
+        this.dislikedVideos = dislikedVideos;
+    }
+
+    @ElementCollection
+    @CollectionTable(name = "disliked_videos", joinColumns = @JoinColumn(name = "user_id"))
+    private List<Long> dislikedVideos;
+
+    public List<Long> getDislikedQuests() {
+        return dislikedQuests;
+    }
+
+    public void setDislikedQuests(List<Long> dislikedQuests) {
+        this.dislikedQuests = dislikedQuests;
+    }
+
+    @ElementCollection
+    @CollectionTable(name = "disliked_quests", joinColumns = @JoinColumn(name = "user_id"))
+    private List<Long> dislikedQuests;
+
+    public List<Long> getLikedQuests() {
+        return likedQuests;
+    }
+
+    public void setLikedQuests(List<Long> likedQuests) {
+        this.likedQuests = likedQuests;
+    }
+
+    @ElementCollection
+    @CollectionTable(name = "liked_quests", joinColumns = @JoinColumn(name = "user_id"))
+    private List<Long> likedQuests;
 
     public List<Long> getLikedVideos() {
         return likedVideos;
