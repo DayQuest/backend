@@ -13,24 +13,15 @@ import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.util.StreamUtils;
-import org.springframework.web.bind.annotation.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.Base64;
 import java.util.Map;
 import com.github.benmanes.caffeine.cache.Cache;
 
-import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -84,34 +75,58 @@ public class VideoController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
         }
 
-        int vidIndex = VideoSelection.nextVideo(videoService.getAllVideos().toArray(new Video[0]),
-                new String[0], 10);
+        List<Video> allVideos = videoService.getAllVideos();
+        int currentVideoIndex = VideoSelection.nextVideo(allVideos.toArray(new Video[0]), new String[0], 10);
 
-        Video video = videoService.getAllVideos().toArray(new Video[0])[vidIndex];
-        String cachedFilePath = videoCache.getIfPresent(video.getId().intValue());
+        if (currentVideoIndex >= 130 && currentVideoIndex + 20 < allVideos.size()) {
+            // Preload the next 20 videos
+            preloadVideos(allVideos.subList(currentVideoIndex + 1, currentVideoIndex + 21));
+        }
+
+        Video currentVideo = allVideos.get(currentVideoIndex);
+        String cachedFilePath = videoCache.getIfPresent(currentVideo.getId().intValue());
 
         if (cachedFilePath == null) {
-            // Dekodieren und im temporären Verzeichnis speichern
             try {
-                byte[] decodedBytes = Base64.getDecoder().decode(video.getVideo64());
-                File tempFile = File.createTempFile("video_" + video.getId(), ".mp4");
+                byte[] decodedBytes = Base64.getDecoder().decode(currentVideo.getVideo64());
+                File tempFile = File.createTempFile("video_" + currentVideo.getId(), ".mp4");
                 try (FileOutputStream fos = new FileOutputStream(tempFile)) {
                     fos.write(decodedBytes);
                 }
                 cachedFilePath = tempFile.getAbsolutePath();
-                videoCache.put(video.getId().intValue(), cachedFilePath);
+                videoCache.put(currentVideo.getId().intValue(), cachedFilePath);
             } catch (IOException e) {
                 e.printStackTrace();
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error decoding video");
             }
         }
 
-        // Erstelle eine URL zum Streamen des Videos
-        String videoUrl = "/api/videos/stream/" + video.getId();
-        video.setFilePath(videoUrl); // Setze die Datei-URL im Video-Objekt
+        String videoUrl = "/api/videos/stream/" + currentVideo.getId();
+        currentVideo.setFilePath(videoUrl);
 
-        return ResponseEntity.ok(video);
+        return ResponseEntity.ok(currentVideo);
     }
+
+
+    @Async
+    public void preloadVideos(List<Video> videosToPreload) {
+        for (Video video : videosToPreload) {
+            String cachedFilePath = videoCache.getIfPresent(video.getId().intValue());
+            if (cachedFilePath == null) {
+                try {
+                    byte[] decodedBytes = Base64.getDecoder().decode(video.getVideo64());
+                    File tempFile = File.createTempFile("video_" + video.getId(), ".mp4");
+                    try (FileOutputStream fos = new FileOutputStream(tempFile)) {
+                        fos.write(decodedBytes);
+                    }
+                    videoCache.put(video.getId().intValue(), tempFile.getAbsolutePath());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
 
     @GetMapping("/stream/{id}")
     public ResponseEntity<ResourceRegion> streamVideo(@PathVariable int id, @RequestHeader HttpHeaders headers) throws IOException {

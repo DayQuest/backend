@@ -37,7 +37,7 @@ public class VideoService {
         return videoRepository.findAll();
     }
 
-    @Async
+
     public String uploadVideo(MultipartFile file, String title, String description) throws IOException {
         String videoId = UUID.randomUUID().toString();
 
