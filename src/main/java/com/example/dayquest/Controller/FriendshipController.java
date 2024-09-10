@@ -1,5 +1,6 @@
 package com.example.dayquest.Controller;
 
+import com.example.dayquest.dto.FriendDTO;
 import com.example.dayquest.model.Friendship;
 import com.example.dayquest.Service.FriendshipService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/friends")
@@ -39,23 +41,28 @@ public class FriendshipController {
 
     // List all friends of a user
     @GetMapping("/list")
-    public ResponseEntity<List<Friendship>> listFriends(@RequestParam Long userId) {
+    public ResponseEntity<List<FriendDTO>> listFriends(@RequestParam Long userId) {
         List<Friendship> friends = friendshipService.getFriends(userId);
-        if (friends != null && !friends.isEmpty()) {
-            return ResponseEntity.ok(friends);
-        } else {
-            return ResponseEntity.ok().body(List.of()); // Return an empty list if no friends are found
-        }
+
+        List<FriendDTO> sanitizedFriends = friends.stream()
+                .map(friendship -> new FriendDTO(friendship.getFriend().getUsername()))
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(sanitizedFriends);
     }
 
-    // Get pending friend requests for a user
+
+
     @GetMapping("/pending-requests")
-    public ResponseEntity<List<Friendship>> getPendingRequests(@RequestParam Long userId) {
+    public ResponseEntity<List<FriendDTO>> getPendingRequests(@RequestParam Long userId) {
         List<Friendship> pendingRequests = friendshipService.getPendingRequests(userId);
         if (pendingRequests != null && !pendingRequests.isEmpty()) {
-            return ResponseEntity.ok(pendingRequests);
+            List<FriendDTO> sanitizedFriends = pendingRequests.stream()
+                    .map(friendship -> new FriendDTO(friendship.getFriend().getUsername()))
+                    .toList();
+            return ResponseEntity.ok(sanitizedFriends);
         } else {
-            return ResponseEntity.ok().body(List.of()); // Return an empty list if no pending requests are found
+            return ResponseEntity.ok().body(List.of());
         }
     }
 }
