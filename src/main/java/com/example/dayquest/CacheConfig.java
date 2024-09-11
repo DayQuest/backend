@@ -12,8 +12,8 @@ public class CacheConfig {
     @Bean
     public Cache<Integer, String> videoCache() {
         return Caffeine.newBuilder()
-                .expireAfterWrite(10, TimeUnit.MINUTES)
-                .maximumSize(100)
+                .expireAfterWrite(1, TimeUnit.HOURS)
+                .maximumSize(500)
                 .build();
     }
 }

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import com.example.dayquest.Repository.VideoRepository;
 import com.example.dayquest.model.Video;
@@ -38,6 +39,17 @@ public class VideoService {
     }
 
 
+    @Async
+    public CompletableFuture<String> uploadVideoAsync(MultipartFile file, String title, String description) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return uploadVideo(file, title, description);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to upload video", e);
+            }
+        });
+    }
+
     public String uploadVideo(MultipartFile file, String title, String description) throws IOException {
         String videoId = UUID.randomUUID().toString();
 
@@ -47,7 +59,7 @@ public class VideoService {
         video.setTitle(title);
         video.setDescription(description);
         video.setVideo64(base64Video);
-        video.setFilePath(videoId); // Wir verwenden filePath als eindeutige ID
+        video.setFilePath(videoId);
         videoRepository.save(video);
         videos++;
         return videoId;

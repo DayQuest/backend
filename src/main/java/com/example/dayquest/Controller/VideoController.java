@@ -28,8 +28,6 @@ import java.util.UUID;
 @RequestMapping("/api/videos")
 public class VideoController {
     private static final int PRELOAD_COUNT = 5;
-    private static final int CACHE_SIZE = 500;
-    private static final int CACHE_EXPIRATION = 3600; // 1 hour
 
     private final VideoService videoService;
     private final UserService userService;
@@ -37,6 +35,7 @@ public class VideoController {
 
     @Autowired
     private Cache<Integer, String> videoCache;
+
     public VideoController(VideoService videoService, UserService userService, VideoRepository videoRepository) {
         this.videoService = videoService;
         this.userService = userService;
@@ -69,61 +68,60 @@ public class VideoController {
 
 
 
-        @PostMapping("/nextVid")
-        public ResponseEntity<?> nextVid(@RequestBody Map<String, Long> request) {
-            Long userId = request.get("userId");
-            if (userId == null) {
-                return ResponseEntity.badRequest().body("User ID is missing");
-            }
-
-            User user = userService.getUserById(userId);
-            if (user == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
-            }
-
-            List<Video> allVideos = videoService.getAllVideos();
-            int currentVideoIndex = VideoSelection.nextVideo(allVideos.toArray(new Video[0]), new String[0], 10);
-
-            if (currentVideoIndex >= allVideos.size() - PRELOAD_COUNT) {
-                preloadVideos(allVideos.subList(currentVideoIndex + 1, Math.min(currentVideoIndex + 1 + PRELOAD_COUNT, allVideos.size())));
-            }
-
-            Video currentVideo = allVideos.get(currentVideoIndex);
-            String cachedFilePath = videoCache.getIfPresent(currentVideo.getId().intValue());
-
-            if (cachedFilePath == null) {
-                cachedFilePath = cacheVideo(currentVideo);
-            }
-
-            String videoUrl = "/api/videos/stream/" + currentVideo.getId();
-            currentVideo.setFilePath(videoUrl);
-
-            return ResponseEntity.ok(currentVideo);
+    @PostMapping("/nextVid")
+    public ResponseEntity<?> nextVid(@RequestBody Map<String, Long> request) {
+        Long userId = request.get("userId");
+        if (userId == null) {
+            return ResponseEntity.badRequest().body("User ID is missing");
         }
 
-        @Async
-        public void preloadVideos(List<Video> videosToPreload) {
-            for (Video video : videosToPreload) {
-                cacheVideo(video);
-            }
+        User user = userService.getUserById(userId);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
         }
 
-        private String cacheVideo(Video video) {
-            try {
-                byte[] decodedBytes = Base64.getDecoder().decode(video.getVideo64());
-                File tempFile = File.createTempFile("video_" + video.getId(), ".mp4");
-                try (FileOutputStream fos = new FileOutputStream(tempFile)) {
-                    fos.write(decodedBytes);
-                }
-                String cachedFilePath = tempFile.getAbsolutePath();
-                videoCache.put(video.getId().intValue(), cachedFilePath);
-                return cachedFilePath;
-            } catch (IOException e) {
-                e.printStackTrace();
-                return null;
-            }
+        List<Video> allVideos = videoService.getAllVideos();
+        int currentVideoIndex = VideoSelection.nextVideo(allVideos.toArray(new Video[0]), new String[0], 10);
+
+        if (currentVideoIndex >= allVideos.size() - PRELOAD_COUNT) {
+            preloadVideos(allVideos.subList(currentVideoIndex + 1, Math.min(currentVideoIndex + 1 + PRELOAD_COUNT, allVideos.size())));
         }
 
+        Video currentVideo = allVideos.get(currentVideoIndex);
+        String cachedFilePath = videoCache.getIfPresent(currentVideo.getId().intValue());
+
+        if (cachedFilePath == null) {
+            cachedFilePath = cacheVideo(currentVideo);
+        }
+
+        String videoUrl = "/api/videos/stream/" + currentVideo.getId();
+        currentVideo.setFilePath(videoUrl);
+
+        return ResponseEntity.ok(currentVideo);
+    }
+
+    @Async
+    public void preloadVideos(List<Video> videosToPreload) {
+        for (Video video : videosToPreload) {
+            cacheVideo(video);
+        }
+    }
+
+    private String cacheVideo(Video video) {
+        try {
+            byte[] decodedBytes = Base64.getDecoder().decode(video.getVideo64());
+            File tempFile = File.createTempFile("video_" + video.getId(), ".mp4");
+            try (FileOutputStream fos = new FileOutputStream(tempFile)) {
+                fos.write(decodedBytes);
+            }
+            String cachedFilePath = tempFile.getAbsolutePath();
+            videoCache.put(video.getId().intValue(), cachedFilePath);
+            return cachedFilePath;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
     @GetMapping("/stream/{id}")
     public ResponseEntity<ResourceRegion> streamVideo(@PathVariable int id, @RequestHeader HttpHeaders headers) throws IOException {
@@ -154,7 +152,7 @@ public class VideoController {
         }
     }
 
-    @Async
+
     @PostMapping("/{id}/upvote")
     public ResponseEntity<Video> upvoteVideo(@PathVariable Long id, @RequestParam String uuid) {
         try {
