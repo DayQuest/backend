@@ -166,7 +166,9 @@ public class QuestController {
 
     @GetMapping
     public List<Quest> getAllQuests() {
-        return questRepository.findAll();
+        List<Quest> quests = questRepository.findAll();
+        Collections.shuffle(quests);
+        return quests;
     }
 
     @PostMapping("/suggest")

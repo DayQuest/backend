@@ -18,11 +18,7 @@ public class Video {
     private int upvotes;
     private int downvotes;
 
-    @Lob
-    @Column(columnDefinition = "LONGTEXT")
-    private String video64;
-
-    // Getter und Setter
+    // Getters and setters
 
     public Long getId() {
         return id;
@@ -78,13 +74,5 @@ public class Video {
 
     public void setDownvotes(int downvotes) {
         this.downvotes = downvotes;
-    }
-
-    public String getVideo64() {
-        return video64;
-    }
-
-    public void setVideo64(String video64) {
-        this.video64 = video64;
     }
 }

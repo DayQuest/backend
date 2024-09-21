@@ -1,21 +1,28 @@
 package com.example.dayquest.Service;
 
 import java.io.IOException;
-import java.util.Base64;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import com.example.dayquest.Repository.VideoRepository;
 import com.example.dayquest.model.Video;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class VideoService {
-    public int videos;
+    @Value("${video.upload.path}")
+    private String uploadPath;
 
     @Autowired
     private VideoRepository videoRepository;
@@ -38,7 +45,6 @@ public class VideoService {
         return videoRepository.findAll();
     }
 
-
     @Async
     public CompletableFuture<String> uploadVideoAsync(MultipartFile file, String title, String description) {
         return CompletableFuture.supplyAsync(() -> {
@@ -50,34 +56,50 @@ public class VideoService {
         });
     }
 
-    public String uploadVideo(MultipartFile file, String title, String description) throws IOException {
-        String videoId = UUID.randomUUID().toString();
+    public Video getRandomVideo() {
+        long count = videoRepository.count();
+        if (count == 0) {
+            throw new RuntimeException("No videos available");
+        }
+        long randomId = new Random().nextLong(count);
+        return videoRepository.findAll().get((int) randomId);
+    }
 
-        String base64Video = Base64.getEncoder().encodeToString(file.getBytes());
+    public String uploadVideo(MultipartFile file, String title, String description) throws IOException {
+        String fileName = UUID.randomUUID().toString() + ".mp4";
+        Path filePath = Paths.get(uploadPath, fileName);
+        Files.copy(file.getInputStream(), filePath);
 
         Video video = new Video();
         video.setTitle(title);
         video.setDescription(description);
-        video.setVideo64(base64Video);
-        video.setFilePath(videoId);
+        video.setFilePath(fileName.replace(".mp4", ""));
         videoRepository.save(video);
-        videos++;
-        return videoId;
+        return fileName;
     }
 
     public void deleteVideo(Long id) {
         Video video = videoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Video nicht gefunden"));
+        try {
+            Files.deleteIfExists(Paths.get(uploadPath, video.getFilePath()));
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to delete video file", e);
+        }
         videoRepository.delete(video);
-        videos--;
     }
 
-    public Video getVideo(Long id) {
-        return videoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Video nicht gefunden"));
-    }
-    public Video getVideoById(String videoId) {
-        return videoRepository.findByFilePath(videoId)
-                .orElseThrow(() -> new RuntimeException("Video nicht gefunden"));
+    public Resource loadVideoAsResource(String fileName) {
+        try {
+            Path filePath = Paths.get(uploadPath).resolve(fileName).normalize();
+            Resource resource = new UrlResource(filePath.toUri());
+            if (resource.exists() || resource.isReadable()) {
+                return resource;
+            } else {
+                throw new RuntimeException("Could not read file: " + fileName);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Could not read file: " + fileName, e);
+        }
     }
 }

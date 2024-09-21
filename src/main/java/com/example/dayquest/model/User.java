@@ -26,9 +26,6 @@ public class User {
         return dislikedVideos;
     }
 
-    public void setDislikedVideos(List<Long> dislikedVideos) {
-        this.dislikedVideos = dislikedVideos;
-    }
 
     @ElementCollection
     @CollectionTable(name = "disliked_videos", joinColumns = @JoinColumn(name = "user_id"))
@@ -38,9 +35,6 @@ public class User {
         return dislikedQuests;
     }
 
-    public void setDislikedQuests(List<Long> dislikedQuests) {
-        this.dislikedQuests = dislikedQuests;
-    }
 
     @ElementCollection
     @CollectionTable(name = "disliked_quests", joinColumns = @JoinColumn(name = "user_id"))
@@ -96,7 +90,7 @@ public class User {
 
     private boolean banned;
 
-    // Getter und Setter
+
 
     public Long getId() {
         return id;

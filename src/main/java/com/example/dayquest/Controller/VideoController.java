@@ -3,21 +3,19 @@ package com.example.dayquest.Controller;
 import com.example.dayquest.Repository.VideoRepository;
 import com.example.dayquest.model.Video;
 import com.example.dayquest.model.User;
-import com.example.dayquest.VideoSelection;
+
 import com.example.dayquest.Service.VideoService;
 import com.example.dayquest.Service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.UrlResource;
-import org.springframework.core.io.support.ResourceRegion;
+import org.springframework.core.io.Resource;
+
 import org.springframework.http.*;
-import org.springframework.scheduling.annotation.Async;
+
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Base64;
 import java.util.Map;
 import com.github.benmanes.caffeine.cache.Cache;
 
@@ -66,6 +64,23 @@ public class VideoController {
         return ResponseEntity.ok("Video deleted");
     }
 
+    @GetMapping("/videos/{fileName:.+}")
+    public ResponseEntity<Resource> serveVideo(@PathVariable String fileName, HttpServletRequest request) {
+        Resource resource = videoService.loadVideoAsResource(fileName);
+        String contentType = null;
+        try {
+            contentType = request.getServletContext().getMimeType(resource.getFile().getAbsolutePath());
+        } catch (IOException ex) {
+        }
+        if (contentType == null) {
+            contentType = "application/octet-stream";
+        }
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                .body(resource);
+    }
+
 
 
     @PostMapping("/nextVid")
@@ -75,86 +90,18 @@ public class VideoController {
             return ResponseEntity.badRequest().body("User ID is missing");
         }
 
-        User user = userService.getUserById(userId);
-        if (user == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+        Video video = videoService.getRandomVideo();
+        if (video == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No videos available");
         }
 
-        List<Video> allVideos = videoService.getAllVideos();
-        int currentVideoIndex = VideoSelection.nextVideo(allVideos.toArray(new Video[0]), new String[0], 10);
-
-        if (currentVideoIndex >= allVideos.size() - PRELOAD_COUNT) {
-            preloadVideos(allVideos.subList(currentVideoIndex + 1, Math.min(currentVideoIndex + 1 + PRELOAD_COUNT, allVideos.size())));
-        }
-
-        Video currentVideo = allVideos.get(currentVideoIndex);
-        String cachedFilePath = videoCache.getIfPresent(currentVideo.getId().intValue());
-
-        if (cachedFilePath == null) {
-            cachedFilePath = cacheVideo(currentVideo);
-        }
-
-        String videoUrl = "/api/videos/stream/" + currentVideo.getId();
-        currentVideo.setFilePath(videoUrl);
-
-        return ResponseEntity.ok(currentVideo);
+        return ResponseEntity.ok(video);
     }
 
-    @Async
-    public void preloadVideos(List<Video> videosToPreload) {
-        for (Video video : videosToPreload) {
-            cacheVideo(video);
-        }
-    }
-
-    private String cacheVideo(Video video) {
-        try {
-            byte[] decodedBytes = Base64.getDecoder().decode(video.getVideo64());
-            File tempFile = File.createTempFile("video_" + video.getId(), ".mp4");
-            try (FileOutputStream fos = new FileOutputStream(tempFile)) {
-                fos.write(decodedBytes);
-            }
-            String cachedFilePath = tempFile.getAbsolutePath();
-            videoCache.put(video.getId().intValue(), cachedFilePath);
-            return cachedFilePath;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    @GetMapping("/stream/{id}")
-    public ResponseEntity<ResourceRegion> streamVideo(@PathVariable int id, @RequestHeader HttpHeaders headers) throws IOException {
-        String filePath = videoCache.getIfPresent(id);
-        if (filePath == null) {
-            return ResponseEntity.notFound().build();
-        }
-
-        UrlResource video = new UrlResource("file:" + filePath);
-        ResourceRegion region = resourceRegion(video, headers);
-
-        return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT)
-                .contentType(MediaTypeFactory.getMediaType(video).orElse(MediaType.APPLICATION_OCTET_STREAM))
-                .body(region);
-    }
-
-    private ResourceRegion resourceRegion(UrlResource video, HttpHeaders headers) throws IOException {
-        long contentLength = video.contentLength();
-        HttpRange httpRange = headers.getRange().stream().findFirst().orElse(null);
-        if (httpRange != null) {
-            long start = httpRange.getRangeStart(contentLength);
-            long end = httpRange.getRangeEnd(contentLength);
-            long rangeLength = Math.min(1 * 1024 * 1024, end - start + 1);
-            return new ResourceRegion(video, start, rangeLength);
-        } else {
-            long rangeLength = Math.min(1 * 1024 * 1024, contentLength);
-            return new ResourceRegion(video, 0, rangeLength);
-        }
-    }
 
 
     @PostMapping("/{id}/upvote")
-    public ResponseEntity<Video> upvoteVideo(@PathVariable Long id, @RequestParam String uuid) {
+    public ResponseEntity<Video> upvoteVideo(@PathVariable Long id, @RequestBody String uuid) {
         try {
             UUID userUuid = UUID.fromString(uuid);
             User user = userService.getUserByUuid(userUuid);
@@ -178,7 +125,7 @@ public class VideoController {
     }
 
     @PostMapping("/{id}/downvote")
-    public ResponseEntity<Video> downvoteVideo(@PathVariable Long id, @RequestParam String uuid) {
+    public ResponseEntity<Video> downvoteVideo(@PathVariable Long id, @RequestBody String uuid) {
         try {
             UUID userUuid = UUID.fromString(uuid);
             User user = userService.getUserByUuid(userUuid);

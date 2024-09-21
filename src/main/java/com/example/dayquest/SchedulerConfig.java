@@ -27,4 +27,6 @@ public class SchedulerConfig {
     public void assignDailyQuest() {
         userService.assignDailyQuests(questService.getTop10PercentQuests());
     }
+
+
 }
