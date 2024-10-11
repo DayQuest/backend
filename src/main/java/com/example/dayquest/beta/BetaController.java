@@ -3,6 +3,7 @@ package com.example.dayquest.beta;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -41,17 +42,5 @@ public class BetaController {
     }
 
     return ResponseEntity.ok(true);
-  }
-
-  public ResponseEntity<String> updateKey(@RequestBody BetaRequestDTO betaRequestDTO,
-      @RequestBody String newKey) {
-
-    if (!repository.existsById(betaRequestDTO.getDiscordId())) {
-      //Does not exist, cannot update then
-    }
-
-
-    //TODO: Implement this method
-    return ResponseEntity.internalServerError().body("Unimplemented");
   }
 }
