@@ -11,20 +11,24 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/users/register", "/api/users/login", "/api/videos/upload", "/api/videos/auth","/api/videos", "/api/videos/stream/**", "/api/quests", "/api/quests/**", "/api/videos/**", "/api/**", "/api/reports/get").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .csrf(csrf -> csrf.disable()); // CSRF-Schutz ist deaktiviert
 
-        return http.build();
-    }
+  //TODO: Try removing this, seems useless
+  @Bean
+  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    http
+        .authorizeHttpRequests(authorize -> authorize
+            .requestMatchers("/api/users/register", "/api/users/login", "/api/videos/upload",
+                "/api/videos/auth", "/api/videos", "/api/videos/stream/**", "/api/quests",
+                "/api/quests/**", "/api/videos/**", "/api/**", "/api/reports/get").permitAll()
+            .anyRequest().authenticated()
+        )
+        .csrf(csrf -> csrf.disable()); // CSRF-Schutz ist deaktiviert
 
-    @Bean
-    public BCryptPasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+    return http.build();
+  }
+
+  @Bean
+  public BCryptPasswordEncoder passwordEncoder() {
+    return new BCryptPasswordEncoder();
+  }
 }

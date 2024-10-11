@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class KeyCreator {
 
-  public String generateKey() {
+   String generateKey() {
     UUID uuid = UUID.randomUUID();
     String key = uuid.toString().substring(0, 16).replaceAll("-", "");
 
