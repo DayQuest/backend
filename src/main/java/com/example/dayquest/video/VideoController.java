@@ -2,8 +2,7 @@ package com.example.dayquest.video;
 
 import com.example.dayquest.user.User;
 
-import com.example.dayquest.service.VideoService;
-import com.example.dayquest.service.UserService;
+import com.example.dayquest.user.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;

@@ -1,9 +1,7 @@
-package com.example.dayquest.service;
+package com.example.dayquest.user;
 
 import com.example.dayquest.quest.QuestRepository;
 import com.example.dayquest.quest.Quest;
-import com.example.dayquest.user.User;
-import com.example.dayquest.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;

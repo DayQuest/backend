@@ -1,6 +1,6 @@
 package com.example.dayquest.quest;
 
-import com.example.dayquest.service.UserService;
+import com.example.dayquest.user.UserService;
 import com.example.dayquest.user.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

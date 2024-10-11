@@ -1,9 +1,7 @@
-package com.example.dayquest.service;
+package com.example.dayquest.quest;
 
 import java.util.List;
 
-import com.example.dayquest.quest.QuestRepository;
-import com.example.dayquest.quest.Quest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

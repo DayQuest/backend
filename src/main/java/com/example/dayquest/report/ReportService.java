@@ -1,7 +1,5 @@
-package com.example.dayquest.service;
+package com.example.dayquest.report;
 
-import com.example.dayquest.report.ReportRepository;
-import com.example.dayquest.report.Report;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

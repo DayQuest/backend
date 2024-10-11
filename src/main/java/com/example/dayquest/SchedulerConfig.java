@@ -1,7 +1,7 @@
 package com.example.dayquest;
 
-import com.example.dayquest.service.QuestService;
-import com.example.dayquest.service.UserService;
+import com.example.dayquest.quest.QuestService;
+import com.example.dayquest.user.UserService;
 import jakarta.annotation.PostConstruct;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;

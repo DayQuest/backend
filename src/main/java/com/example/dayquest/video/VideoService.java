@@ -1,4 +1,4 @@
-package com.example.dayquest.service;
+package com.example.dayquest.video;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -9,8 +9,6 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-import com.example.dayquest.video.VideoRepository;
-import com.example.dayquest.video.Video;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;

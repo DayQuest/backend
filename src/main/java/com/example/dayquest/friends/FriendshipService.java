@@ -1,8 +1,6 @@
-package com.example.dayquest.service;
+package com.example.dayquest.friends;
 
-import com.example.dayquest.friends.Friendship;
 import com.example.dayquest.user.User;
-import com.example.dayquest.friends.FriendshipRepository;
 import com.example.dayquest.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

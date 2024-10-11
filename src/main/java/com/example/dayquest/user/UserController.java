@@ -1,6 +1,5 @@
 package com.example.dayquest.user;
 
-import com.example.dayquest.service.UserService;
 import com.example.dayquest.util.UuidDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
