@@ -127,17 +127,18 @@ public class UserController {
     }
     @Async
     @PostMapping("/auth")
-    public CompletableFuture<ResponseEntity<String>> UUIDAuth(@RequestBody UuidDTO uuidDto) {
+    //TODO: Remove, whatever this is idk
+    public ResponseEntity<String> UUIDAuth(@RequestBody UuidDTO uuidDto) {
         try {
             UUID validUuid = UUID.fromString(uuidDto.getUuid());
             boolean result = userService.UUIDAuth(validUuid);
             if (result) {
-                return CompletableFuture.completedFuture(ResponseEntity.ok("Authentication successful"));
+                return ResponseEntity.ok("Authentication successful");
             } else {
-                return CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication failed"));
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication failed");
             }
         } catch (IllegalArgumentException e) {
-            return CompletableFuture.completedFuture(ResponseEntity.badRequest().body("Invalid UUID format"));
+            return ResponseEntity.badRequest().body("Invalid UUID format");
         }
     }
     @PostMapping("/update")
