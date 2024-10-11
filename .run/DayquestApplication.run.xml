@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="DayquestApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
     <module name="dayquest" />
-    <option name="SPRING_BOOT_MAIN_CLASS" value="com.example.dayquest.DayquestApplication" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.dayquest.dayquestbackend.DayquestApplication" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>

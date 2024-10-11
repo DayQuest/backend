@@ -8,8 +8,8 @@
 		<version>3.3.2</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.example</groupId>
-	<artifactId>dayquest</artifactId>
+	<groupId>com.dayquest</groupId>
+	<artifactId>dayquestbackend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>dayquest</name>
 	<description>Demo project for Spring Boot</description>
