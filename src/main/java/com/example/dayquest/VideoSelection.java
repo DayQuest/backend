@@ -1,12 +1,10 @@
 package com.example.dayquest;
 
-import com.example.dayquest.model.Video;
-import com.example.dayquest.model.User;
-import com.example.dayquest.Repository.VideoRepository;
+import com.example.dayquest.video.Video;
+import com.example.dayquest.video.VideoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
 import java.util.Random;
 
 @Service
