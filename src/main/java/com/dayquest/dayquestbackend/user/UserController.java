@@ -1,16 +1,10 @@
 package com.dayquest.dayquestbackend.user;
 
-import com.dayquest.dayquestbackend.util.UuidDTO;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -18,156 +12,114 @@ import java.util.concurrent.CompletableFuture;
 @RequestMapping("/api/users")
 public class UserController {
 
-    @Autowired
-    private UserService userService;
+  @Autowired
+  private UserService userService;
 
-    @PostMapping("/register")
-    public ResponseEntity<String> registerUser(@RequestBody UserDTO userDTO) {
-        boolean result = userService.registerUser(
-                userDTO.getUsername(),
-                userDTO.getEmail(),
-                userDTO.getPassword()
+  @Autowired
+  private UserRepository userRepository;
+
+  @PostMapping("/register")
+  public CompletableFuture<ResponseEntity<String>> registerUser(@RequestBody UserDTO userDTO) {
+    return userService.registerUser(userDTO.getUsername(), userDTO.getEmail(),
+            userDTO.getPassword())
+        .thenApply(result -> result
+            ? ResponseEntity.ok("Registration successful")
+            : ResponseEntity.badRequest().body("Registration failed"));
+  }
+
+  @PostMapping("/status")
+  public ResponseEntity<Object> status() {
+
+    //TODO: Implement, document
+    return ResponseEntity.ok().build();
+  }
+
+  @PostMapping("/login")
+  public CompletableFuture<ResponseEntity<LoginResponse>> loginUser(
+      @RequestBody LoginDTO loginDTO) {
+
+    return CompletableFuture.supplyAsync(() -> {
+      User user = userRepository.findByUsername(loginDTO.getUsername());
+
+      if (user == null) {
+        return ResponseEntity.notFound().build();
+      }
+
+      if (user.isBanned()) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+            new LoginResponse(null, null, "User has been banned")
         );
+      }
 
-        if (result) {
-            return ResponseEntity.ok("Registration successful");
-        } else {
-            return ResponseEntity.badRequest().body("Registration failed");
-        }
-    }
+      return ResponseEntity.ok(
+          new LoginResponse(user.getUuid(), "Unimplemented", "Login permitted"));
+    });
+  }
 
-    @PostMapping("/status")
-    public HttpEntity<Object> status() {
-        return ResponseEntity.ok().build();
-    }
+  @PostMapping("/ban")
+  public CompletableFuture<ResponseEntity<String>> banUser(@RequestBody UUID uuid) {
+    return CompletableFuture.supplyAsync(() -> {
+      User user = userRepository.findByUuid(uuid);
+      if (user == null) {
+        return ResponseEntity.notFound().build();
+      }
+      if (user.isBanned()) {
+        return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Already banned");
+      }
 
-    @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> loginUser(@RequestBody LoginDTO loginDTO) {
-        boolean isAuthenticated = userService.authenticateUser(loginDTO.getUsername(), loginDTO.getPassword());
-        if (isAuthenticated) {
-            User user = userService.getUserByUsername(loginDTO.getUsername());
-            Map<String, Object> response = new HashMap<>();
-            response.put("message", "Login successful");
-            response.put("userId", user.getId());
-            response.put("uuid", user.getUuid().toString());
-            return ResponseEntity.ok(response);
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Collections.singletonMap("message", "Invalid credentials"));
-        }
-    }
-    @PostMapping("/ban")
-    public ResponseEntity<String> banUser(@RequestBody UuidDTO uuidDto) {
-        String uuidString = uuidDto.getUuid();
+      userService.banUser(user.getUuid()).join();
+      return ResponseEntity.ok("Successfully banned user");
+    });
+  }
 
-        // Check if the UUID is already formatted
-        if (!uuidString.contains("-")) {
-            // Insert hyphens to create a valid UUID string
-            uuidString = String.format(
-                    "%s-%s-%s-%s-%s",
-                    uuidString.substring(0, 8),
-                    uuidString.substring(8, 12),
-                    uuidString.substring(12, 16),
-                    uuidString.substring(16, 20),
-                    uuidString.substring(20)
-            );
-        }
+  @PostMapping("/unban")
+  public CompletableFuture<ResponseEntity<String>> unbanUser(@RequestBody UUID uuid) {
+    return CompletableFuture.supplyAsync(() -> {
+      User user = userRepository.findByUuid(uuid);
 
-        UUID validUuid;
-        try {
-            validUuid = UUID.fromString(uuidString);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body("Invalid UUID format");
-        }
+      if (user == null) {
+        return ResponseEntity.notFound().build();
+      }
 
-        if(userService.getUserByUuid(validUuid) == null) {
-            return ResponseEntity.badRequest().body("User not found");
-        }
-        else if(userService.getUserByUuid(validUuid).isBanned()) {
-            return ResponseEntity.badRequest().body("User is already banned");
-        }
-        else {
-            userService.banUser(validUuid);
-            return ResponseEntity.ok("User banned");
-        }
-    }
-    @PostMapping("/unban")
-    public ResponseEntity<String> unbanUser(@RequestBody UuidDTO uuidDto) {
-        String uuidString = uuidDto.getUuid();
+      if (!user.isBanned()) {
+        return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("User is not banned");
+      }
 
-        // Check if the UUID is already formatted
-        if (!uuidString.contains("-")) {
-            // Insert hyphens to create a valid UUID string
-            uuidString = String.format(
-                    "%s-%s-%s-%s-%s",
-                    uuidString.substring(0, 8),
-                    uuidString.substring(8, 12),
-                    uuidString.substring(12, 16),
-                    uuidString.substring(16, 20),
-                    uuidString.substring(20)
-            );
-        }
+      userService.unbanUser(user.getUuid()).join();
+      return ResponseEntity.ok("User has been unbanned");
+    });
+  }
 
-        UUID validUuid;
-        try {
-            validUuid = UUID.fromString(uuidString);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body("Invalid UUID format");
-        }
+  @PostMapping("/auth")
+  public CompletableFuture<ResponseEntity<String>> authUser(@RequestBody UUID uuid) {
+    return CompletableFuture.supplyAsync(() -> {
+      if (userService.authenticateUser(uuid, null).join()) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token or uuid did not match");
+      }
 
-        if(userService.getUserByUuid(validUuid) == null) {
-            return ResponseEntity.badRequest().body("User not found");
-        }
-        else if(!userService.getUserByUuid(validUuid).isBanned()) {
-            return ResponseEntity.badRequest().body("User is not banned");
-        }
-        else {
-            userService.unbanUser(validUuid);
-            return ResponseEntity.ok("User unbanned");
-        }
-    }
-    @Async
-    @PostMapping("/auth")
-    //TODO: Remove, whatever this is idk
-    public ResponseEntity<String> UUIDAuth(@RequestBody UuidDTO uuidDto) {
-        try {
-            UUID validUuid = UUID.fromString(uuidDto.getUuid());
-            boolean result = userService.UUIDAuth(validUuid);
-            if (result) {
-                return ResponseEntity.ok("Authentication successful");
-            } else {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication failed");
-            }
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body("Invalid UUID format");
-        }
-    }
-    @PostMapping("/update")
-    public ResponseEntity<String> updateUser(@RequestBody UpdateUserDTO updateUserDTO) {
-        boolean result = userService.updateUserProfile(
-                UUID.fromString(updateUserDTO.getUuid()),
-                updateUserDTO.getUsername(),
-                updateUserDTO.getEmail()
-        );
+      return ResponseEntity.ok("Authentication successful");
+    });
+  }
 
-        if (result) {
-            return ResponseEntity.ok("Update successful");
-        } else {
-            return ResponseEntity.badRequest().body("Update failed");
-        }
-    }
-    @GetMapping("/{uuid}")
-    public ResponseEntity<User> getUserByUuid(@PathVariable String uuid) {
-        try {
-            UUID validUuid = UUID.fromString(uuid);
-            User user = userService.getUserByUuid(validUuid);
-            if (user != null) {
-                return ResponseEntity.ok(user);
-            } else {
-                return ResponseEntity.notFound().build();
-            }
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
+  @PostMapping("/update")
+  public CompletableFuture<ResponseEntity<String>> updateUser(
+      @RequestBody UpdateUserDTO updateUserDTO) {
 
+    return CompletableFuture.supplyAsync(() -> {
+      boolean result = userService.updateUserProfile(updateUserDTO.getUuid(),
+          updateUserDTO.getUsername(),
+          updateUserDTO.getEmail()).join();
+
+      return result ? ResponseEntity.ok("Update successful")
+          : ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
+    });
+  }
+
+  @GetMapping("/{uuid}")
+  public CompletableFuture<ResponseEntity<User>> getUserByUuid(@PathVariable UUID uuid) {
+    return CompletableFuture.supplyAsync(() -> {
+      User user = userRepository.findByUuid(uuid);
+      return user == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(user);
+    });
+  }
 }

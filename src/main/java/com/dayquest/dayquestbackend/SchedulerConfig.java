@@ -3,6 +3,8 @@ package com.dayquest.dayquestbackend;
 import com.dayquest.dayquestbackend.quest.QuestService;
 import com.dayquest.dayquestbackend.user.UserService;
 import jakarta.annotation.PostConstruct;
+import java.util.concurrent.CompletableFuture;
+import org.hibernate.boot.internal.BootstrapContextImpl;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -24,8 +26,8 @@ public class SchedulerConfig {
     }
 
     @Scheduled(cron = "0 0 0 * * ?")
-    public void assignDailyQuest() {
-        userService.assignDailyQuests(questService.getTop10PercentQuests());
+    public CompletableFuture<Void> assignDailyQuest() {
+      return userService.assignDailyQuests(questService.getTop10PercentQuests());
     }
 
 

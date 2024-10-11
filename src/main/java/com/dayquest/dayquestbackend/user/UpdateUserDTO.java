@@ -1,16 +1,18 @@
 package com.dayquest.dayquestbackend.user;
 
+import java.util.UUID;
+
 public class UpdateUserDTO {
-    private String uuid;
+    private UUID uuid;
     private String username;
     private String email;
 
     // Getter und Setter
-    public String getUuid() {
+    public UUID getUuid() {
         return uuid;
     }
 
-    public void setUuid(String uuid) {
+    public void setUuid(UUID uuid) {
         this.uuid = uuid;
     }
 

@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api/reports")
@@ -15,20 +16,20 @@ public class ReportController {
     private ReportService reportService;
 
     @PostMapping("/create")
-    public ResponseEntity<Report> createReport(@RequestBody Report report) {
-        Report newReport = reportService.createReport(report);
-        return ResponseEntity.status(HttpStatus.CREATED).body(newReport);
+    public CompletableFuture<ResponseEntity<Report>> createReport(@RequestBody Report report) {
+        return reportService.createReport(report)
+            .thenApply(newReport -> ResponseEntity.status(HttpStatus.CREATED).body(newReport));
     }
 
     @PostMapping("/get")
-    public ResponseEntity<List<Report>> getAllReports() {
-        List<Report> reports = reportService.getAllReports();
-        return ResponseEntity.ok(reports);
+    public CompletableFuture<ResponseEntity<List<Report>>> getAllReports() {
+        return reportService.getAllReports()
+            .thenApply(ResponseEntity::ok);
     }
 
     @PostMapping("/delete/{id}")
-    public ResponseEntity<Void> deleteReport(@PathVariable Long id) {
-        reportService.deleteReport(id);
-        return ResponseEntity.noContent().build();
+    public CompletableFuture<ResponseEntity<Void>> deleteReport(@PathVariable Long id) {
+        return reportService.deleteReport(id)
+            .thenApply(result -> ResponseEntity.noContent().<Void>build());
     }
 }

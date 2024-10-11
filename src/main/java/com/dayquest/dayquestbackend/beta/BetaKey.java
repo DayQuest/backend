@@ -16,6 +16,18 @@ public class BetaKey {
   @Column
   private String key;
 
+  @Column
+  private boolean inUse;
+
+
+  public boolean isInUse() {
+    return inUse;
+  }
+
+  public void setInUse(boolean inUse) {
+    this.inUse = inUse;
+  }
+
   public String getKey() {
     return key;
   }
