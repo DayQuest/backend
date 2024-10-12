@@ -6,6 +6,7 @@ import jakarta.annotation.PostConstruct;
 import java.util.concurrent.CompletableFuture;
 import org.hibernate.boot.internal.BootstrapContextImpl;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,21 +15,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 @EnableScheduling
 public class SchedulerConfig {
 
-    @Autowired
-    private UserService userService;
+  @Autowired
+  private UserService userService;
 
-    @Autowired
-    private QuestService questService;
+  @Autowired
+  private QuestService questService;
 
-    @PostConstruct
-    public void init() {
-        userService.assignDailyQuests(questService.getTop10PercentQuests());
-    }
+  @PostConstruct
+  @Async
+  public CompletableFuture<Void> init() {
+    return userService.assignDailyQuests(questService.getTop10PercentQuests().join());
+  }
 
-    @Scheduled(cron = "0 0 0 * * ?")
-    public CompletableFuture<Void> assignDailyQuest() {
-      return userService.assignDailyQuests(questService.getTop10PercentQuests());
-    }
-
-
+  @Scheduled(cron = "0 0 0 * * ?")
+  @Async
+  public CompletableFuture<Void> assignDailyQuest() {
+    return userService.assignDailyQuests(questService.getTop10PercentQuests().join());
+  }
 }
