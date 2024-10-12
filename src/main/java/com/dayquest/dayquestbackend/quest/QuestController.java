@@ -1,7 +1,6 @@
 package com.dayquest.dayquestbackend.quest;
 
 import com.dayquest.dayquestbackend.user.UserRepository;
-import com.dayquest.dayquestbackend.user.UserService;
 import com.dayquest.dayquestbackend.user.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -11,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/api/quests")
@@ -31,80 +29,74 @@ public class QuestController {
     @GetMapping
     @Async
     public CompletableFuture<ResponseEntity<List<Quest>>> getAllQuests() {
-        return questService.getAllQuests()
-            .thenApply(quests -> {
-                Collections.shuffle(quests);
-                return ResponseEntity.ok(quests);
-            });
+        return CompletableFuture.supplyAsync(() -> {
+           List<Quest> quests = questRepository.findAll();
+           Collections.shuffle(quests);
+           return ResponseEntity.ok(quests);
+        });
     }
 
-    @PostMapping("/suggest")
+    @PostMapping("/create")
     @Async
-    public CompletableFuture<ResponseEntity<Quest>> suggestQuest(@RequestBody Quest quest) {
+    public CompletableFuture<ResponseEntity<Quest>> createQuest(@RequestBody Quest quest) {
         if (quest.getDescription().toLowerCase().contains("penis")) {
             return CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null));
         }
-        return questService.suggestQuest(quest.getTitle(), quest.getDescription())
+        return questService.createQuest(quest.getTitle(), quest.getDescription())
             .thenApply(newQuest -> ResponseEntity.status(HttpStatus.CREATED).body(newQuest));
     }
 
-    @PostMapping("/{id}/like")
+    @PostMapping("/like")
     @Async
-    public CompletableFuture<ResponseEntity<Void>> likeQuest(@PathVariable Long id, @RequestBody Map<String, String> body) {
-        String uuid = body.get("uuid");
-        if (uuid == null) {
-            return CompletableFuture.completedFuture(ResponseEntity.badRequest().build());
-        }
-        try {
-            UUID userUuid = UUID.fromString(uuid);
-            User user = userRepository.findByUuid(userUuid);
-            if (user == null) {
-                return CompletableFuture.completedFuture(ResponseEntity.badRequest().body(null));
-            }
-            if (user.getLikedQuests().contains(id)) {
-                return CompletableFuture.completedFuture(ResponseEntity.badRequest().body(null));
-            } else {
-                user.getLikedQuests().add(id);
-                return questService.likeQuest(id)
-                    .thenApply(quest -> ResponseEntity.ok().build());
-            }
-        } catch (IllegalArgumentException e) {
-            return CompletableFuture.completedFuture(ResponseEntity.badRequest().body(null));
-        }
-    }
-
-
-    //TODO: Refactor this
-    @PostMapping("/{id}/dislike")
-    @Async
-    public CompletableFuture<ResponseEntity<Void>> dislikeQuest(@PathVariable Long id, @RequestBody UUID uuid) {
-        if (uuid == null) {
-            return CompletableFuture.completedFuture(ResponseEntity.badRequest().build());
-        }
-        try {
-            User user = userRepository.findByUuid(uuid);
-            if (user == null) {
-                return CompletableFuture.completedFuture(ResponseEntity.badRequest().body(null));
-            }
-            if (user.getDislikedQuests().contains(id)) {
-                return CompletableFuture.completedFuture(ResponseEntity.badRequest().body(null));
-            } else {
-                user.getDislikedQuests().add(id);
-                return questService.dislikeQuest(id)
-                    .thenApply(quest -> ResponseEntity.ok().build());
-            }
-        } catch (IllegalArgumentException e) {
-            return CompletableFuture.completedFuture(ResponseEntity.badRequest().body(null));
-        }
-    }
-
-    @PostMapping("/getquest")
-    @Async
-    public CompletableFuture<ResponseEntity<String>> getQuest(@RequestBody UUID uuid) {
+    public CompletableFuture<ResponseEntity<?>> likeQuest(@RequestBody UUID uuid, @RequestBody UUID userUuid) {
         return CompletableFuture.supplyAsync(() -> {
-            User user = userRepository.findByUuid(uuid);
-            Quest quest = user.getDailyQuest();
-            return ResponseEntity.ok(quest.getDescription());
+            Optional<User> user = userRepository.findById(userUuid);
+            Optional<Quest> quest = questRepository.findById(uuid);
+            if (user.isEmpty() || quest.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            if (user.get().getLikedQuests().contains(uuid)) {
+                return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Already liked");
+            }
+
+            user.get().getLikedQuests().add(uuid);
+            userRepository.save(user.get());
+            return ResponseEntity.ok("Successfully liked quest");
+        });
+    }
+
+
+    //TODO: Refactor this code dupe
+    @PostMapping("/dislike")
+    @Async
+    public CompletableFuture<ResponseEntity<?>> dislikeQuest(@RequestBody UUID uuid, @RequestBody UUID userUuid) {
+        return CompletableFuture.supplyAsync(() -> {
+            Optional<User> user = userRepository.findById(userUuid);
+            Optional<Quest> quest = questRepository.findById(uuid);
+            if (user.isEmpty() || quest.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            if (user.get().getDislikedQuests().contains(uuid)) {
+                return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Already disliked");
+            }
+
+            user.get().getDislikedVideos().add(uuid);
+            userRepository.save(user.get());
+            return ResponseEntity.ok("Successfully disliked quest");
+        });
+    }
+
+    @PostMapping("/get-quest")
+    @Async
+    public CompletableFuture<ResponseEntity<Quest>> getQuest(@RequestBody UUID uuid) {
+        return CompletableFuture.supplyAsync(() -> {
+          if (questRepository.findById(uuid).isEmpty()) {
+              return ResponseEntity.notFound().build();
+          }
+
+          return ResponseEntity.ok(questRepository.findById(uuid).get());
         });
     }
 }

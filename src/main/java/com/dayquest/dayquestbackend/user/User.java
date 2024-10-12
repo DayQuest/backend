@@ -9,9 +9,10 @@ import java.util.UUID;
 @Entity
 @Table(name = "users")
 public class User {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private UUID uuid;
 
     @Column(nullable = false, unique = true)
     private String username;
@@ -22,49 +23,25 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    public List<Long> getDislikedVideos() {
-        return dislikedVideos;
-    }
-
-
-    @ElementCollection
-    @CollectionTable(name = "disliked_videos", joinColumns = @JoinColumn(name = "user_id"))
-    private List<Long> dislikedVideos;
-
-    public List<Long> getDislikedQuests() {
-        return dislikedQuests;
-    }
-
+    @Column
+    private boolean banned;
 
     @ElementCollection
     @CollectionTable(name = "disliked_quests", joinColumns = @JoinColumn(name = "user_id"))
-    private List<Long> dislikedQuests;
+    private List<UUID> dislikedQuests;
 
-    public List<Long> getLikedQuests() {
-        return likedQuests;
-    }
-
-    public void setLikedQuests(List<Long> likedQuests) {
-        this.likedQuests = likedQuests;
-    }
+    @ElementCollection
+    @CollectionTable(name = "disliked_videos", joinColumns = @JoinColumn(name = "user_id"))
+    private List<UUID> dislikedVideos;
 
     @ElementCollection
     @CollectionTable(name = "liked_quests", joinColumns = @JoinColumn(name = "user_id"))
-    private List<Long> likedQuests;
-
-    public List<Long> getLikedVideos() {
-        return likedVideos;
-    }
-
-    public void setLikedVideos(List<Long> likedVideos) {
-        this.likedVideos = likedVideos;
-    }
+    private List<UUID> likedQuests;
 
     @ElementCollection
     @CollectionTable(name = "liked_videos", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "video_id")
-    private List<Long> likedVideos;
-
+    private List<UUID> likedVideos;
 
     @ManyToOne
     @JoinColumn(name = "daily_quest_id")
@@ -76,28 +53,6 @@ public class User {
 
     public void setUuid(UUID uuid) {
         this.uuid = uuid;
-    }
-
-    private UUID uuid;
-
-    public boolean isBanned() {
-        return banned;
-    }
-
-    public void setBanned(boolean banned) {
-        this.banned = banned;
-    }
-
-    private boolean banned;
-
-
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public String getUsername() {
@@ -124,6 +79,45 @@ public class User {
         this.password = password;
     }
 
+    public boolean isBanned() {
+        return banned;
+    }
+
+    public void setBanned(boolean banned) {
+        this.banned = banned;
+    }
+
+    public List<UUID> getDislikedQuests() {
+        return dislikedQuests;
+    }
+
+    public void setDislikedQuests(List<UUID> dislikedQuests) {
+        this.dislikedQuests = dislikedQuests;
+    }
+
+    public List<UUID> getDislikedVideos() {
+        return dislikedVideos;
+    }
+
+    public void setDislikedVideos(List<UUID> dislikedVideos) {
+        this.dislikedVideos = dislikedVideos;
+    }
+
+    public List<UUID> getLikedQuests() {
+        return likedQuests;
+    }
+
+    public void setLikedQuests(List<UUID> likedQuests) {
+        this.likedQuests = likedQuests;
+    }
+
+    public List<UUID> getLikedVideos() {
+        return likedVideos;
+    }
+
+    public void setLikedVideos(List<UUID> likedVideos) {
+        this.likedVideos = likedVideos;
+    }
 
     public Quest getDailyQuest() {
         return dailyQuest;

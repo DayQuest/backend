@@ -4,24 +4,24 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import java.util.UUID;
 
 @Entity
 public class Quest {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private UUID uuid;
     private String title;
     private String description;
-    private int likes = 0;  // Initialisiert auf 0
-    private int dislikes = 0;  // Initialisiert auf 0
+    private int likes;  //Primitive int default value is 0
+    private int dislikes;
 
-    // Getters und Setters
-    public Long getId() {
-        return id;
+    public UUID getUuid() {
+        return uuid;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setUuid(UUID uuid) {
+        this.uuid = uuid;
     }
 
     public String getTitle() {
