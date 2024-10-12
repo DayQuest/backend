@@ -3,6 +3,7 @@ package com.dayquest.dayquestbackend.friends;
 import com.dayquest.dayquestbackend.user.User;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "friendships")
@@ -10,7 +11,7 @@ public class Friendship {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private UUID uuid;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
@@ -26,12 +27,12 @@ public class Friendship {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    public Long getId() {
-        return id;
+    public UUID getUuid() {
+        return uuid;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setUuid(UUID uuid) {
+        this.uuid = uuid;
     }
 
     public User getUser() {

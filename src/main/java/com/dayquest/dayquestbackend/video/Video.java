@@ -1,31 +1,31 @@
 package com.dayquest.dayquestbackend.video;
 
 import jakarta.persistence.*;
+import java.util.UUID;
 
 @Entity
 public class Video {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
+    private UUID uuid;
     private String title;
+
     private String description;
     private String filePath;
 
     @ElementCollection
     private String[] hashtags;
 
-    private int upvotes;
-    private int downvotes;
+    private int upVotes;
+    private int downVotes;
 
-    // Getters and setters
 
-    public Long getId() {
-        return id;
+    public UUID getUuid() {
+        return uuid;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setUuid(UUID uuid) {
+        this.uuid = uuid;
     }
 
     public String getTitle() {
@@ -60,19 +60,19 @@ public class Video {
         this.hashtags = hashtags;
     }
 
-    public int getUpvotes() {
-        return upvotes;
+    public int getUpVotes() {
+        return upVotes;
     }
 
-    public void setUpvotes(int upvotes) {
-        this.upvotes = upvotes;
+    public void setUpVotes(int upVotes) {
+        this.upVotes = upVotes;
     }
 
-    public int getDownvotes() {
-        return downvotes;
+    public int getDownVotes() {
+        return downVotes;
     }
 
-    public void setDownvotes(int downvotes) {
-        this.downvotes = downvotes;
+    public void setDownVotes(int downVotes) {
+        this.downVotes = downVotes;
     }
 }

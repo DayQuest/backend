@@ -1,5 +1,6 @@
 package com.dayquest.dayquestbackend.user;
 
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,10 +24,7 @@ public class UserController {
   @Async
   public CompletableFuture<ResponseEntity<String>> registerUser(@RequestBody UserDTO userDTO) {
     return userService.registerUser(userDTO.getUsername(), userDTO.getEmail(),
-            userDTO.getPassword())
-        .thenApply(result -> result
-            ? ResponseEntity.ok("Registration successful")
-            : ResponseEntity.badRequest().body("Registration failed"));
+        userDTO.getPassword());
   }
 
   @PostMapping("/status")
@@ -62,37 +60,13 @@ public class UserController {
   @PostMapping("/ban")
   @Async
   public CompletableFuture<ResponseEntity<String>> banUser(@RequestBody UUID uuid) {
-    return CompletableFuture.supplyAsync(() -> {
-      User user = userRepository.findByUuid(uuid);
-      if (user == null) {
-        return ResponseEntity.notFound().build();
-      }
-      if (user.isBanned()) {
-        return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Already banned");
-      }
-
-      userService.banUser(user.getUuid()).join();
-      return ResponseEntity.ok("Successfully banned user");
-    });
+    return userService.changeBanStatus(uuid, true);
   }
 
   @PostMapping("/unban")
   @Async
   public CompletableFuture<ResponseEntity<String>> unbanUser(@RequestBody UUID uuid) {
-    return CompletableFuture.supplyAsync(() -> {
-      User user = userRepository.findByUuid(uuid);
-
-      if (user == null) {
-        return ResponseEntity.notFound().build();
-      }
-
-      if (!user.isBanned()) {
-        return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("User is not banned");
-      }
-
-      userService.unbanUser(user.getUuid()).join();
-      return ResponseEntity.ok("User has been unbanned");
-    });
+    return userService.changeBanStatus(uuid, false);
   }
 
   @PostMapping("/auth")
@@ -112,22 +86,16 @@ public class UserController {
   public CompletableFuture<ResponseEntity<String>> updateUser(
       @RequestBody UpdateUserDTO updateUserDTO) {
 
-    return CompletableFuture.supplyAsync(() -> {
-      boolean result = userService.updateUserProfile(updateUserDTO.getUuid(),
-          updateUserDTO.getUsername(),
-          updateUserDTO.getEmail()).join();
-
-      return result ? ResponseEntity.ok("Update successful")
-          : ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
-    });
+    return userService.updateUserProfile(updateUserDTO.getUuid(), updateUserDTO.getUsername(),
+        updateUserDTO.getEmail());
   }
 
   @GetMapping("/{uuid}")
   @Async
   public CompletableFuture<ResponseEntity<User>> getUserByUuid(@PathVariable UUID uuid) {
     return CompletableFuture.supplyAsync(() -> {
-      User user = userRepository.findByUuid(uuid);
-      return user == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(user);
+      Optional<User> user = userRepository.findById(uuid);
+      return user.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     });
   }
 }

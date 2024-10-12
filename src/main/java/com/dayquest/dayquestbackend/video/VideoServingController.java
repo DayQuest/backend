@@ -7,10 +7,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/videos")
 public class VideoServingController {
 
-    private final VideoService videoService;
+  @Autowired
+  private VideoService videoService;
 
-    @Autowired
-    public VideoServingController(VideoService videoService) {
-        this.videoService = videoService;
-    }
 }
