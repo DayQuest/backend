@@ -6,6 +6,7 @@ import com.dayquest.dayquestbackend.user.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -28,6 +29,7 @@ public class QuestController {
     private QuestRepository questRepository;
 
     @GetMapping
+    @Async
     public CompletableFuture<ResponseEntity<List<Quest>>> getAllQuests() {
         return questService.getAllQuests()
             .thenApply(quests -> {
@@ -37,6 +39,7 @@ public class QuestController {
     }
 
     @PostMapping("/suggest")
+    @Async
     public CompletableFuture<ResponseEntity<Quest>> suggestQuest(@RequestBody Quest quest) {
         if (quest.getDescription().toLowerCase().contains("penis")) {
             return CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null));
@@ -46,6 +49,7 @@ public class QuestController {
     }
 
     @PostMapping("/{id}/like")
+    @Async
     public CompletableFuture<ResponseEntity<Void>> likeQuest(@PathVariable Long id, @RequestBody Map<String, String> body) {
         String uuid = body.get("uuid");
         if (uuid == null) {
@@ -70,6 +74,7 @@ public class QuestController {
     }
 
     @PostMapping("/{id}/dislike")
+    @Async
     public CompletableFuture<ResponseEntity<Void>> dislikeQuest(@PathVariable Long id, @RequestBody UUID uuid) {
         if (uuid == null) {
             return CompletableFuture.completedFuture(ResponseEntity.badRequest().build());
@@ -92,9 +97,12 @@ public class QuestController {
     }
 
     @PostMapping("/getquest")
-    public ResponseEntity<String> getQuest(@RequestBody UUID uuid) {
-        User user = userRepository.findByUuid(uuid);
-        Quest quest = user.getDailyQuest();
-        return ResponseEntity.ok(quest.getDescription());
+    @Async
+    public CompletableFuture<ResponseEntity<String>> getQuest(@RequestBody UUID uuid) {
+        return CompletableFuture.supplyAsync(() -> {
+            User user = userRepository.findByUuid(uuid);
+            Quest quest = user.getDailyQuest();
+            return ResponseEntity.ok(quest.getDescription());
+        });
     }
 }
