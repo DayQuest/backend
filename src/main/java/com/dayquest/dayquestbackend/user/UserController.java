@@ -3,6 +3,7 @@ package com.dayquest.dayquestbackend.user;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -19,6 +20,7 @@ public class UserController {
   private UserRepository userRepository;
 
   @PostMapping("/register")
+  @Async
   public CompletableFuture<ResponseEntity<String>> registerUser(@RequestBody UserDTO userDTO) {
     return userService.registerUser(userDTO.getUsername(), userDTO.getEmail(),
             userDTO.getPassword())
@@ -30,11 +32,12 @@ public class UserController {
   @PostMapping("/status")
   public ResponseEntity<Object> status() {
 
-    //TODO: Implement, document
+    //TODO: Implement, documentation
     return ResponseEntity.ok().build();
   }
 
   @PostMapping("/login")
+  @Async
   public CompletableFuture<ResponseEntity<LoginResponse>> loginUser(
       @RequestBody LoginDTO loginDTO) {
 
@@ -57,6 +60,7 @@ public class UserController {
   }
 
   @PostMapping("/ban")
+  @Async
   public CompletableFuture<ResponseEntity<String>> banUser(@RequestBody UUID uuid) {
     return CompletableFuture.supplyAsync(() -> {
       User user = userRepository.findByUuid(uuid);
@@ -73,6 +77,7 @@ public class UserController {
   }
 
   @PostMapping("/unban")
+  @Async
   public CompletableFuture<ResponseEntity<String>> unbanUser(@RequestBody UUID uuid) {
     return CompletableFuture.supplyAsync(() -> {
       User user = userRepository.findByUuid(uuid);
@@ -91,6 +96,7 @@ public class UserController {
   }
 
   @PostMapping("/auth")
+  @Async
   public CompletableFuture<ResponseEntity<String>> authUser(@RequestBody UUID uuid) {
     return CompletableFuture.supplyAsync(() -> {
       if (userService.authenticateUser(uuid, null).join()) {
@@ -102,6 +108,7 @@ public class UserController {
   }
 
   @PostMapping("/update")
+  @Async
   public CompletableFuture<ResponseEntity<String>> updateUser(
       @RequestBody UpdateUserDTO updateUserDTO) {
 
@@ -116,6 +123,7 @@ public class UserController {
   }
 
   @GetMapping("/{uuid}")
+  @Async
   public CompletableFuture<ResponseEntity<User>> getUserByUuid(@PathVariable UUID uuid) {
     return CompletableFuture.supplyAsync(() -> {
       User user = userRepository.findByUuid(uuid);
