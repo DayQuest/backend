@@ -5,30 +5,31 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Column;
+import java.util.UUID;
 
 @Entity
 public class Report {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private UUID uuid;
 
     @Column(nullable = false)
     private String description;
 
     @Column(nullable = false)
-    private Long videoId;
+    private UUID videoUuid;
 
     @Column(nullable = false)
-    private Long userId;
+    private Long userUuid;
 
     // Getters and Setters
-    public Long getId() {
-        return id;
+    public UUID getUuid() {
+        return uuid;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setUuid(UUID uuid) {
+        this.uuid = uuid;
     }
 
     public String getDescription() {
@@ -39,19 +40,19 @@ public class Report {
         this.description = description;
     }
 
-    public Long getVideoId() {
-        return videoId;
+    public UUID getVideoUuid() {
+        return videoUuid;
     }
 
-    public void setVideoId(Long videoId) {
-        this.videoId = videoId;
+    public void setVideoUuid(UUID videoUuid) {
+        this.videoUuid = videoUuid;
     }
 
-    public Long getUserId() {
-        return userId;
+    public Long getUserUuid() {
+        return userUuid;
     }
 
-    public void setUserId(Long userId) {
-        this.userId = userId;
+    public void setUserUuid(Long userUuid) {
+        this.userUuid = userUuid;
     }
 }
