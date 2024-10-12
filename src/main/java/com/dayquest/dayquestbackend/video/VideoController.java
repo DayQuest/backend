@@ -5,6 +5,7 @@ import com.dayquest.dayquestbackend.user.User;
 import com.dayquest.dayquestbackend.user.UserRepository;
 import com.dayquest.dayquestbackend.user.UserService;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,23 +54,20 @@ public class VideoController {
       @RequestParam("title") String title,
       @RequestParam("description") String description) {
     return CompletableFuture.supplyAsync(() -> {
-      try {
-        videoService.uploadVideo(file, title, description);
-        return ResponseEntity.ok("Video uploaded successfully");
-      } catch (IOException e) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload video");
+
+      String path = videoService.uploadVideo(file, title, description).join();
+      if (path == null) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload video due to internal error");
       }
+
+      return ResponseEntity.ok("Uploaded");
     });
   }
 
   @Async
   @PostMapping("/delete")
-  public CompletableFuture<ResponseEntity<String>> deleteVideo(@RequestParam("id") Long id) {
-    return CompletableFuture.supplyAsync(() -> {
-      VideoService videoService = new VideoService();
-      videoService.deleteVideo(id);
-      return ResponseEntity.ok("Video deleted");
-    });
+  public CompletableFuture<ResponseEntity<String>> deleteVideo(@RequestParam UUID uuid) {
+    return videoService.deleteVideo(uuid);
   }
 
   @Async

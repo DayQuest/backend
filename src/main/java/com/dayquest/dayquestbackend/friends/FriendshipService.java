@@ -2,7 +2,9 @@ package com.dayquest.dayquestbackend.friends;
 
 import com.dayquest.dayquestbackend.user.User;
 import com.dayquest.dayquestbackend.user.UserRepository;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -20,9 +22,9 @@ public class FriendshipService {
 
     // Send a friend request from one user to another
     @Async
-    public CompletableFuture<Boolean> sendFriendRequest(Long userId, String friendUsername) {
+    public CompletableFuture<ResponseEntity<String>> sendFriendRequest(UUID uuid, String friendUsername) {
         return CompletableFuture.supplyAsync(() -> {
-            User user = userRepository.findById(userId).orElse(null);
+            User user = userRepository.findById(uuid).orElse(null);
             User friend = userRepository.findByUsername(friendUsername);
 
             if (user != null && friend != null && !user.equals(friend)
@@ -34,9 +36,9 @@ public class FriendshipService {
                 friendship.setFriend(friend);
                 friendship.setStatus("PENDING");
                 friendshipRepository.save(friendship);
-                return true;
+                return ResponseEntity.ok("Sent request");
             }
-            return false;
+            return ResponseEntity.notFound().build();
         });
     }
 
@@ -57,9 +59,9 @@ public class FriendshipService {
 
     // Get all accepted friends of a user
     @Async
-    public CompletableFuture<List<Friendship>> getFriends(Long userId) {
+    public CompletableFuture<List<Friendship>> getFriends(UUID uuid) {
         return CompletableFuture.supplyAsync(() -> {
-            User user = userRepository.findById(userId).orElse(null);
+            User user = userRepository.findById(uuid).orElse(null);
 
             if (user != null) {
                 return friendshipRepository.findByUserAndStatus(user, "ACCEPTED");
@@ -70,9 +72,9 @@ public class FriendshipService {
 
     // Get all pending friend requests for a user
     @Async
-    public CompletableFuture<List<Friendship>> getPendingRequests(Long userId) {
+    public CompletableFuture<List<Friendship>> getPendingRequests(UUID uuid) {
         return CompletableFuture.supplyAsync(() -> {
-            User user = userRepository.findById(userId).orElse(null);
+            User user = userRepository.findById(uuid).orElse(null);
 
             if (user != null) {
                 return friendshipRepository.findByFriendAndStatus(user, "PENDING");
