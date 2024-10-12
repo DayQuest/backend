@@ -19,7 +19,7 @@ public class BetaController {
   @Autowired
   private KeyRepository repository;
 
-  @PostMapping("/newKey")
+  @PostMapping("/new-key")
   @Async
   public CompletableFuture<ResponseEntity<String>> newKey(@RequestBody BetaRequestDTO betaRequestDTO) {
     return CompletableFuture.supplyAsync(() -> {
@@ -36,7 +36,7 @@ public class BetaController {
     });
   }
 
-  @PostMapping("/isValid")
+  @PostMapping("/is-valid")
   @Async
   public CompletableFuture<ResponseEntity<Boolean>> isValid(@RequestBody String key) {
     return CompletableFuture.supplyAsync(() -> {
