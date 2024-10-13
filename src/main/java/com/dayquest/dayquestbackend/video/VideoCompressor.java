@@ -41,7 +41,7 @@ public class VideoCompressor {
 
 
   private String[] getCompressCommand(String inputFile, File outputFile) {
-    return new String[]{
+    return new String[] {
         ffmpegPath,
         "-i", inputFile,
         "-c:v", "libx265",
