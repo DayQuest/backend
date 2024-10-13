@@ -22,22 +22,14 @@ public class FriendshipController {
   @PostMapping("/send-request")
   public CompletableFuture<ResponseEntity<String>> sendFriendRequest(@RequestParam UUID uuid,
       @RequestParam String targetUsername) {
-    return friendshipService.sendFriendRequest(uuid, targetUsername)
-        .thenApply(result -> {
-          if (result) {
-            return ResponseEntity.ok("Friend request sent");
-          } else {
-            return ResponseEntity.badRequest().body(
-                "Failed to send friend request. The request might already exist or the user was not found.");
-          }
-        });
+    return friendshipService.sendFriendRequest(uuid, targetUsername);
   }
 
   // Accept a friend request
   @Async
   @PostMapping("/accept-request")
   public CompletableFuture<ResponseEntity<String>> acceptFriendRequest(
-      @RequestParam Long friendshipId) {
+      @RequestParam UUID user) {
     return friendshipService.acceptFriendRequest(friendshipId)
         .thenApply(result -> {
           if (result) {
@@ -52,7 +44,7 @@ public class FriendshipController {
   // List all friends of a user
   @Async
   @GetMapping("/list")
-  public CompletableFuture<ResponseEntity<List<FriendDTO>>> listFriends(@RequestParam Long userId) {
+  public CompletableFuture<ResponseEntity<List<FriendDTO>>> listFriends(@RequestParam UUID uuid) {
     return friendshipService.getFriends(userId)
         .thenApply(friends -> {
           if (friends != null) {
@@ -69,17 +61,7 @@ public class FriendshipController {
   @Async
   @GetMapping("/pending-requests")
   public CompletableFuture<ResponseEntity<List<UUID>>> getPendingRequests(
-      @RequestParam Long userId) {
-    return friendshipService.getPendingRequests(userId)
-        .thenApply(pendingRequests -> {
-          if (pendingRequests != null && !pendingRequests.isEmpty()) {
-            List<FriendDTO> sanitizedFriends = pendingRequests.stream()
-                .map(friendship -> new FriendDTO(friendship.getUser().getUsername()))
-                .toList();
-            return ResponseEntity.ok(sanitizedFriends);
-          } else {
-            return ResponseEntity.ok().body(List.of());
-          }
-        });
+      @RequestParam UUID uuid) {
+    return friendshipService.getFriendshipsOfUserByState(uuid, FriendRequestStatus.PENDING);
   }
 }
