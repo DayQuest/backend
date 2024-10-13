@@ -11,6 +11,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.config.annotation.web.AbstractRequestMatcherRegistry;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -24,6 +25,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @EnableWebSecurity
 @EnableScheduling
 public class SpringConfiguration implements WebMvcConfigurer {
+
   @Autowired
   private UserService userService;
 
@@ -54,16 +56,10 @@ public class SpringConfiguration implements WebMvcConfigurer {
   //TODO: Try removing this, seems useless
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    http
-        .authorizeHttpRequests(authorize -> authorize
-            .requestMatchers("/api/users/register", "/api/users/login", "/api/videos/upload",
-                "/api/videos/auth", "/api/videos", "/api/videos/stream/**", "/api/quests",
-                "/api/quests/**", "/api/videos/**", "/api/**", "/api/reports/get").permitAll()
-            .anyRequest().authenticated()
-        )
-        .csrf(AbstractHttpConfigurer::disable); // CSRF-Schutz ist deaktiviert
-
-    return http.build();
+    return http
+        .authorizeHttpRequests(AbstractRequestMatcherRegistry::anyRequest)
+        .csrf(AbstractHttpConfigurer::disable)
+        .build();
   }
 
   @Bean
