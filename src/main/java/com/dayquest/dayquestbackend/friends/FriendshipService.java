@@ -46,9 +46,15 @@ public class FriendshipService {
 
     // Accept a friend request
     @Async
-    public CompletableFuture<ResponseEntity<String>> acceptFriendRequest(UUID requesterUuid) {
+    public CompletableFuture<ResponseEntity<String>> acceptFriendRequest(UUID uuid, UUID targetUuid) {
         return CompletableFuture.supplyAsync(() -> {
-            Friendship friendship = friendshipRepository.findById(requesterUuid).orElse(null);
+            User user = userRepository.findById(uuid).orElse(null);
+            User target = userRepository.findById(targetUuid).orElse(null);
+            if (user == null || target == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            Friendship friendship = friendshipRepository.findByUserAndFriend(user, target);
 
             if (friendship == null) {
                 return ResponseEntity.notFound().build();

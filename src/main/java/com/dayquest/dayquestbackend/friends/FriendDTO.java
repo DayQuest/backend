@@ -3,7 +3,7 @@ package com.dayquest.dayquestbackend.friends;
 
 //TODO: Remove this
 public class FriendDTO {
-    private String username;
+    private final String username;
 
     public FriendDTO(String username) {
         this.username = username;
@@ -11,10 +11,5 @@ public class FriendDTO {
 
     public String getUsername() {
         return username;
-    }
-
-
-    public void setUsername(String username) {
-        this.username = username;
     }
 }
