@@ -65,7 +65,6 @@ public class FriendshipController {
         .thenApply((friendships) -> {
           return ResponseEntity.ok(friendships
               .stream()
-              .filter(friendship -> friendship.getStatus() == FriendRequestStatus.PENDING)
               .map(friendship -> new FriendDTO(friendship.getFriend().getUsername()))
               .toList());
         });
