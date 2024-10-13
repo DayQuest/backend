@@ -2,8 +2,10 @@ package com.dayquest.dayquestbackend.friends;
 
 import com.dayquest.dayquestbackend.user.User;
 import com.dayquest.dayquestbackend.user.UserRepository;
+import java.util.Collections;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -34,7 +36,7 @@ public class FriendshipService {
                 Friendship friendship = new Friendship();
                 friendship.setUser(user);
                 friendship.setFriend(friend);
-                friendship.setStatus("PENDING");
+                friendship.setStatus(FriendRequestStatus.PENDING);
                 friendshipRepository.save(friendship);
                 return ResponseEntity.ok("Sent request");
             }
@@ -44,42 +46,36 @@ public class FriendshipService {
 
     // Accept a friend request
     @Async
-    public CompletableFuture<Boolean> acceptFriendRequest(Long friendshipId) {
+    public CompletableFuture<ResponseEntity<String>> acceptFriendRequest(UUID requesterUuid) {
         return CompletableFuture.supplyAsync(() -> {
-            Friendship friendship = friendshipRepository.findById(friendshipId).orElse(null);
+            Friendship friendship = friendshipRepository.findById(requesterUuid).orElse(null);
 
-            if (friendship != null && "PENDING".equals(friendship.getStatus())) {
-                friendship.setStatus("ACCEPTED");
-                friendshipRepository.save(friendship);
-                return true;
+            if (friendship == null) {
+                return ResponseEntity.notFound().build();
             }
-            return false;
+
+            if (friendship.getStatus() != FriendRequestStatus.PENDING) {
+                return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Friendship ist not pending");
+            }
+
+            friendship.setStatus(FriendRequestStatus.ACCEPTED);
+            friendshipRepository.save(friendship);
+            return ResponseEntity.ok("Accepted friend request");
         });
     }
+
 
     // Get all accepted friends of a user
     @Async
-    public CompletableFuture<List<Friendship>> getFriends(UUID uuid) {
+    public CompletableFuture<List<Friendship>> getFriendshipsOfUserByState(UUID uuid, FriendRequestStatus state) {
         return CompletableFuture.supplyAsync(() -> {
             User user = userRepository.findById(uuid).orElse(null);
 
-            if (user != null) {
-                return friendshipRepository.findByUserAndStatus(user, "ACCEPTED");
+            if (user == null) {
+                return Collections.emptyList();
             }
-            return null;
-        });
-    }
 
-    // Get all pending friend requests for a user
-    @Async
-    public CompletableFuture<List<Friendship>> getPendingRequests(UUID uuid) {
-        return CompletableFuture.supplyAsync(() -> {
-            User user = userRepository.findById(uuid).orElse(null);
-
-            if (user != null) {
-                return friendshipRepository.findByFriendAndStatus(user, "PENDING");
-            }
-            return null;
+            return friendshipRepository.findByUserAndStatus(user, state);
         });
     }
 }

@@ -10,6 +10,6 @@ import java.util.List;
 @Repository
 public interface FriendshipRepository extends JpaRepository<Friendship, UUID> {
     Friendship findByUserAndFriend(User user, User friend);
-    List<Friendship> findByUserAndStatus(User user, String status);
-    List<Friendship> findByFriendAndStatus(User friend, String status);
+    List<Friendship> findByUserAndStatus(User user, FriendRequestStatus status);
+    List<Friendship> findByFriendAndStatus(User friend, FriendRequestStatus status);
 }
