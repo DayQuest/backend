@@ -22,7 +22,7 @@ public class Friendship {
     private User friend;
 
     @Column(name = "status")
-    private String status; // PENDING, ACCEPTED, REJECTED
+    private FriendRequestStatus status;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -51,11 +51,11 @@ public class Friendship {
         this.friend = friend;
     }
 
-    public String getStatus() {
+    public FriendRequestStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(FriendRequestStatus status) {
         this.status = status;
     }
 
