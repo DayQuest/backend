@@ -17,6 +17,9 @@ public class VideoCompressor {
   @Value("${video.upload.path}")
   private String unprocessedPath;
 
+  @Value("${ffmpeg.path}")
+  private String ffmpegPath;
+
   void compressVideo(String inputFile, String outputFileName) {
     try {
       File outputFile = new File(processPath, outputFileName);
@@ -39,7 +42,7 @@ public class VideoCompressor {
 
   private String[] getCompressCommand(String inputFile, File outputFile) {
     return new String[]{
-        "ffmpeg",
+        ffmpegPath,
         "-i", inputFile,
         "-c:v", "libx265",
         "-preset", "slow", // Slower preset for better compression
