@@ -31,7 +31,7 @@ public class VideoService {
 
     //TODO: Remove code dupe in down and upvote
     @Async
-    public CompletableFuture<ResponseEntity<String>> upVoteVideo(UUID uuid) {
+    public CompletableFuture<ResponseEntity<Video>> upVoteVideo(UUID uuid) {
         return CompletableFuture.supplyAsync(() -> {
             Optional<Video> video = videoRepository.findById(uuid);
             if (video.isEmpty()) {
@@ -40,7 +40,7 @@ public class VideoService {
 
             video.get().setUpVotes(video.get().getUpVotes() + 1);
             videoRepository.save(video.get());
-            return ResponseEntity.ok("Upvoted video");
+            return ResponseEntity.ok(video.get());
         });
     }
 

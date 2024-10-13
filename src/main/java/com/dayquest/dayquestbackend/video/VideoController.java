@@ -51,14 +51,16 @@ public class VideoController {
 
   @Async
   @PostMapping("/upload")
-  public CompletableFuture<ResponseEntity<String>> uploadVideo(@RequestParam("file") MultipartFile file,
+  public CompletableFuture<ResponseEntity<String>> uploadVideo(
+      @RequestParam("file") MultipartFile file,
       @RequestParam("title") String title,
       @RequestParam("description") String description) {
     return CompletableFuture.supplyAsync(() -> {
 
       String path = videoService.uploadVideo(file, title, description).join();
       if (path == null) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload video due to internal error");
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body("Failed to upload video due to internal error");
       }
 
       return ResponseEntity.ok("Uploaded");
@@ -75,40 +77,39 @@ public class VideoController {
   @Async
   @PostMapping("/next-vid")
   public CompletableFuture<ResponseEntity<?>> nextVideo(@RequestBody UUID userUuid) {
-   return CompletableFuture.supplyAsync(() -> {
-    Optional<User> user = userRepository.findById(userUuid);
-    if (user.isEmpty()) {
-      return ResponseEntity.notFound().build();
-    }
+    return CompletableFuture.supplyAsync(() -> {
+      Optional<User> user = userRepository.findById(userUuid);
+      if (user.isEmpty()) {
+        return ResponseEntity.notFound().build();
+      }
 
+      //TODO: Use rust algorythm service
+      Video video = videoService.getRandomVideo().join();
+      if (video == null) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("No video found");
+      }
 
-     //TODO: Use rust algorythm service
-     Video video = videoService.getRandomVideo().join();
-     if (video == null) {
-       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("No video found");
-     }
-
-     return ResponseEntity.ok(video);
-   });
+      return ResponseEntity.ok(video);
+    });
   }
 
 
   @Async
   @PostMapping("/{id}/upvote")
-  public CompletableFuture<ResponseEntity<Video>> upvoteVideo(@PathVariable UUID uuid, @RequestBody UUID userUuid) {
+  public CompletableFuture<ResponseEntity<Video>> upVoteVideo(@PathVariable UUID uuid,
+      @RequestBody UUID userUuid) {
     return CompletableFuture.supplyAsync(() -> {
-        Optional<User> user = userRepository.findById(userUuid);
-        if (user.isEmpty()) {
-          return ResponseEntity.notFound().build();
-        }
+      Optional<User> user = userRepository.findById(userUuid);
+      if (user.isEmpty()) {
+        return ResponseEntity.notFound().build();
+      }
 
-        if (user.getLikedVideos().contains(id)) {
-          return ResponseEntity.badRequest().body(null);
-        } else {
-          user.getLikedVideos().add(id);
-          Video updatedVideo = videoService.upvoteVideo(id);
-          return ResponseEntity.ok(updatedVideo);
-        }
+      if (user.get().getLikedVideos().contains(uuid)) {
+        return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
+      }
+
+      user.get().getLikedVideos().add(uuid);
+      return videoService.upVoteVideo(uuid).join();
     });
   }
 
@@ -126,7 +127,7 @@ public class VideoController {
 
   @Async
   @PostMapping("/{id}/downvote")
-  public ResponseEntity<Video> downvoteVideo(@PathVariable Long id, @RequestBody UUID uuid) {
+  public ResponseEntity<Video> downVoteVideo(@PathVariable Long id, @RequestBody UUID uuid) {
     try {
       User user = userRepository.findByUuid(uuid);
       if (user == null) {
