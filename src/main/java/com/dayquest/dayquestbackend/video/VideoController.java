@@ -70,28 +70,6 @@ public class VideoController {
     return videoService.deleteVideo(uuid);
   }
 
-  @Async
-  @GetMapping("/videos/{fileName:.+}")
-  public CompletableFuture<ResponseEntity<Resource>> serveVideo(@PathVariable String fileName,
-      HttpServletRequest request) {
-    return CompletableFuture.supplyAsync(() -> {
-      Resource resource = videoService.loadVideoAsResource(fileName);
-      String contentType = null;
-      try {
-        contentType = request.getServletContext().getMimeType(resource.getFile().getAbsolutePath());
-      } catch (IOException ignored) {
-      }
-      if (contentType == null) {
-        contentType = "application/octet-stream";
-      }
-      return ResponseEntity.ok()
-          .contentType(MediaType.parseMediaType(contentType))
-          .header(HttpHeaders.CONTENT_DISPOSITION,
-              "inline; filename=\"" + resource.getFilename() + "\"")
-          .body(resource);
-    });
-  }
-
 
   @Async
   @PostMapping("/nextVid")
