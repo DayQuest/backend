@@ -28,46 +28,49 @@ public class VideoService {
     @Autowired
     private VideoRepository videoRepository;
 
-    public CompletableFuture<Video> upvoteVideo(UUID uuid) {
-        Video video = videoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Video nicht gefunden"));
-        video.setUpvotes(video.getUpvotes() + 1);
-        return videoRepository.save(video);
-    }
 
-    public Video downvoteVideo(Long id) {
-        Video video = videoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Video nicht gefunden"));
-        video.setDownvotes(video.getDownvotes() + 1);
-        return videoRepository.save(video);
-    }
-
-    public List<Video> getAllVideos() {
-        return videoRepository.findAll();
-    }
-
+    //TODO: Remove code dupe in down and upvote
     @Async
-    public CompletableFuture<String> uploadVideoAsync(MultipartFile file, String title, String description) {
+    public CompletableFuture<ResponseEntity<String>> upVoteVideo(UUID uuid) {
         return CompletableFuture.supplyAsync(() -> {
-            try {
-                return uploadVideo(file, title, description);
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to upload video", e);
+            Optional<Video> video = videoRepository.findById(uuid);
+            if (video.isEmpty()) {
+                return ResponseEntity.notFound().build();
             }
+
+            video.get().setUpVotes(video.get().getUpVotes() + 1);
+            videoRepository.save(video.get());
+            return ResponseEntity.ok("Upvoted video");
         });
     }
 
-    public Video getRandomVideo() {
-        boolean test = true;
+    @Async
+    public CompletableFuture<ResponseEntity<String>> downVoteVideo(UUID uuid) {
+        return CompletableFuture.supplyAsync(() -> {
+            Optional<Video> video = videoRepository.findById(uuid);
+            if (video.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
 
-        long count = videoRepository.count();
-        if (count == 0) {
-            throw new RuntimeException("No videos available");
-        }
-        long randomId = new Random().nextLong(count);
-        return videoRepository.findAll().get((int) randomId);
+            video.get().setDownVotes(video.get().getDownVotes() + 1);
+            videoRepository.save(video.get());
+            return ResponseEntity.ok("Downvoted video");
+        });
     }
 
+    @Async
+    public CompletableFuture<Video> getRandomVideo() {
+        return CompletableFuture.supplyAsync(() -> {
+            long count = videoRepository.count();
+            if (count == 0) {
+                throw new RuntimeException("No videos available");
+            }
+            long randomId = new Random().nextLong(count);
+            return videoRepository.findAll().get((int) randomId);
+        });
+    }
+
+    @Async
     public CompletableFuture<String> uploadVideo(MultipartFile file, String title, String description) {
         return CompletableFuture.supplyAsync(() -> {
             String fileName = UUID.randomUUID() + ".mp4";
@@ -87,6 +90,7 @@ public class VideoService {
         });
     }
 
+    @Async
     public CompletableFuture<ResponseEntity<String>> deleteVideo(UUID uuid) {
         return CompletableFuture.supplyAsync(() -> {
             Optional<Video> video = videoRepository.findById(uuid);
@@ -105,6 +109,8 @@ public class VideoService {
         });
     }
 
+
+    //Unused
     public Resource loadVideoAsResource(String fileName) {
         try {
             Path filePath = Paths.get(uploadPath).resolve(fileName).normalize();

@@ -80,6 +80,7 @@ public class VideoController {
        return ResponseEntity.badRequest().body("User ID is missing");
      }
 
+     //Use rust algorythm service
      Video video = videoService.getRandomVideo();
      if (video == null) {
        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No videos available");
