@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
@@ -31,7 +30,7 @@ public class VideoService {
 
     //TODO: Remove code dupe in down and upvote
     @Async
-    public CompletableFuture<ResponseEntity<Video>> upVoteVideo(UUID uuid) {
+    public CompletableFuture<ResponseEntity<Video>> likeVideo(UUID uuid) {
         return CompletableFuture.supplyAsync(() -> {
             Optional<Video> video = videoRepository.findById(uuid);
             if (video.isEmpty()) {
@@ -45,7 +44,7 @@ public class VideoService {
     }
 
     @Async
-    public CompletableFuture<ResponseEntity<String>> downVoteVideo(UUID uuid) {
+    public CompletableFuture<ResponseEntity<Video>> dislikeVideo(UUID uuid) {
         return CompletableFuture.supplyAsync(() -> {
             Optional<Video> video = videoRepository.findById(uuid);
             if (video.isEmpty()) {
@@ -54,7 +53,7 @@ public class VideoService {
 
             video.get().setDownVotes(video.get().getDownVotes() + 1);
             videoRepository.save(video.get());
-            return ResponseEntity.ok("Downvoted video");
+            return ResponseEntity.ok(video.get());
         });
     }
 

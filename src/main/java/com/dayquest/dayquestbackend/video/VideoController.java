@@ -3,23 +3,16 @@ package com.dayquest.dayquestbackend.video;
 import com.dayquest.dayquestbackend.user.User;
 
 import com.dayquest.dayquestbackend.user.UserRepository;
-import com.dayquest.dayquestbackend.user.UserService;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.Resource;
 
 import org.springframework.http.*;
 
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.security.web.FilterChainProxy.VirtualFilterChainDecorator;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.util.Map;
 import com.github.benmanes.caffeine.cache.Cache;
 
 import java.util.List;
@@ -95,8 +88,8 @@ public class VideoController {
 
 
   @Async
-  @PostMapping("/{id}/upvote")
-  public CompletableFuture<ResponseEntity<Video>> upVoteVideo(@PathVariable UUID uuid,
+  @PostMapping("/{id}/like")
+  public CompletableFuture<ResponseEntity<Video>> likeVideo(@PathVariable UUID uuid,
       @RequestBody UUID userUuid) {
     return CompletableFuture.supplyAsync(() -> {
       Optional<User> user = userRepository.findById(userUuid);
@@ -109,39 +102,38 @@ public class VideoController {
       }
 
       user.get().getLikedVideos().add(uuid);
-      return videoService.upVoteVideo(uuid).join();
+      return videoService.likeVideo(uuid).join();
+    });
+  }
+
+  @Async
+  @PostMapping("/{id}/dislike")
+  public CompletableFuture<ResponseEntity<Video>> dislikeVideo(@PathVariable UUID uuid,
+      @RequestBody UUID userUuid) {
+    return CompletableFuture.supplyAsync(() -> {
+      Optional<User> user = userRepository.findById(userUuid);
+      if (user.isEmpty()) {
+        return ResponseEntity.notFound().build();
+      }
+
+      if (user.get().getDislikedVideos().contains(uuid)) {
+        return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
+      }
+
+      user.get().getDislikedQuests().add(uuid);
+      return videoService.dislikeVideo(uuid).join();
     });
   }
 
   @Async
   @PostMapping("/{id}")
-  public CompletableFuture<ResponseEntity<Video>> getVideoById(@PathVariable Long id) {
+  public CompletableFuture<ResponseEntity<Video>> getVideoById(@PathVariable UUID uuid) {
     return CompletableFuture.supplyAsync(() -> {
-      if (videoRepository.findById(id).isEmpty()) {
+      if (videoRepository.findById(uuid).isEmpty()) {
         return ResponseEntity.notFound().build();
       }
 
-      return videoRepository.findById(id).get();
+      return ResponseEntity.ok(videoRepository.findById(uuid).get());
     });
-  }
-
-  @Async
-  @PostMapping("/{id}/downvote")
-  public ResponseEntity<Video> downVoteVideo(@PathVariable Long id, @RequestBody UUID uuid) {
-    try {
-      User user = userRepository.findByUuid(uuid);
-      if (user == null) {
-        return ResponseEntity.badRequest().body(null);
-      }
-      if (user.getDislikedVideos().contains(id)) {
-        return ResponseEntity.badRequest().body(null);
-      } else {
-        user.getDislikedVideos().add(id);
-        Video updatedVideo = videoService.downvoteVideo(id);
-        return ResponseEntity.ok(updatedVideo);
-      }
-    } catch (IllegalArgumentException e) {
-      return ResponseEntity.badRequest().body(null);
-    }
   }
 }
