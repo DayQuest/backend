@@ -14,6 +14,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.*;
 
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.web.FilterChainProxy.VirtualFilterChainDecorator;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -72,8 +73,8 @@ public class VideoController {
 
 
   @Async
-  @PostMapping("/nextVid")
-  public CompletableFuture<ResponseEntity<?>> nextVid(@RequestBody UUID userUuid) {
+  @PostMapping("/next-vid")
+  public CompletableFuture<ResponseEntity<?>> nextVideo(@RequestBody UUID userUuid) {
    return CompletableFuture.supplyAsync(() -> {
     Optional<User> user = userRepository.findById(userUuid);
     if (user.isEmpty()) {
@@ -94,13 +95,13 @@ public class VideoController {
 
   @Async
   @PostMapping("/{id}/upvote")
-  public CompletableFuture<ResponseEntity<Video>> upvoteVideo(@PathVariable Long id, @RequestBody UUID uuid) {
+  public CompletableFuture<ResponseEntity<Video>> upvoteVideo(@PathVariable UUID uuid, @RequestBody UUID userUuid) {
     return CompletableFuture.supplyAsync(() -> {
-      try {
-        User user = userRepository.findByUuid(uuid);
-        if (user == null) {
-          return ResponseEntity.badRequest().body(null);
+        Optional<User> user = userRepository.findById(userUuid);
+        if (user.isEmpty()) {
+          return ResponseEntity.notFound().build();
         }
+
         if (user.getLikedVideos().contains(id)) {
           return ResponseEntity.badRequest().body(null);
         } else {
@@ -108,9 +109,6 @@ public class VideoController {
           Video updatedVideo = videoService.upvoteVideo(id);
           return ResponseEntity.ok(updatedVideo);
         }
-      } catch (IllegalArgumentException e) {
-        return ResponseEntity.badRequest().body(null);
-      }
     });
   }
 
