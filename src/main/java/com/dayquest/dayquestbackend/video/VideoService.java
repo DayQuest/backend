@@ -9,6 +9,7 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -26,6 +27,9 @@ public class VideoService {
 
     @Autowired
     private VideoRepository videoRepository;
+
+    @Autowired
+    private VideoCompressor videoCompressor;
 
 
     //TODO: Remove code dupe in down and upvote
@@ -79,6 +83,9 @@ public class VideoService {
           } catch (IOException e) {
             return null;
           }
+
+          videoCompressor.compressVideo(filePath.toString(), fileName);
+          videoCompressor.removeUnprocessed(filePath.toString());
 
           Video video = new Video();
             video.setTitle(title);
