@@ -42,10 +42,10 @@ public class VideoController {
   @Autowired
   private Cache<Integer, String> videoCache;
 
+  @Async
   @GetMapping
-  public ResponseEntity<List<Video>> getAllVideos() {
-    List<Video> videos = videoService.getAllVideos();
-    return ResponseEntity.ok(videos);
+  public CompletableFuture<ResponseEntity<List<Video>>> getAllVideos() {
+    return CompletableFuture.supplyAsync(() -> ResponseEntity.ok(videoRepository.findAll()));
   }
 
   @Async
@@ -73,17 +73,18 @@ public class VideoController {
 
   @Async
   @PostMapping("/nextVid")
-  public CompletableFuture<ResponseEntity<?>> nextVid(@RequestBody Map<String, Long> request) {
+  public CompletableFuture<ResponseEntity<?>> nextVid(@RequestBody UUID userUuid) {
    return CompletableFuture.supplyAsync(() -> {
-     Long userId = request.get("userId");
-     if (userId == null) {
-       return ResponseEntity.badRequest().body("User ID is missing");
-     }
+    Optional<User> user = userRepository.findById(userUuid);
+    if (user.isEmpty()) {
+      return ResponseEntity.notFound().build();
+    }
 
-     //Use rust algorythm service
-     Video video = videoService.getRandomVideo();
+
+     //TODO: Use rust algorythm service
+     Video video = videoService.getRandomVideo().join();
      if (video == null) {
-       return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No videos available");
+       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("No video found");
      }
 
      return ResponseEntity.ok(video);
