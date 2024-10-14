@@ -106,7 +106,6 @@ public class VideoService {
     private byte[] generateThumbnail(String videoPath) {
         try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(videoPath)) {
             grabber.start();
-
             // Frame at 1 second
             grabber.setTimestamp(1000000);
             Frame frame = grabber.grabImage();
@@ -114,6 +113,7 @@ public class VideoService {
             if (frame != null) {
                 Java2DFrameConverter converter = new Java2DFrameConverter();
                 BufferedImage bufferedImage = converter.getBufferedImage(frame);
+                converter.close();
 
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
                 ImageIO.write(bufferedImage, "jpg", outputStream);
@@ -122,7 +122,7 @@ public class VideoService {
 
             grabber.stop();
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
 
         return new byte[0];
