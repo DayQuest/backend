@@ -9,6 +9,8 @@ import java.util.UUID;
 
 @Entity
 public class BetaKey {
+
+  @Id
   private long discordId;
 
   @Column

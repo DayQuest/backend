@@ -21,7 +21,7 @@ public class Report {
     private UUID videoUuid;
 
     @Column(nullable = false)
-    private Long userUuid;
+    private UUID userUuid;
 
     // Getters and Setters
     public UUID getUuid() {
@@ -48,11 +48,11 @@ public class Report {
         this.videoUuid = videoUuid;
     }
 
-    public Long getUserUuid() {
+    public UUID getUserUuid() {
         return userUuid;
     }
 
-    public void setUserUuid(Long userUuid) {
+    public void setUserUuid(UUID userUuid) {
         this.userUuid = userUuid;
     }
 }
