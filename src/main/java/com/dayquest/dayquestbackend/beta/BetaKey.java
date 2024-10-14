@@ -1,23 +1,18 @@
 package com.dayquest.dayquestbackend.beta;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import org.springframework.data.annotation.Id;
+import jakarta.persistence.Id;
 
 @Entity
 public class BetaKey {
 
   @Id
-  @Column
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private long discordId;
+  private Long discordId;
 
-  @Column
+  @Column(name = "beta_key")
   private String key;
-
-  @Column
   private boolean inUse;
 
   public long getDiscordId() {

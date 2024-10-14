@@ -1,9 +1,10 @@
 package com.dayquest.dayquestbackend.video;
 
-import jakarta.persistence.*;
-
-import java.sql.Blob;
-import java.util.Base64;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import java.util.UUID;
 
 @Entity
