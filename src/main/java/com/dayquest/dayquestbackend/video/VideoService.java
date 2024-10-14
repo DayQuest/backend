@@ -1,5 +1,7 @@
 package com.dayquest.dayquestbackend.video;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -9,7 +11,9 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-import org.checkerframework.checker.units.qual.A;
+import org.bytedeco.javacv.FFmpegFrameGrabber;
+import org.bytedeco.javacv.Frame;
+import org.bytedeco.javacv.Java2DFrameConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -19,6 +23,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import javax.imageio.ImageIO;
 
 @Service
 public class VideoService {
@@ -89,11 +95,37 @@ public class VideoService {
 
           Video video = new Video();
             video.setTitle(title);
+            video.setThumbnail(generateThumbnail(filePath.toString()));
             video.setDescription(description);
             video.setFilePath(fileName.replace(".mp4", ""));
             videoRepository.save(video);
             return fileName;
         });
+    }
+
+    private byte[] generateThumbnail(String videoPath) {
+        try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(videoPath)) {
+            grabber.start();
+
+            // Frame at 1 second
+            grabber.setTimestamp(1000000);
+            Frame frame = grabber.grabImage();
+
+            if (frame != null) {
+                Java2DFrameConverter converter = new Java2DFrameConverter();
+                BufferedImage bufferedImage = converter.getBufferedImage(frame);
+
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                ImageIO.write(bufferedImage, "jpg", outputStream);
+                return outputStream.toByteArray();
+            }
+
+            grabber.stop();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return new byte[0];
     }
 
     @Async

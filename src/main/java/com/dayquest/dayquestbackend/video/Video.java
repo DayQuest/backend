@@ -1,6 +1,9 @@
 package com.dayquest.dayquestbackend.video;
 
 import jakarta.persistence.*;
+
+import java.sql.Blob;
+import java.util.Base64;
 import java.util.UUID;
 
 @Entity
@@ -19,6 +22,15 @@ public class Video {
     private int upVotes;
     private int downVotes;
 
+    private byte[] thumbnail;
+
+    public byte[] getThumbnail() {
+        return thumbnail;
+    }
+
+    public void setThumbnail(byte[] thumbnail) {
+        this.thumbnail = thumbnail;
+    }
 
     public UUID getUuid() {
         return uuid;
