@@ -7,6 +7,7 @@ import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -27,9 +28,11 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class SpringConfiguration implements WebMvcConfigurer {
 
   @Autowired
+  @Lazy
   private UserService userService;
 
   @Autowired
+
   private QuestService questService;
 
   @PostConstruct
