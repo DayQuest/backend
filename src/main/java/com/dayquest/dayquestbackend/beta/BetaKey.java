@@ -5,13 +5,11 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import java.util.UUID;
 
 @Entity
 public class BetaKey {
-
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
+  private long discordId;
 
   @Column
   private String key;
@@ -19,13 +17,12 @@ public class BetaKey {
   @Column
   private boolean inUse;
 
-
-  public boolean isInUse() {
-    return inUse;
+  public long getDiscordId() {
+    return discordId;
   }
 
-  public void setInUse(boolean inUse) {
-    this.inUse = inUse;
+  public void setDiscordId(long discordId) {
+    this.discordId = discordId;
   }
 
   public String getKey() {
@@ -36,11 +33,11 @@ public class BetaKey {
     this.key = key;
   }
 
-  public Long getId() {
-    return id;
+  public boolean isInUse() {
+    return inUse;
   }
 
-  public void setId(Long id) {
-    this.id = id;
+  public void setInUse(boolean inUse) {
+    this.inUse = inUse;
   }
 }
