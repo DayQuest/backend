@@ -53,7 +53,6 @@ public class SpringConfiguration implements WebMvcConfigurer {
   }
 
 
-  //TODO: Try removing this, seems useless
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     return http
