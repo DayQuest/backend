@@ -9,7 +9,7 @@ import java.util.UUID;
 @Entity
 public class Quest {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID uuid;
     private String title;
     private String description;

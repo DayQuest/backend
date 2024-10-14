@@ -9,7 +9,7 @@ import java.util.UUID;
 @Entity
 public class Video {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID uuid;
     private String title;
 
