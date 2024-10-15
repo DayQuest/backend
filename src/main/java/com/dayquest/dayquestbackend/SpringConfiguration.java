@@ -17,6 +17,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.config.annotation.web.AbstractRequestMatcherRegistry;
+import org.springframework.security.config.annotation.web.WebSecurityConfigurer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -61,15 +62,6 @@ public class SpringConfiguration implements WebMvcConfigurer {
         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
         .allowedHeaders("*"); // Optional: Falls spezifische Header erlaubt werden sollen
   }
-
-
-//  @Bean
-//  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-//    return http
-//        .authorizeHttpRequests(AbstractRequestMatcherRegistry::anyRequest)
-//        .csrf(AbstractHttpConfigurer::disable)
-//        .build();
-//  }
 
   @Bean
   public BCryptPasswordEncoder passwordEncoder() {

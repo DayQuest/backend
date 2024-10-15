@@ -2,11 +2,10 @@ package com.dayquest.dayquestbackend;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 @SpringBootApplication
-public class DayquestApplication {
+public class DayQuestApplication {
 	public static void main(String[] args) {
-		SpringApplication.run(DayquestApplication.class, args);
+		SpringApplication.run(DayQuestApplication.class, args);
 	}
 }
