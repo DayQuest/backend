@@ -60,18 +60,18 @@ public class VideoCompressor {
   public void removeUnprocessed(String path) {
     File file = new File(path);
     if (!file.delete()) {
-      Logger.getLogger("Video Compressor").warning("Unable to delete unprocessed file: " + path);
+      Logger.getGlobal().info("Unable to delete unprocessed file: " + path);
     }
   }
 
 
   @PostConstruct
   public void compressAllUnprocessed() {
-    Logger.getLogger("video compressor").info("Starting compression of unprocessed videos");
+    Logger.getGlobal().info("Starting compression of unprocessed videos");
     File unprocessedDir = new File(unprocessedPath);
     File[] files = unprocessedDir.listFiles();
     if (files == null) {
-      Logger.getLogger("video compressor").info("No unprocessed videos found");
+      Logger.getGlobal().info("No unprocessed videos found");
       return;
     }
 
