@@ -7,21 +7,24 @@ import java.io.InputStreamReader;
 import java.util.logging.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 public class VideoCompressor {
 
-  private final VideoProperties videoProperties;
+  @Value("${video.processed.path}")
+  private String processPath;
 
-  @Autowired
-  public VideoCompressor(VideoProperties videoProperties) {
-    this.videoProperties = videoProperties;
-  }
+  @Value("${video.upload.path}")
+  private String unprocessedPath;
+
+  @Value("${ffmpeg.path}")
+  private String ffmpegPath;
 
   void compressVideo(String inputFile, String outputFileName) {
     try {
-      File outputFile = new File(videoProperties.getProcessedPath(), outputFileName);
+      File outputFile = new File(processPath, outputFileName);
 
       ProcessBuilder pb = new ProcessBuilder(getCompressCommand(inputFile, outputFile));
       pb.redirectErrorStream(true);
@@ -40,8 +43,8 @@ public class VideoCompressor {
 
 
   private String[] getCompressCommand(String inputFile, File outputFile) {
-    return new String[] {
-            videoProperties.getFfmpegPath(),
+    return new String[]{
+        ffmpegPath,
         "-i", inputFile,
         "-c:v", "libx265",
         "-preset", "slow", // Slower preset for better compression
@@ -66,7 +69,7 @@ public class VideoCompressor {
   @PostConstruct
   public void compressAllUnprocessed() {
     Logger.getLogger("video compressor").info("Starting compression of unprocessed videos");
-    File unprocessedDir = new File(videoProperties.getProcessedPath());
+    File unprocessedDir = new File(unprocessedPath);
     File[] files = unprocessedDir.listFiles();
     if (files == null) {
       Logger.getLogger("video compressor").info("No unprocessed videos found");
