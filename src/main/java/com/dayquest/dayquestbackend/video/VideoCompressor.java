@@ -47,12 +47,12 @@ public class VideoCompressor {
         ffmpegPath,
         "-i", inputFile,
         "-c:v", "libx265",
-        "-preset", "slow", // Slower preset for better compression
-        "-crf", "28", // Constant Rate Factor (CRF) - adjusted for HEVC
-        "-vf", "scale=-1:720", // Scale to 720p, maintaining aspect ratio
-        "-r", "30", // Set frame rate to 24 fps
-        "-c:a", "copy", // Copy audio without re-encoding
-        "-tag:v", "hvc1", // Add tag for better compatibility
+        "-preset", "slow",
+        "-crf", "28",
+        "-vf", "scale=-1:720",
+        "-r", "30",
+        "-c:a", "copy",
+        "-tag:v", "hvc1",
         "-movflags", "+faststart",
         outputFile.getPath()
     };
