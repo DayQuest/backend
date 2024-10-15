@@ -1,6 +1,5 @@
 package com.dayquest.dayquestbackend.video;
 
-import com.dayquest.dayquestbackend.config.VideoProperties;
 import jakarta.annotation.PostConstruct;
 import java.io.BufferedReader;
 import java.io.File;
@@ -8,8 +7,6 @@ import java.io.InputStreamReader;
 import java.util.logging.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
 
 @Service
