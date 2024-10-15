@@ -1,5 +1,6 @@
 package com.dayquest.dayquestbackend.video;
 
+import com.dayquest.dayquestbackend.Config;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -28,8 +29,8 @@ import javax.imageio.ImageIO;
 
 @Service
 public class VideoService {
-    @Value("${video.upload.path}")
-    private String uploadPath;
+   // @Value("${video.upload.path}")
+    private String uploadPath = Config.VIDEO_UNPROCESSED_PATH;
 
     @Autowired
     private VideoRepository videoRepository;

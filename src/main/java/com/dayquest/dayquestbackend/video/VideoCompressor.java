@@ -1,25 +1,25 @@
 package com.dayquest.dayquestbackend.video;
 
+import com.dayquest.dayquestbackend.Config;
 import jakarta.annotation.PostConstruct;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
 import java.util.logging.Logger;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 public class VideoCompressor {
 
-  @Value("${video.processed.path}")
-  private String processPath;
+  //@Value("${video.processed.path}")
+  private String processPath = Config.VIDEO_PROCESSED_PATH;
 
-  @Value("${video.upload.path}")
-  private String unprocessedPath;
+  //@Value("${video.upload.path}")
+  private String unprocessedPath = Config.VIDEO_UNPROCESSED_PATH;
 
-  @Value("${ffmpeg.path}")
-  private String ffmpegPath;
+  //@Value("${ffmpeg.path}")
+  private String ffmpegPath = Config.FFMPEG_PATH;
 
   void compressVideo(String inputFile, String outputFileName) {
     try {
@@ -80,6 +80,6 @@ public class VideoCompressor {
       removeUnprocessed(file.getPath());
     }
 
-    Logger.getLogger("video compressor").info("Compression done");
+    Logger.getGlobal().info("Compression done");
   }
 }
