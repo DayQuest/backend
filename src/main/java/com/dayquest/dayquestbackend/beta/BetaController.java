@@ -14,24 +14,24 @@ import org.springframework.web.bind.annotation.RestController;
 public class BetaController {
 
   @Autowired
-  private KeyCreator keyCreator;
+  private KeyFactory keyFactory;
 
   @Autowired
-  private KeyRepository repository;
+  private KeyRepository keyRepository;
 
   @PostMapping("/new-key")
   @Async
   public CompletableFuture<ResponseEntity<String>> newKey(@RequestBody long discordId) {
     return CompletableFuture.supplyAsync(() -> {
-      if (repository.existsById(discordId)) {
+      if (keyRepository.existsById(discordId)) {
         return ResponseEntity.unprocessableEntity().body("This id has already been bound to a beta key");
       }
 
       BetaKey key = new BetaKey();
-      key.setKey(keyCreator.generateKey());
+      key.setKey(keyFactory.generateKey());
       key.setDiscordId(discordId);
 
-      repository.save(key);
+      keyRepository.save(key);
       return ResponseEntity.ok(key.getKey());
     });
   }
@@ -40,7 +40,7 @@ public class BetaController {
   @Async
   public CompletableFuture<ResponseEntity<Boolean>> isValid(@RequestBody String key) {
     return CompletableFuture.supplyAsync(() -> {
-      boolean exists = repository.existsByKey(key);
+      boolean exists = keyRepository.existsByKey(key);
       return ResponseEntity.ok(exists);
     });
   }
