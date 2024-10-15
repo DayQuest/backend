@@ -37,7 +37,6 @@ public class VideoService {
     @Autowired
     private VideoCompressor videoCompressor;
 
-
     //TODO: Remove code dupe in down and upvote
     @Async
     public CompletableFuture<ResponseEntity<Video>> likeVideo(UUID uuid) {

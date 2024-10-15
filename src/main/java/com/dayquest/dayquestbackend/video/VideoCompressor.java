@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.InputStreamReader;
 import java.util.logging.Logger;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -66,14 +67,19 @@ public class VideoCompressor {
 
   @PostConstruct
   public void compressAllUnprocessed() {
+    Logger.getLogger("video compressor").info("Starting compression of unprocessed videos");
     File unprocessedDir = new File(unprocessedPath);
     File[] files = unprocessedDir.listFiles();
     if (files == null) {
+      Logger.getLogger("video compressor").info("No unprocessed videos found");
       return;
     }
+
     for (File file : files) {
       compressVideo(file.getPath(), file.getName());
       removeUnprocessed(file.getPath());
     }
+
+    Logger.getLogger("video compressor").info("Compression done");
   }
 }
