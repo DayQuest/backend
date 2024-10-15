@@ -52,7 +52,8 @@ public class SpringConfiguration implements WebMvcConfigurer {
   @Async
   @PostConstruct
   public CompletableFuture<Void> assignDailyQuest() {
-    return CompletableFuture.runAsync(() -> userService.assignDailyQuests(questService.getTop10PercentQuests().join()).join());
+    return CompletableFuture.runAsync(() ->
+        userService.assignDailyQuests(questService.getTop10PercentQuests().join()).join());
   }
 
   @Override
@@ -60,7 +61,7 @@ public class SpringConfiguration implements WebMvcConfigurer {
     registry.addMapping("/**")
         .allowedOrigins("*")
         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-        .allowedHeaders("*"); // Optional: Falls spezifische Header erlaubt werden sollen
+        .allowedHeaders("*");
   }
 
   @Bean
