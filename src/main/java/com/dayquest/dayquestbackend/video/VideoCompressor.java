@@ -1,6 +1,5 @@
 package com.dayquest.dayquestbackend.video;
 
-import com.dayquest.dayquestbackend.Config;
 import jakarta.annotation.PostConstruct;
 import java.io.BufferedReader;
 import java.io.File;
@@ -12,14 +11,14 @@ import org.springframework.stereotype.Service;
 @Service
 public class VideoCompressor {
 
-  //@Value("${video.processed.path}")
-  private String processPath = Config.VIDEO_PROCESSED_PATH;
+  @Value("${video.processed.path}")
+  private String processPath;
 
-  //@Value("${video.upload.path}")
-  private String unprocessedPath = Config.VIDEO_UNPROCESSED_PATH;
+  @Value("${video.upload.path}")
+  private String unprocessedPath;
 
-  //@Value("${ffmpeg.path}")
-  private String ffmpegPath = Config.FFMPEG_PATH;
+  @Value("${ffmpeg.path}")
+  private String ffmpegPath;
 
   void compressVideo(String inputFile, String outputFileName) {
     try {
