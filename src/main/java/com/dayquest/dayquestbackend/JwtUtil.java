@@ -41,7 +41,6 @@ public class JwtUtil {
         .setIssuedAt(new Date(System.currentTimeMillis()))
         .signWith(SignatureAlgorithm.HS256, secret).compact();
   }
-
   public boolean validateToken(String token, UUID uuid) {
     return extractUuid(token).toString().equals(uuid.toString());
   }

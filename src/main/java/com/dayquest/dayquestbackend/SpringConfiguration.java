@@ -65,6 +65,20 @@ public class SpringConfiguration implements WebMvcConfigurer {
   }
 
   @Bean
+  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    http
+            .csrf(AbstractHttpConfigurer::disable)
+            .authorizeHttpRequests(authorize -> authorize
+                    //Endpoint without authentication
+                    .requestMatchers("**").permitAll()
+                    //All other endpoints with authentication
+                    .anyRequest().authenticated()
+            );
+
+    return http.build();
+  }
+
+  @Bean
   public BCryptPasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder();
   }
