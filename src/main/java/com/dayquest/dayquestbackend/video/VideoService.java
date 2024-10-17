@@ -6,11 +6,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import com.dayquest.dayquestbackend.user.User;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.Java2DFrameConverter;
@@ -79,52 +81,80 @@ public class VideoService {
     }
 
     @Async
-    public CompletableFuture<String> uploadVideo(MultipartFile file, String title, String description) {
+    public CompletableFuture<String> uploadVideo(MultipartFile file, String title, String description, Optional<User> user) {
         return CompletableFuture.supplyAsync(() -> {
+            if (!user.isPresent()) {
+                throw new IllegalArgumentException("User must be present");
+            }
+
+            try {
+                Files.createDirectories(Paths.get(uploadPath));
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to create upload directory", e);
+            }
+
             String fileName = UUID.randomUUID() + ".mp4";
             Path filePath = Paths.get(uploadPath, fileName);
-          try {
-            Files.copy(file.getInputStream(), filePath);
-          } catch (IOException e) {
-            return null;
-          }
 
-          videoCompressor.compressVideo(filePath.toString(), fileName);
-          videoCompressor.removeUnprocessed(filePath.toString());
+            try {
+                Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to copy uploaded file", e);
+            }
 
-          Video video = new Video();
-            video.setTitle(title);
-            video.setThumbnail(generateThumbnail(filePath.toString()));
-            video.setDescription(description);
-            video.setFilePath(fileName.replace(".mp4", ""));
-            videoRepository.save(video);
-            return fileName;
+            User user1 = user.get();
+
+            Path processedPath = Paths.get(uploadPath, "processed");
+            try {
+                Files.createDirectories(processedPath);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to create processed videos directory", e);
+            }
+
+
+            try {
+                videoCompressor.compressVideo(filePath.toString(), fileName);
+                videoCompressor.removeUnprocessed(filePath.toString());
+
+                Video video = new Video();
+                video.setTitle(title);
+                video.setThumbnail(generateThumbnail(filePath.toString()));
+                video.setDescription(description);
+                video.setFilePath(fileName.replace(".mp4", ""));
+                video.setUser(user1);
+                videoRepository.save(video);
+                user1.addPostedVideo(video);
+
+                return fileName;
+            } catch (Exception e) {
+                try {
+                    Files.deleteIfExists(filePath);
+                } catch (IOException ignored) {}
+                throw new RuntimeException("Failed to process video", e);
+            }
         });
     }
 
     private byte[] generateThumbnail(String videoPath) {
-        try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(videoPath)) {
+        try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(videoPath);
+             Java2DFrameConverter converter = new Java2DFrameConverter()) {
+
             grabber.start();
-            // Frame at 1 second
             grabber.setTimestamp(1000000);
             Frame frame = grabber.grabImage();
 
-            if (frame != null) {
-                Java2DFrameConverter converter = new Java2DFrameConverter();
-                BufferedImage bufferedImage = converter.getBufferedImage(frame);
-                converter.close();
-
-                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                ImageIO.write(bufferedImage, "jpg", outputStream);
-                return outputStream.toByteArray();
+            if (frame == null) {
+                throw new RuntimeException("Failed to grab video frame");
             }
 
-            grabber.stop();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+            BufferedImage bufferedImage = converter.getBufferedImage(frame);
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            ImageIO.write(bufferedImage, "jpg", outputStream);
 
-        return new byte[0];
+            return outputStream.toByteArray();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to generate thumbnail", e);
+        }
     }
 
     @Async

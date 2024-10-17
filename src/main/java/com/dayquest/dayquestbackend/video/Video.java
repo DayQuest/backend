@@ -1,10 +1,8 @@
 package com.dayquest.dayquestbackend.video;
 
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import com.dayquest.dayquestbackend.user.User;
+import jakarta.persistence.*;
+
 import java.util.UUID;
 
 @Entity
@@ -24,6 +22,17 @@ public class Video {
     private int downVotes;
 
     private byte[] thumbnail;
+
+    @ManyToOne
+    private User user;
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
 
     public byte[] getThumbnail() {
         return thumbnail;

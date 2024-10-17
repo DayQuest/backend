@@ -1,5 +1,6 @@
 package com.dayquest.dayquestbackend.user;
 import com.dayquest.dayquestbackend.quest.Quest;
+import com.dayquest.dayquestbackend.video.Video;
 import jakarta.persistence.*;
 
 import java.util.List;
@@ -45,6 +46,22 @@ public class User {
     @ManyToOne
     @JoinColumn(name = "daily_quest_id")
     private Quest dailyQuest;
+
+    @OneToMany
+    @Column(name = "posted_videos")
+    private List<Video> postedVideos;
+
+    public List<Video> getPostedVideos() {
+        return postedVideos;
+    }
+
+    public void setPostedVideos(List<Video> postedVideos) {
+        this.postedVideos = postedVideos;
+    }
+
+    public void addPostedVideo(Video video) {
+        postedVideos.add(video);
+    }
 
     public UUID getUuid() {
         return uuid;

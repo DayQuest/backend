@@ -47,10 +47,15 @@ public class VideoController {
   public CompletableFuture<ResponseEntity<String>> uploadVideo(
       @RequestParam("file") MultipartFile file,
       @RequestParam("title") String title,
-      @RequestParam("description") String description) {
+      @RequestParam("description") String description,
+      @RequestParam("userUuid") UUID userUuid) {
     return CompletableFuture.supplyAsync(() -> {
-
-      String path = videoService.uploadVideo(file, title, description).join();
+        Optional<User> user = userRepository.findById(userUuid);
+        if (user.isEmpty()) {
+          return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                  .body("Could not find user with that UUID");
+        }
+      String path = videoService.uploadVideo(file, title, description, user).join();
       if (path == null) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body("Failed to upload video due to internal error");
