@@ -1,5 +1,6 @@
 package com.dayquest.dayquestbackend.video;
 
+import com.dayquest.dayquestbackend.user.UserRepository;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -41,6 +42,9 @@ public class VideoService {
     @Autowired
     private VideoRepository videoRepository;
 
+
+    @Autowired
+    private UserRepository userRepository;
     @Autowired
     private VideoCompressor videoCompressor;
 
@@ -97,13 +101,6 @@ public class VideoService {
             } catch (IOException e) {
                 throw new RuntimeException("Failed to copy uploaded file", e);
             }
-
-            Path processedPath = Paths.get(uploadPath, "processed");
-            try {
-                Files.createDirectories(processedPath);
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to create processed videos directory", e);
-            }
                 videoCompressor.compressVideo(filePath.toString(), fileName);
                 videoCompressor.removeUnprocessed(filePath.toString());
 
@@ -114,10 +111,9 @@ public class VideoService {
                 video.setFilePath(fileName.replace(".mp4", ""));
                 video.setUser(user);
                 videoRepository.save(video);
-                if (user.getPostedVideos() == null) {
-                    user.setPostedVideos(new ArrayList<>());
-                }
                 user.getPostedVideos().add(video);
+
+                userRepository.save(user);
                 return filePath.toString();
         });
     }
