@@ -84,16 +84,12 @@ public class VideoService {
 
     @Async
     @Transactional
-    public CompletableFuture<String> uploadVideo(MultipartFile file, String title, String description, Optional<User> user) {
+    public CompletableFuture<String> uploadVideo(MultipartFile file, String title, String description, User user) {
         return CompletableFuture.supplyAsync(() -> {
-            if (user.isEmpty()) {
-                throw new IllegalArgumentException("User must be present");
-            }
 
             String fileName = UUID.randomUUID() + ".mp4";
             Path filePath = Paths.get(uploadPath, fileName);
 
-            User user1 = user.get();
 
             try {
                 videoCompressor.compressVideo(filePath.toString(), fileName);
@@ -104,12 +100,12 @@ public class VideoService {
                 video.setThumbnail(generateThumbnail(filePath.toString().replace("unprocessed", "processed")));
                 video.setDescription(description);
                 video.setFilePath(fileName.replace(".mp4", ""));
-                video.setUser(user1);
+                video.setUser(user);
                 videoRepository.save(video);
-                if (user1.getPostedVideos() == null) {
-                    user1.setPostedVideos(new ArrayList<>());
+                if (user.getPostedVideos() == null) {
+                    user.setPostedVideos(new ArrayList<>());
                 }
-                user1.getPostedVideos().add(video);
+                user.getPostedVideos().add(video);
 
                 return fileName;
             } catch (Exception e) {
