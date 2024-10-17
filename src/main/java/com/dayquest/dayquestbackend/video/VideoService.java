@@ -86,34 +86,14 @@ public class VideoService {
     @Transactional
     public CompletableFuture<String> uploadVideo(MultipartFile file, String title, String description, Optional<User> user) {
         return CompletableFuture.supplyAsync(() -> {
-            if (!user.isPresent()) {
+            if (user.isEmpty()) {
                 throw new IllegalArgumentException("User must be present");
-            }
-
-            try {
-                Files.createDirectories(Paths.get(uploadPath));
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to create upload directory", e);
             }
 
             String fileName = UUID.randomUUID() + ".mp4";
             Path filePath = Paths.get(uploadPath, fileName);
 
-            try {
-                Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to copy uploaded file", e);
-            }
-
             User user1 = user.get();
-
-            Path processedPath = Paths.get(uploadPath, "processed");
-            try {
-                Files.createDirectories(processedPath);
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to create processed videos directory", e);
-            }
-
 
             try {
                 videoCompressor.compressVideo(filePath.toString(), fileName);
@@ -130,7 +110,6 @@ public class VideoService {
                     user1.setPostedVideos(new ArrayList<>());
                 }
                 user1.getPostedVideos().add(video);
-
 
                 return fileName;
             } catch (Exception e) {
