@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.ArrayList;
 
 
 @Entity
@@ -47,9 +48,13 @@ public class User {
     @JoinColumn(name = "daily_quest_id")
     private Quest dailyQuest;
 
-    @OneToMany
-    @Column(name = "posted_videos")
-    private List<Video> postedVideos;
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private List<Video> postedVideos = new ArrayList<>();
+
+    public void addPostedVideo(Video video) {
+        postedVideos.add(video);
+        video.setUser(this);
+    }
 
     public List<Video> getPostedVideos() {
         return postedVideos;
@@ -59,9 +64,6 @@ public class User {
         this.postedVideos = postedVideos;
     }
 
-    public void addPostedVideo(Video video) {
-        postedVideos.add(video);
-    }
 
     public UUID getUuid() {
         return uuid;

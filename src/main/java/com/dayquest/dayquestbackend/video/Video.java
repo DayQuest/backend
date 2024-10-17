@@ -23,7 +23,8 @@ public class Video {
 
     private byte[] thumbnail;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
     private User user;
 
     public User getUser() {
