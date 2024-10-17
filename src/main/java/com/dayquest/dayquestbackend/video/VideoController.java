@@ -55,7 +55,7 @@ public class VideoController {
           return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                   .body("Could not find user with that UUID");
         }
-      String path = videoService.uploadVideo(file, title, description, user).join();
+      String path = videoService.uploadVideo(file, title, description, user.get()).join();
       if (path == null) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body("Failed to upload video due to internal error");

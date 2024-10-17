@@ -35,6 +35,9 @@ public class VideoService {
     @Value("${video.upload.path}")
     private String uploadPath;
 
+    @Value("${video.processed.path}")
+    private String processedPath;
+
     @Autowired
     private VideoRepository videoRepository;
 
@@ -84,18 +87,8 @@ public class VideoService {
 
     @Async
     @Transactional
-    public CompletableFuture<String> uploadVideo(MultipartFile file, String title, String description, Optional<User> user) {
+    public CompletableFuture<String> uploadVideo(MultipartFile file, String title, String description, User user) {
         return CompletableFuture.supplyAsync(() -> {
-            if (!user.isPresent()) {
-                throw new IllegalArgumentException("User must be present");
-            }
-
-            try {
-                Files.createDirectories(Paths.get(uploadPath));
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to create upload directory", e);
-            }
-
             String fileName = UUID.randomUUID() + ".mp4";
             Path filePath = Paths.get(uploadPath, fileName);
 
@@ -105,17 +98,12 @@ public class VideoService {
                 throw new RuntimeException("Failed to copy uploaded file", e);
             }
 
-            User user1 = user.get();
-
             Path processedPath = Paths.get(uploadPath, "processed");
             try {
                 Files.createDirectories(processedPath);
             } catch (IOException e) {
                 throw new RuntimeException("Failed to create processed videos directory", e);
             }
-
-
-            try {
                 videoCompressor.compressVideo(filePath.toString(), fileName);
                 videoCompressor.removeUnprocessed(filePath.toString());
 
@@ -124,21 +112,13 @@ public class VideoService {
                 video.setThumbnail(generateThumbnail(filePath.toString().replace("unprocessed", "processed")));
                 video.setDescription(description);
                 video.setFilePath(fileName.replace(".mp4", ""));
-                video.setUser(user1);
+                video.setUser(user);
                 videoRepository.save(video);
-                if (user1.getPostedVideos() == null) {
-                    user1.setPostedVideos(new ArrayList<>());
+                if (user.getPostedVideos() == null) {
+                    user.setPostedVideos(new ArrayList<>());
                 }
-                user1.getPostedVideos().add(video);
-
-
-                return fileName;
-            } catch (Exception e) {
-                try {
-                    Files.deleteIfExists(filePath);
-                } catch (IOException ignored) {}
-                throw new RuntimeException("Failed to process video", e);
-            }
+                user.getPostedVideos().add(video);
+                return filePath.toString();
         });
     }
 
