@@ -8,11 +8,14 @@ import jakarta.annotation.PostConstruct;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+
+import jakarta.persistence.EntityManagerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.task.AsyncTaskExecutor;
+import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.scheduling.annotation.*;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.config.annotation.web.AbstractRequestMatcherRegistry;
@@ -22,6 +25,8 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -30,6 +35,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @EnableAsync
 @EnableWebSecurity
 @EnableScheduling
+@EnableTransactionManagement
 public class SpringConfiguration implements WebMvcConfigurer, AsyncConfigurer {
 
   @Autowired
@@ -54,6 +60,11 @@ public class SpringConfiguration implements WebMvcConfigurer, AsyncConfigurer {
   public CompletableFuture<Void> assignDailyQuest() {
     return CompletableFuture.runAsync(() ->
         userService.assignDailyQuests(questService.getTop10PercentQuests().join()).join());
+  }
+
+  @Bean
+  public PlatformTransactionManager transactionManager(EntityManagerFactory emf) {
+    return new JpaTransactionManager(emf);
   }
 
   @Override

@@ -48,8 +48,16 @@ public class User {
     @JoinColumn(name = "daily_quest_id")
     private Quest dailyQuest;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Video> postedVideos = new ArrayList<>();
+
+    public User() {
+        this.postedVideos = new ArrayList<>();
+        this.dislikedQuests = new ArrayList<>();
+        this.dislikedVideos = new ArrayList<>();
+        this.likedQuests = new ArrayList<>();
+        this.likedVideos = new ArrayList<>();
+    }
 
     public void addPostedVideo(Video video) {
         postedVideos.add(video);

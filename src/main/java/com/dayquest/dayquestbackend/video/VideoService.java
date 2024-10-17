@@ -7,12 +7,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import com.dayquest.dayquestbackend.user.User;
+import jakarta.transaction.Transactional;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.Java2DFrameConverter;
@@ -81,6 +83,7 @@ public class VideoService {
     }
 
     @Async
+    @Transactional
     public CompletableFuture<String> uploadVideo(MultipartFile file, String title, String description, Optional<User> user) {
         return CompletableFuture.supplyAsync(() -> {
             if (!user.isPresent()) {
@@ -118,12 +121,16 @@ public class VideoService {
 
                 Video video = new Video();
                 video.setTitle(title);
-                video.setThumbnail(generateThumbnail(filePath.toString()));
+                video.setThumbnail(generateThumbnail(filePath.toString().replace("unprocessed", "processed")));
                 video.setDescription(description);
                 video.setFilePath(fileName.replace(".mp4", ""));
                 video.setUser(user1);
                 videoRepository.save(video);
-                user1.addPostedVideo(video);
+                if (user1.getPostedVideos() == null) {
+                    user1.setPostedVideos(new ArrayList<>());
+                }
+                user1.getPostedVideos().add(video);
+
 
                 return fileName;
             } catch (Exception e) {
