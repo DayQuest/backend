@@ -14,6 +14,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import com.dayquest.dayquestbackend.user.User;
+import com.dayquest.dayquestbackend.user.UserRepository;
 import jakarta.transaction.Transactional;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
@@ -26,6 +27,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
@@ -40,6 +44,21 @@ public class VideoService {
 
     @Autowired
     private VideoCompressor videoCompressor;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
+
+    private final TransactionTemplate transactionTemplate;
+
+    @Autowired
+    public VideoService(PlatformTransactionManager transactionManager) {
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
+        this.transactionTemplate.setPropagationBehavior(
+                TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+    }
 
     //TODO: Remove code dupe in down and upvote
     @Async
@@ -82,45 +101,56 @@ public class VideoService {
         });
     }
 
+
     @Async
     @Transactional
     public CompletableFuture<String> uploadVideo(MultipartFile file, String title, String description, User user) {
         return CompletableFuture.supplyAsync(() -> {
-
             String fileName = UUID.randomUUID() + ".mp4";
             Path filePath = Paths.get(uploadPath, fileName);
 
-
             try {
+                Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
                 videoCompressor.compressVideo(filePath.toString(), fileName);
                 videoCompressor.removeUnprocessed(filePath.toString());
 
-                Video video = new Video();
-                video.setTitle(title);
-                video.setThumbnail(generateThumbnail(filePath.toString().replace("unprocessed", "processed")));
-                video.setDescription(description);
-                video.setFilePath(fileName.replace(".mp4", ""));
-                video.setUser(user);
-                videoRepository.save(video);
-                if (user.getPostedVideos() == null) {
-                    user.setPostedVideos(new ArrayList<>());
-                }
-                user.getPostedVideos().add(video);
+                String processedFilePath = filePath.toString().replace("unprocessed", "processed");
 
-                return fileName;
+                if (!Files.exists(Paths.get(processedFilePath))) {
+                    throw new RuntimeException("Processed video file not found: " + processedFilePath);
+                }
+
+                return transactionTemplate.execute(status -> {
+                    User managedUser = userRepository.findById(user.getUuid())
+                            .orElseThrow(() -> new RuntimeException("User not found"));
+
+                    Video video = new Video();
+                    video.setTitle(title);
+                    video.setThumbnail(generateThumbnail(processedFilePath));
+                    video.setDescription(description);
+                    video.setFilePath(fileName.replace(".mp4", ""));
+                    video.setUser(managedUser);
+                    managedUser.addPostedVideo(video);
+
+                    userRepository.save(managedUser);
+                    videoRepository.save(video);
+
+                    return fileName;
+                });
+
             } catch (Exception e) {
                 try {
                     Files.deleteIfExists(filePath);
                 } catch (IOException ignored) {}
-                throw new RuntimeException("Failed to process video", e);
+                throw new RuntimeException("Failed to process video: " + e.getMessage(), e);
             }
         });
     }
 
     private byte[] generateThumbnail(String videoPath) {
-        try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(videoPath);
-             Java2DFrameConverter converter = new Java2DFrameConverter()) {
-
+        try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(videoPath)) {
+            grabber.setFormat("mp4");
             grabber.start();
             grabber.setTimestamp(1000000);
             Frame frame = grabber.grabImage();
@@ -129,13 +159,21 @@ public class VideoService {
                 throw new RuntimeException("Failed to grab video frame");
             }
 
-            BufferedImage bufferedImage = converter.getBufferedImage(frame);
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            ImageIO.write(bufferedImage, "jpg", outputStream);
+            try (Java2DFrameConverter converter = new Java2DFrameConverter()) {
+                BufferedImage bufferedImage = converter.getBufferedImage(frame);
+                if (bufferedImage == null) {
+                    throw new RuntimeException("Failed to convert frame to BufferedImage");
+                }
 
-            return outputStream.toByteArray();
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                if (!ImageIO.write(bufferedImage, "jpg", outputStream)) {
+                    throw new RuntimeException("Failed to write BufferedImage to JPG");
+                }
+
+                return outputStream.toByteArray();
+            }
         } catch (IOException e) {
-            throw new RuntimeException("Failed to generate thumbnail", e);
+            throw new RuntimeException("Failed to generate thumbnail: " + e.getMessage(), e);
         }
     }
 

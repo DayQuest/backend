@@ -98,4 +98,13 @@ public class UserController {
       return user.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     });
   }
+
+  @GetMapping("{uuid}/videos")
+    @Async
+    public CompletableFuture<ResponseEntity<Object>> getUserVideos(@PathVariable UUID uuid) {
+        return CompletableFuture.supplyAsync(() -> {
+            Optional<User> user = userRepository.findById(uuid);
+            return user.<ResponseEntity<Object>>map(value -> ResponseEntity.ok(value.getPostedVideos())).orElseGet(() -> ResponseEntity.notFound().build());
+        });
+    }
 }
