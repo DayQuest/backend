@@ -109,7 +109,7 @@ public class UserController {
             if (user == null) {
                 return ResponseEntity.notFound().build();
             }
-            ProfileDTO profileDTO = new ProfileDTO(user.getUsername(), user.getProfilePicture(), userService.getPostedVideosForUser(user.getUuid()));
+            ProfileDTO profileDTO = new ProfileDTO(user.getUsername(), user.getProfilePicture(), user.getPostedVideos());
             return ResponseEntity.ok(profileDTO);
         });
     }
