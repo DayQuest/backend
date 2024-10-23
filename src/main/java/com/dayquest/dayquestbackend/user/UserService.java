@@ -3,6 +3,9 @@ package com.dayquest.dayquestbackend.user;
 import com.dayquest.dayquestbackend.quest.QuestRepository;
 import com.dayquest.dayquestbackend.quest.Quest;
 import java.util.Optional;
+
+import com.dayquest.dayquestbackend.video.Video;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -112,5 +115,12 @@ public class UserService {
       userRepository.save(user.get());
       return ResponseEntity.ok("Updated successfully");
     });
+  }
+
+  @Transactional
+  public List<Video> getPostedVideosForUser(UUID userId) {
+    User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+    return user.getPostedVideos();
   }
 }

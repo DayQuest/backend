@@ -103,10 +103,9 @@ public class SpringConfiguration implements WebMvcConfigurer, AsyncConfigurer {
             );
 
     return http.build();
-  }
-
-  @Bean
+  }  @Bean
   public BCryptPasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder();
   }
+
 }

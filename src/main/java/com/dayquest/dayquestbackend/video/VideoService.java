@@ -12,7 +12,6 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-
 import com.dayquest.dayquestbackend.user.User;
 import com.dayquest.dayquestbackend.user.UserRepository;
 import jakarta.transaction.Transactional;
@@ -31,7 +30,6 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
-
 import javax.imageio.ImageIO;
 
 @Service
@@ -131,6 +129,7 @@ public class VideoService {
                     video.setDescription(description);
                     video.setFilePath(fileName.replace(".mp4", ""));
                     video.setUser(managedUser);
+
                     managedUser.addPostedVideo(video);
 
                     userRepository.save(managedUser);

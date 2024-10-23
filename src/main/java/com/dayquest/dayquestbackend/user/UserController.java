@@ -1,11 +1,13 @@
 package com.dayquest.dayquestbackend.user;
 
+import java.io.IOException;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -99,12 +101,43 @@ public class UserController {
     });
   }
 
-  @GetMapping("{uuid}/videos")
+  @GetMapping("/profile/{username}")
     @Async
-    public CompletableFuture<ResponseEntity<Object>> getUserVideos(@PathVariable UUID uuid) {
+    public CompletableFuture<ResponseEntity<ProfileDTO>> getUserByUsername(@PathVariable String username) {
         return CompletableFuture.supplyAsync(() -> {
-            Optional<User> user = userRepository.findById(uuid);
-            return user.<ResponseEntity<Object>>map(value -> ResponseEntity.ok(value.getPostedVideos())).orElseGet(() -> ResponseEntity.notFound().build());
+            User user = userRepository.findByUsername(username);
+            if (user == null) {
+                return ResponseEntity.notFound().build();
+            }
+            ProfileDTO profileDTO = new ProfileDTO(user.getUsername(), user.getProfilePicture(), userService.getPostedVideosForUser(user.getUuid()));
+            return ResponseEntity.ok(profileDTO);
         });
     }
+
+  @PostMapping("/setprofilepicture")
+  public ResponseEntity<String> setProfilePicture(@RequestParam("file") MultipartFile file, @RequestParam("uuid") UUID uuid) {
+
+    if (file.isEmpty()) {
+      return ResponseEntity.badRequest().body("File is empty");
+    }
+
+    String fileType = file.getContentType();
+    if (!"image/jpeg".equals(fileType) && !"image/png".equals(fileType)) {
+      return ResponseEntity.badRequest().body("Only JPG or PNG images are allowed");
+    }
+
+    try {
+      byte[] fileBytes = file.getBytes();
+        Optional<User> user = userRepository.findById(uuid);
+        if (user.isEmpty()) {
+          return ResponseEntity.ok("User not found");
+        }
+        user.get().setProfilePicture(fileBytes);
+        userRepository.save(user.get());
+      return ResponseEntity.ok("Profile picture uploaded successfully");
+
+    } catch (IOException e) {
+      return ResponseEntity.status(500).body("Failed to process the file");
+    }
+  }
 }
