@@ -36,6 +36,34 @@ public class BetaController {
     });
   }
 
+  @PostMapping("/get-key")
+  @Async
+  public CompletableFuture<ResponseEntity<String>> getKey(@RequestBody DiscordIdDTO discordIdDTO) {
+    return CompletableFuture.supplyAsync(() -> {
+      BetaKey key = keyRepository.findById(discordIdDTO.getDiscordId()).orElse(null);
+      if (key == null) {
+        return ResponseEntity.unprocessableEntity().body("This id doesn't have a beta key");
+      }
+
+      return ResponseEntity.ok(key.getKey());
+    });
+  }
+
+    @PostMapping("/remove-key")
+    @Async
+    public CompletableFuture<ResponseEntity<String>> removeKey(@RequestBody DiscordIdDTO discordIdDTO) {
+        return CompletableFuture.supplyAsync(() -> {
+            BetaKey key = keyRepository.findById(discordIdDTO.getDiscordId()).orElse(null);
+            if (key == null) {
+                return ResponseEntity.unprocessableEntity().body("This id doesn't have a beta key");
+            }
+
+            keyRepository.delete(key);
+            return ResponseEntity.ok("Key removed");
+        });
+    }
+
+
   @PostMapping("/is-valid")
   @Async
   public CompletableFuture<ResponseEntity<Boolean>> isValid(@RequestBody KeyDTO key) {
