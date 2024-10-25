@@ -21,15 +21,15 @@ public class BetaController {
 
   @PostMapping("/new-key")
   @Async
-  public CompletableFuture<ResponseEntity<String>> newKey(@RequestBody long discordId) {
+  public CompletableFuture<ResponseEntity<String>> newKey(@RequestBody DiscordIdDTO discordIdDTO) {
     return CompletableFuture.supplyAsync(() -> {
-      if (keyRepository.existsById(discordId)) {
+      if (keyRepository.existsById(discordIdDTO.getDiscordId())) {
         return ResponseEntity.unprocessableEntity().body("This id has already been bound to a beta key");
       }
 
       BetaKey key = new BetaKey();
       key.setKey(keyFactory.generateKey());
-      key.setDiscordId(discordId);
+      key.setDiscordId(discordIdDTO.getDiscordId());
 
       keyRepository.save(key);
       return ResponseEntity.ok(key.getKey());
@@ -38,9 +38,9 @@ public class BetaController {
 
   @PostMapping("/is-valid")
   @Async
-  public CompletableFuture<ResponseEntity<Boolean>> isValid(@RequestBody String key) {
+  public CompletableFuture<ResponseEntity<Boolean>> isValid(@RequestBody KeyDTO key) {
     return CompletableFuture.supplyAsync(() -> {
-      boolean exists = keyRepository.existsByKey(key);
+      boolean exists = keyRepository.existsByKey(key.getBetaKey());
       return ResponseEntity.ok(exists);
     });
   }
