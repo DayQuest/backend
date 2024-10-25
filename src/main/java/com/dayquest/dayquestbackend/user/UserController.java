@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -102,17 +103,22 @@ public class UserController {
   }
 
   @GetMapping("/profile/{username}")
-    @Async
-    public CompletableFuture<ResponseEntity<ProfileDTO>> getUserByUsername(@PathVariable String username) {
-        return CompletableFuture.supplyAsync(() -> {
-            User user = userRepository.findByUsername(username);
-            if (user == null) {
-                return ResponseEntity.notFound().build();
-            }
-            ProfileDTO profileDTO = new ProfileDTO(user.getUsername(), user.getProfilePicture(), user.getPostedVideos());
-            return ResponseEntity.ok(profileDTO);
-        });
-    }
+  @Async
+  @Transactional(readOnly = true)
+  public CompletableFuture<ResponseEntity<ProfileDTO>> getUserByUsername(@PathVariable String username) {
+    return CompletableFuture.supplyAsync(() -> {
+      User userWithVideos = userRepository.findByUsernameWithVideos(username);
+      if (userWithVideos == null) {
+        return ResponseEntity.notFound().build();
+      }
+      ProfileDTO profileDTO = new ProfileDTO(
+              userWithVideos.getUsername(),
+              userWithVideos.getProfilePicture(),
+              userWithVideos.getPostedVideos()
+      );
+      return ResponseEntity.ok(profileDTO);
+    });
+  }
 
   @PostMapping("/setprofilepicture")
   public ResponseEntity<String> setProfilePicture(@RequestParam("file") MultipartFile file, @RequestParam("uuid") UUID uuid) {

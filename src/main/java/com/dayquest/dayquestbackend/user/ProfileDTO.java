@@ -1,19 +1,36 @@
 package com.dayquest.dayquestbackend.user;
 
 import com.dayquest.dayquestbackend.video.Video;
+import com.dayquest.dayquestbackend.video.VideoDTO;
 
+import java.sql.SQLOutput;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ProfileDTO {
     private String username;
     private byte[] profilePicture;
-    private List<Video> videos;
+    private List<VideoDTO> videos = new ArrayList<>();
 
     public ProfileDTO(String username, byte[] profilePicture, List<Video> videos) {
         this.username = username;
         this.profilePicture = profilePicture;
-        this.videos = videos;
+        this.videos = new ArrayList<>();
+        if (videos != null) {
+            for(Video video : videos) {
+                this.videos.add(new VideoDTO(
+                        video.getTitle(),
+                        video.getDescription(),
+                        video.getUpVotes(),
+                        video.getDownVotes(),
+                        video.getUser().getUsername(),
+                        video.getFilePath(),
+                        video.getThumbnail()
+                ));
+            }
+        }
     }
+
 
     public String getUsername() {
         return username;
@@ -31,12 +48,7 @@ public class ProfileDTO {
         this.profilePicture = profilePicture;
     }
 
-    public List<Video> getVideos() {
+    public List<VideoDTO> getVideos() {
         return videos;
     }
-
-    public void setVideos(List<Video> videos) {
-        this.videos = videos;
-    }
-
 }
