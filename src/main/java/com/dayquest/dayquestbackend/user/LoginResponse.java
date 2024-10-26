@@ -4,31 +4,37 @@ import jakarta.annotation.Nullable;
 import java.util.UUID;
 
 public class LoginResponse {
-  @Nullable
-  private final UUID uuid;
+  private UUID uuid;
+  private String token;
+  private String message;
 
-  @Nullable
-  private final String sessionToken;
-  private final String message;
-
-  public LoginResponse(@Nullable UUID uuid, @Nullable String sessionToken, String message) {
+  public LoginResponse(UUID uuid, String token, String message) {
     this.uuid = uuid;
-    this.sessionToken = sessionToken;
+    this.token = token;
     this.message = message;
   }
 
+    public UUID getUuid() {
+        return uuid;
+    }
 
-  @Nullable
-  public UUID getUuid() {
-    return uuid;
+  public void setUuid(UUID uuid) {
+    this.uuid = uuid;
   }
 
-  @Nullable
-  public String getSessionToken() {
-    return sessionToken;
+  public String getToken() {
+    return token;
+  }
+
+  public void setToken(String token) {
+    this.token = token;
   }
 
   public String getMessage() {
     return message;
+  }
+
+  public void setMessage(String message) {
+    this.message = message;
   }
 }

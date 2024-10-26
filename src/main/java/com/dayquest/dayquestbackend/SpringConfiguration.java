@@ -23,8 +23,10 @@ import org.springframework.security.config.annotation.web.WebSecurityConfigurer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
@@ -45,6 +47,9 @@ public class SpringConfiguration implements WebMvcConfigurer, AsyncConfigurer {
   @Autowired
 
   private QuestService questService;
+
+  @Autowired
+  private JwtAuthenticationFilter jwtAuthFilter;
 
   @Bean
   public Cache<Integer, String> videoCache() {
@@ -96,14 +101,18 @@ public class SpringConfiguration implements WebMvcConfigurer, AsyncConfigurer {
     http
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(authorize -> authorize
-                    //Endpoint without authentication
-                    .requestMatchers("**").permitAll()
-                    //All other endpoints with authentication
+                    .requestMatchers("/api/users/register", "/api/users/login", "/api/users/auth").permitAll()
                     .anyRequest().authenticated()
-            );
+            )
+            .sessionManagement(session -> session
+                    .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
     return http.build();
-  }  @Bean
+  }
+
+  @Bean
   public BCryptPasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder();
   }

@@ -112,7 +112,7 @@ public class VideoController {
   }
 
   @Async
-  @PostMapping("/{id}/dislike")
+  @PostMapping("/{uuid}/dislike")
   public CompletableFuture<ResponseEntity<Video>> dislikeVideo(@PathVariable UUID uuid,
       @RequestBody UUID userUuid) {
     return CompletableFuture.supplyAsync(() -> {

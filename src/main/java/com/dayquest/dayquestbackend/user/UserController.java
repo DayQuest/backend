@@ -2,6 +2,8 @@ package com.dayquest.dayquestbackend.user;
 
 import java.io.IOException;
 import java.util.Optional;
+
+import com.dayquest.dayquestbackend.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +25,9 @@ public class UserController {
   @Autowired
   private UserRepository userRepository;
 
+  @Autowired
+  private JwtUtil jwtUtil;
+
   @PostMapping("/register")
   @Async
   public CompletableFuture<ResponseEntity<String>> registerUser(@RequestBody UserDTO userDTO) {
@@ -39,8 +44,7 @@ public class UserController {
 
   @PostMapping("/login")
   @Async
-  public CompletableFuture<ResponseEntity<LoginResponse>> loginUser(
-      @RequestBody LoginDTO loginDTO) {
+  public CompletableFuture<ResponseEntity<LoginResponse>> loginUser(@RequestBody LoginDTO loginDTO) {
 
     return CompletableFuture.supplyAsync(() -> {
       User user = userRepository.findByUsername(loginDTO.getUsername());
@@ -51,12 +55,15 @@ public class UserController {
 
       if (user.isBanned()) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
-            new LoginResponse(null, null, "User has been banned")
+                new LoginResponse(null, null, "User has been banned")
         );
       }
 
+      String token = jwtUtil.generateToken(user.getUuid());
+
       return ResponseEntity.ok(
-          new LoginResponse(user.getUuid(), "Unimplemented", "Login permitted"));
+              new LoginResponse(user.getUuid(), token, "Login permitted")
+      );
     });
   }
 
