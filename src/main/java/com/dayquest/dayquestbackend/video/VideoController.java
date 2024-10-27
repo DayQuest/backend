@@ -22,8 +22,6 @@ import java.util.UUID;
 @RequestMapping("/api/videos")
 public class VideoController {
 
-  private static final int PRELOAD_COUNT = 5;
-
   @Autowired
   private VideoService videoService;
 
@@ -55,7 +53,9 @@ public class VideoController {
           return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                   .body("Could not find user with that UUID");
         }
+
       String path = videoService.uploadVideo(file, title, description, user.get()).join();
+
       if (path == null) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body("Failed to upload video due to internal error");
@@ -93,11 +93,11 @@ public class VideoController {
 
 
   @Async
-  @PostMapping("/{id}/like")
+  @PostMapping("/{uuid}/like")
   public CompletableFuture<ResponseEntity<Video>> likeVideo(@PathVariable UUID uuid,
-      @RequestBody UUID userUuid) {
+      @RequestBody UuidDTO userUuid) {
     return CompletableFuture.supplyAsync(() -> {
-      Optional<User> user = userRepository.findById(userUuid);
+      Optional<User> user = userRepository.findById(UUID.fromString(userUuid.getUuid()));
       if (user.isEmpty()) {
         return ResponseEntity.notFound().build();
       }
@@ -131,7 +131,7 @@ public class VideoController {
   }
 
   @Async
-  @PostMapping("/{id}")
+  @PostMapping("/{uuid}")
   public CompletableFuture<ResponseEntity<Video>> getVideoById(@PathVariable UUID uuid) {
     return CompletableFuture.supplyAsync(() -> {
       if (videoRepository.findById(uuid).isEmpty()) {

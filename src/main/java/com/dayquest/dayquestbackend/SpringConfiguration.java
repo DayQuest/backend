@@ -101,7 +101,7 @@ public class SpringConfiguration implements WebMvcConfigurer, AsyncConfigurer {
     http
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(authorize -> authorize
-                    .requestMatchers("/api/users/register", "/api/users/login", "/api/users/auth").permitAll()
+                    .requestMatchers("/api/users/register", "/api/users/login", "/api/users/auth", "**").permitAll()
                     .anyRequest().authenticated()
             )
             .sessionManagement(session -> session

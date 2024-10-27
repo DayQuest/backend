@@ -15,7 +15,7 @@ import java.util.concurrent.CompletableFuture;
 @RequestMapping("/api/quests")
 public class QuestController {
 
-    // The static initializer block with prohibitedPatterns remains unchanged
+
 
     @Autowired
     private QuestService questService;
@@ -28,11 +28,21 @@ public class QuestController {
 
     @GetMapping
     @Async
-    public CompletableFuture<ResponseEntity<List<Quest>>> getAllQuests() {
+    public CompletableFuture<ResponseEntity<List<Quest>>> getQuests(@RequestParam(defaultValue = "0") int page) {
         return CompletableFuture.supplyAsync(() -> {
-           List<Quest> quests = questRepository.findAll();
-           Collections.shuffle(quests);
-           return ResponseEntity.ok(quests);
+            List<Quest> allQuests = questRepository.findAll();
+            Collections.shuffle(allQuests);
+
+            int pageSize = 10;
+            int startIndex = page * pageSize;
+            int endIndex = Math.min(startIndex + pageSize, allQuests.size());
+
+            if (startIndex >= allQuests.size()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            List<Quest> pagedQuests = allQuests.subList(startIndex, endIndex);
+            return ResponseEntity.ok(pagedQuests);
         });
     }
 

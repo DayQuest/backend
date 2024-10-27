@@ -13,7 +13,7 @@ public class Quest {
     private UUID uuid;
     private String title;
     private String description;
-    private int likes;  //Primitive int default value is 0
+    private int likes;
     private int dislikes;
 
     public UUID getUuid() {
