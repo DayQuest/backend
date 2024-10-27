@@ -4,6 +4,7 @@ public class UserDTO {
     private String username;
     private String email;
     private String password;
+    private String betaKey;
 
     // Constructor with correct parameters
     public UserDTO(String username, String email, String password) {
@@ -35,5 +36,13 @@ public class UserDTO {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getBetaKey() {
+        return betaKey;
+    }
+
+    public void setBetaKey(String betaKey) {
+        this.betaKey = betaKey;
     }
 }

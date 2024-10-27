@@ -1,5 +1,6 @@
 package com.dayquest.dayquestbackend.user;
 
+import com.dayquest.dayquestbackend.beta.KeyRepository;
 import com.dayquest.dayquestbackend.quest.QuestRepository;
 import com.dayquest.dayquestbackend.quest.Quest;
 import java.util.Optional;
@@ -30,13 +31,17 @@ public class UserService {
   @Autowired
   private BCryptPasswordEncoder passwordEncoder;
 
+  @Autowired
+  private KeyRepository keyRepository;
+
   private final Random random = new Random();
 
+
   @Async
-  public CompletableFuture<ResponseEntity<String>> registerUser(String username, String email, String password) {
+  public CompletableFuture<ResponseEntity<String>> registerUser(String username, String email, String password, String betaKey) {
     return CompletableFuture.supplyAsync(() -> {
       if (username == null || email == null || password == null || username.isEmpty()
-          || email.isEmpty() || password.isEmpty()) {
+          || email.isEmpty() || password.isEmpty() || betaKey == null || betaKey.isEmpty()) {
         return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
       }
 
@@ -44,11 +49,20 @@ public class UserService {
         return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("User with that name already exists");
       }
 
+        if (userRepository.findByEmail(email) != null) {
+            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("User with that email already exists");
+        }
+
+        if (keyRepository.existsByKey(betaKey)) {
+            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Invalid beta key");
+        }
+
       User newUser = new User();
       newUser.setUsername(username);
       newUser.setEmail(email);
       newUser.setPassword(passwordEncoder.encode(password));
       newUser.setUuid(UUID.randomUUID());
+      newUser.setBetaKey(betaKey);
 
       userRepository.save(newUser);
       return ResponseEntity.ok("Successfully registered new user");

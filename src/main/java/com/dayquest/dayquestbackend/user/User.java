@@ -25,6 +25,9 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    @Column(nullable = false)
+    private String betaKey;
+
     private boolean banned;
 
     @ElementCollection
@@ -69,6 +72,14 @@ public class User {
         this.dislikedVideos = new ArrayList<>();
         this.likedQuests = new ArrayList<>();
         this.likedVideos = new ArrayList<>();
+    }
+
+    public String getBetaKey() {
+        return betaKey;
+    }
+
+    public void setBetaKey(String betaKey) {
+        this.betaKey = betaKey;
     }
 
     public void addPostedVideo(Video video) {

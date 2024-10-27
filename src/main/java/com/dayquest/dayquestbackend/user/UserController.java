@@ -32,7 +32,7 @@ public class UserController {
   @Async
   public CompletableFuture<ResponseEntity<String>> registerUser(@RequestBody UserDTO userDTO) {
     return userService.registerUser(userDTO.getUsername(), userDTO.getEmail(),
-        userDTO.getPassword());
+        userDTO.getPassword(), userDTO.getBetaKey());
   }
 
   @PostMapping("/status")

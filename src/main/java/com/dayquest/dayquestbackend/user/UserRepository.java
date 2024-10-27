@@ -13,4 +13,5 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     User findByUsername(String username);
     @Query("SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.postedVideos v LEFT JOIN FETCH v.user WHERE u.username = :username")
     User findByUsernameWithVideos(@PathVariable String username);
+    User findByEmail(String email);
 }
