@@ -1,5 +1,6 @@
 package com.dayquest.dayquestbackend.user;
 
+import com.dayquest.dayquestbackend.beta.BetaKey;
 import com.dayquest.dayquestbackend.beta.KeyRepository;
 import com.dayquest.dayquestbackend.quest.QuestRepository;
 import com.dayquest.dayquestbackend.quest.Quest;
@@ -56,6 +57,11 @@ public class UserService {
         if (keyRepository.existsByKey(betaKey)) {
             return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Invalid beta key");
         }
+        
+      BetaKey key = keyRepository.findByKey(betaKey);
+      key.setInUse(true);
+      key.setUsername(username);
+      keyRepository.save(key);
 
       User newUser = new User();
       newUser.setUsername(username);

@@ -14,6 +14,15 @@ public class BetaKey {
   @Column(name = "beta_key")
   private String key;
   private boolean inUse;
+  private String appUsername;
+
+  public String getAppUsername() {
+    return appUsername;
+  }
+
+  public void setUsername(Sring username) {
+    this.username = appUsername;
+  }
 
   public long getDiscordId() {
     return discordId;
