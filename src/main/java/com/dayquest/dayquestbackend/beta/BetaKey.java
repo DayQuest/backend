@@ -20,8 +20,8 @@ public class BetaKey {
     return appUsername;
   }
 
-  public void setUsername(Sring username) {
-    this.username = appUsername;
+  public void setUsername(String username) {
+    this.appUsername = username;
   }
 
   public long getDiscordId() {
