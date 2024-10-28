@@ -57,7 +57,11 @@ public class UserService {
         if (keyRepository.existsByKey(betaKey)) {
             return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Invalid beta key");
         }
-        
+
+        if(keyRepository.findByKey(betaKey).isInUse()) {
+            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Beta key already in use");
+        }
+
       BetaKey key = keyRepository.findByKey(betaKey);
       key.setInUse(true);
       key.setUsername(username);
