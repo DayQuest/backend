@@ -81,9 +81,13 @@ public class UserController {
 
   @PostMapping("/auth")
   @Async
-  public CompletableFuture<ResponseEntity<String>> authUser(@RequestBody UUID uuid) {
+  public CompletableFuture<ResponseEntity<String>> authUser(@RequestBody UUID uuid , @RequestHeader("Authorization") String token) {
     return CompletableFuture.supplyAsync(() -> {
       if (userService.authenticateUser(uuid, null).join()) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token or uuid did not match");
+      }
+
+      if(jwtUtil.validateToken(token, uuid)) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token or uuid did not match");
       }
 
