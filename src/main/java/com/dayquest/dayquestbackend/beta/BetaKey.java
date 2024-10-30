@@ -11,24 +11,28 @@ public class BetaKey {
   @Id
   private Long discordId;
 
-  @Column(name = "beta_key")
+  @Column(name = "beta_key", nullable = false)
   private String key;
+
+  @Column(name = "in_use", nullable = false)
   private boolean inUse;
+
+  @Column(name = "app_username")
   private String appUsername;
 
   public String getAppUsername() {
     return appUsername;
   }
 
-  public void setUsername(String username) {
-    this.appUsername = username;
+  public void setUsername(String appUsername) {
+    this.appUsername = appUsername;
   }
 
-  public long getDiscordId() {
+  public Long getDiscordId() {
     return discordId;
   }
 
-  public void setDiscordId(long discordId) {
+  public void setDiscordId(Long discordId) {
     this.discordId = discordId;
   }
 
@@ -48,3 +52,4 @@ public class BetaKey {
     this.inUse = inUse;
   }
 }
+

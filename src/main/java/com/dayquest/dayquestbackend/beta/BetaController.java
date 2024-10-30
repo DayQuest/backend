@@ -30,6 +30,7 @@ public class BetaController {
       BetaKey key = new BetaKey();
       key.setKey(keyFactory.generateKey());
       key.setDiscordId(discordIdDTO.getDiscordId());
+      key.setInUse(false);
 
       keyRepository.save(key);
       return ResponseEntity.ok(key.getKey());

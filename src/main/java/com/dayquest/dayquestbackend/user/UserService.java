@@ -54,7 +54,7 @@ public class UserService {
             return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("User with that email already exists");
         }
 
-        if (keyRepository.existsByKey(betaKey)) {
+        if (!keyRepository.existsByKey(betaKey)) {
             return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Invalid beta key");
         }
 

@@ -5,6 +5,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface KeyRepository extends JpaRepository<BetaKey, Long> {
-    boolean existsByKey(String key);
-    BetaKey findByKey(String key);
+    boolean existsByKey(String betaKey);
+    BetaKey findByKey(String betaKey);
 }

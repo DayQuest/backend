@@ -7,10 +7,11 @@ public class UserDTO {
     private String betaKey;
 
     // Constructor with correct parameters
-    public UserDTO(String username, String email, String password) {
+    public UserDTO(String username, String email, String password, String betaKey) {
         this.username = username;
         this.email = email;
         this.password = password;
+        this.betaKey = betaKey;
     }
 
     // Getters and Setters
