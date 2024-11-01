@@ -9,8 +9,7 @@ import java.util.Optional;
 
 @Repository
 public interface  VideoRepository extends JpaRepository<Video, UUID> {
-    Optional<Video> findByFilePath(String filePath);
     @Query(value = "SELECT * FROM video ORDER BY RAND() LIMIT 1", nativeQuery = true)
-    Video findRandomVideo();
+    Optional<Video> findRandomVideo();
 }
 

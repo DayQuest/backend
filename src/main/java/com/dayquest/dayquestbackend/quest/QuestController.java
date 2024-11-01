@@ -58,19 +58,21 @@ public class QuestController {
 
     @PostMapping("/like")
     @Async
-    public CompletableFuture<ResponseEntity<?>> likeQuest(@RequestBody UUID uuid, @RequestBody UUID userUuid) {
+    public CompletableFuture<ResponseEntity<?>> likeQuest(@RequestBody InteractionDTO interactionDTO) {
         return CompletableFuture.supplyAsync(() -> {
-            Optional<User> user = userRepository.findById(userUuid);
-            Optional<Quest> quest = questRepository.findById(uuid);
+            Optional<User> user = userRepository.findById(interactionDTO.getUserUuid());
+            Optional<Quest> quest = questRepository.findById(interactionDTO.getUuid());
             if (user.isEmpty() || quest.isEmpty()) {
                 return ResponseEntity.notFound().build();
             }
 
-            if (user.get().getLikedQuests().contains(uuid)) {
+            if (user.get().getLikedQuests().contains(interactionDTO.getUuid())) {
                 return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Already liked");
             }
 
-            user.get().getLikedQuests().add(uuid);
+            user.get().getLikedQuests().add(interactionDTO.getUuid());
+            quest.get().setLikes(quest.get().getLikes() + 1);
+            questRepository.save(quest.get());
             userRepository.save(user.get());
             return ResponseEntity.ok("Successfully liked quest");
         });
@@ -80,19 +82,21 @@ public class QuestController {
     //TODO: Refactor this code dupe
     @PostMapping("/dislike")
     @Async
-    public CompletableFuture<ResponseEntity<?>> dislikeQuest(@RequestBody UUID uuid, @RequestBody UUID userUuid) {
+    public CompletableFuture<ResponseEntity<?>> dislikeQuest(@RequestBody InteractionDTO interactionDTO) {
         return CompletableFuture.supplyAsync(() -> {
-            Optional<User> user = userRepository.findById(userUuid);
-            Optional<Quest> quest = questRepository.findById(uuid);
+            Optional<User> user = userRepository.findById(interactionDTO.getUserUuid());
+            Optional<Quest> quest = questRepository.findById(interactionDTO.getUuid());
             if (user.isEmpty() || quest.isEmpty()) {
                 return ResponseEntity.notFound().build();
             }
 
-            if (user.get().getDislikedQuests().contains(uuid)) {
+            if (user.get().getDislikedQuests().contains(interactionDTO.getUuid())) {
                 return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Already disliked");
             }
 
-            user.get().getDislikedVideos().add(uuid);
+            user.get().getDislikedVideos().add(interactionDTO.getUuid());
+            quest.get().setDislikes(quest.get().getDislikes() + 1);
+            questRepository.save(quest.get());
             userRepository.save(user.get());
             return ResponseEntity.ok("Successfully disliked quest");
         });

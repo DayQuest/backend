@@ -1,11 +1,16 @@
 package com.dayquest.dayquestbackend.user;
 
 import java.io.IOException;
+import java.util.Base64;
 import java.util.Optional;
 
 import com.dayquest.dayquestbackend.JwtUtil;
+import org.bytedeco.opencv.presets.opencv_core;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.annotation.Transactional;
@@ -122,14 +127,43 @@ public class UserController {
       if (userWithVideos == null) {
         return ResponseEntity.notFound().build();
       }
+      String profilePictureLink = "http://77.90.21.53:8010/api/users/profilepicture/" + username;
       ProfileDTO profileDTO = new ProfileDTO(
               userWithVideos.getUsername(),
-              userWithVideos.getProfilePicture(),
+              profilePictureLink,
               userWithVideos.getPostedVideos()
       );
       return ResponseEntity.ok(profileDTO);
     });
   }
+
+  @GetMapping("/profilepicture/{username}")
+  @Async
+  public CompletableFuture<ResponseEntity<ByteArrayResource>> getDecodedImage(@PathVariable("username") String username) {
+    return CompletableFuture.supplyAsync(() -> {
+      try {
+        User user = userRepository.findByUsername(username);
+        if (user == null) {
+          return ResponseEntity.notFound().build();
+        }
+
+        byte[] imageBytes = user.getProfilePicture();
+        ByteArrayResource resource = new ByteArrayResource(imageBytes);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.IMAGE_JPEG);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .contentLength(imageBytes.length)
+                .body(resource);
+
+      } catch (IllegalArgumentException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+      }
+    });
+  }
+
 
   @PostMapping("/setprofilepicture")
   public ResponseEntity<String> setProfilePicture(@RequestParam("file") MultipartFile file, @RequestParam("uuid") UUID uuid) {

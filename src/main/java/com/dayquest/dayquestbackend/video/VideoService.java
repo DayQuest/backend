@@ -22,6 +22,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
@@ -92,10 +94,10 @@ public class VideoService {
         return CompletableFuture.supplyAsync(() -> {
             long count = videoRepository.count();
             if (count == 0) {
-                throw new RuntimeException("No videos available");
+                return null;
             }
-            long randomId = new Random().nextLong(count);
-            return videoRepository.findAll().get((int) randomId);
+
+            return videoRepository.findRandomVideo().orElseThrow(() -> new RuntimeException("Failed to find random video"));
         });
     }
 

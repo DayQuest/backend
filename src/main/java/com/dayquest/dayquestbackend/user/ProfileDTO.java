@@ -9,10 +9,10 @@ import java.util.List;
 
 public class ProfileDTO {
     private String username;
-    private byte[] profilePicture;
+    private String profilePicture;
     private List<VideoDTO> videos = new ArrayList<>();
 
-    public ProfileDTO(String username, byte[] profilePicture, List<Video> videos) {
+    public ProfileDTO(String username, String profilePicture, List<Video> videos) {
         this.username = username;
         this.profilePicture = profilePicture;
         this.videos = new ArrayList<>();
@@ -40,13 +40,6 @@ public class ProfileDTO {
         this.username = username;
     }
 
-    public byte[] getProfilePicture() {
-        return profilePicture;
-    }
-
-    public void setProfilePicture(byte[] profilePicture) {
-        this.profilePicture = profilePicture;
-    }
 
     public List<VideoDTO> getVideos() {
         return videos;

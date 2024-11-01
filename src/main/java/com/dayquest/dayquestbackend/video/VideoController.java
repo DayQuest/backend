@@ -75,20 +75,18 @@ public class VideoController {
   @Async
   @PostMapping("/next-vid")
   public CompletableFuture<ResponseEntity<?>> nextVideo(@RequestBody UUID userUuid) {
-    return CompletableFuture.supplyAsync(() -> {
-      Optional<User> user = userRepository.findById(userUuid);
-      if (user.isEmpty()) {
-        return ResponseEntity.notFound().build();
-      }
-
-      //TODO: Use rust algorythm service
-      Video video = videoService.getRandomVideo().join();
-      if (video == null) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("No video found");
-      }
-
-      return ResponseEntity.ok(video);
-    });
+    return userRepository.findById(userUuid)
+            .map(user -> videoService.getRandomVideo()
+                    .thenApply(video -> {
+                      if (video == null) {
+                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .body("No video found");
+                      }
+                      VideoDTO videoDTO = new VideoDTO(video.getTitle(), video.getDescription(), video.getUpVotes(), video.getDownVotes(), video.getUser().getUsername(), video.getFilePath(), null);
+                      return ResponseEntity.ok(videoDTO);
+                    }))
+            .orElseGet(() -> CompletableFuture.completedFuture(
+                    ResponseEntity.notFound().build()));
   }
 
 
