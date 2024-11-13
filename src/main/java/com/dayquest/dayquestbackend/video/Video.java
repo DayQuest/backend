@@ -2,6 +2,8 @@ package com.dayquest.dayquestbackend.video;
 
 import com.dayquest.dayquestbackend.user.User;
 import jakarta.persistence.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import java.util.UUID;
 
@@ -14,9 +16,6 @@ public class Video {
 
     private String description;
     private String filePath;
-
-    @ElementCollection
-    private String[] hashtags;
 
     private int upVotes;
     private int downVotes;
@@ -75,14 +74,6 @@ public class Video {
 
     public void setFilePath(String filePath) {
         this.filePath = filePath;
-    }
-
-    public String[] getHashtags() {
-        return hashtags;
-    }
-
-    public void setHashtags(String[] hashtags) {
-        this.hashtags = hashtags;
     }
 
     public int getUpVotes() {

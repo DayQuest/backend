@@ -83,7 +83,7 @@ public class UserService {
   public CompletableFuture<Boolean> authenticateUser(UUID uuid, String token) {
     return CompletableFuture.supplyAsync(() -> {
       Optional<User> user = userRepository.findById(uuid);
-      return user.isPresent() && !user.get().isBanned(); //Add token checker
+      return user.isPresent() && !user.get().isBanned();
     });
   }
 

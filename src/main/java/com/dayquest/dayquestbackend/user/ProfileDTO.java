@@ -25,7 +25,7 @@ public class ProfileDTO {
                         video.getDownVotes(),
                         video.getUser().getUsername(),
                         video.getFilePath(),
-                        video.getThumbnail()
+                        "http://77.90.21.53:8010/api/videos/thumbnail/" + video.getUuid().toString()
                 ));
             }
         }
@@ -40,6 +40,9 @@ public class ProfileDTO {
         this.username = username;
     }
 
+    public String getProfilePicture() {
+        return profilePicture;
+    }
 
     public List<VideoDTO> getVideos() {
         return videos;

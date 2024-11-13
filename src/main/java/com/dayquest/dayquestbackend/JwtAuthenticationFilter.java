@@ -1,4 +1,4 @@
-package com.dayquest.dayquestbackend;
+/*package com.dayquest.dayquestbackend;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -52,3 +52,4 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 }
+ */

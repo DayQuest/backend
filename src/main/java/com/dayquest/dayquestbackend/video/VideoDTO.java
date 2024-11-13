@@ -7,7 +7,7 @@ public class VideoDTO {
     private Long downVotes;
     private String username;
     private String filePath;
-    private byte[] thumbnail;
+    private String thumbnail;
 
     // Constructor
     public VideoDTO(
@@ -17,7 +17,7 @@ public class VideoDTO {
             long downVotes,
             String username,
             String filePath,
-            byte[] thumbnail) {
+            String thumbnail) {
         this.title = title;
         this.description = description;
         this.upVotes = upVotes;
@@ -33,5 +33,5 @@ public class VideoDTO {
     public Long getDownVotes() { return downVotes; }
     public String getUsername() { return username; }
     public String getFilePath() { return filePath; }
-    public byte[] getThumbnail() { return thumbnail; }
+    public String getThumbnail() { return thumbnail; }
 }

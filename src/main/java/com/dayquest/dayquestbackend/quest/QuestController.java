@@ -104,13 +104,17 @@ public class QuestController {
 
     @PostMapping("/get-quest")
     @Async
-    public CompletableFuture<ResponseEntity<Quest>> getQuest(@RequestBody UUID uuid) {
+    public CompletableFuture<ResponseEntity<String>> getQuest(@RequestBody UUID uuid) {
         return CompletableFuture.supplyAsync(() -> {
-          if (questRepository.findById(uuid).isEmpty()) {
-              return ResponseEntity.notFound().build();
-          }
-
-          return ResponseEntity.ok(questRepository.findById(uuid).get());
+          Optional<User> user = userRepository.findById(uuid);
+            if (user.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            Quest quest = questRepository.findById(user.get().getDailyQuest().getUuid()).orElse(null);
+            if (quest == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(quest.getDescription());
         });
     }
 }

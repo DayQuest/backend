@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
 
 import org.springframework.scheduling.annotation.Async;
@@ -137,6 +138,32 @@ public class VideoController {
       }
 
       return ResponseEntity.ok(videoRepository.findById(uuid).get());
+    });
+  }
+
+  @GetMapping("/thumbnail/{uuid}")
+  @Async
+  public CompletableFuture<ResponseEntity<ByteArrayResource>> getDecodedImage(@PathVariable("uuid") String uuid) {
+    return CompletableFuture.supplyAsync(() -> {
+      try {
+        Optional<Video> videoOptional = videoRepository.findById(UUID.fromString(uuid));
+        if (videoOptional.isEmpty() || videoOptional.get().getThumbnail() == null) {
+          return ResponseEntity.noContent().build();
+        }
+
+        byte[] imageBytes = videoOptional.get().getThumbnail();
+        ByteArrayResource resource = new ByteArrayResource(imageBytes);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.IMAGE_JPEG);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .contentLength(imageBytes.length)
+                .body(resource);
+      } catch (IllegalArgumentException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+      }
     });
   }
 }
