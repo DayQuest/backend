@@ -71,7 +71,7 @@ public class VideoService {
 
             video.get().setUpVotes(video.get().getUpVotes() + 1);
             videoRepository.save(video.get());
-            return ResponseEntity.ok(video.get());
+            return ResponseEntity.ok().build();
         });
     }
 
@@ -85,7 +85,7 @@ public class VideoService {
 
             video.get().setDownVotes(video.get().getDownVotes() + 1);
             videoRepository.save(video.get());
-            return ResponseEntity.ok(video.get());
+            return ResponseEntity.ok().build();
         });
     }
 
@@ -131,11 +131,11 @@ public class VideoService {
                     video.setDescription(description);
                     video.setFilePath(fileName.replace(".mp4", ""));
                     video.setUser(managedUser);
+                    video.setQuestUuid(managedUser.getDailyQuest().getUuid());
 
                     managedUser.addPostedVideo(video);
 
                     userRepository.save(managedUser);
-                    videoRepository.save(video);
 
                     return fileName;
                 });

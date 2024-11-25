@@ -16,6 +16,7 @@ public class Video {
 
     private String description;
     private String filePath;
+    private UUID questUuid;
 
     private int upVotes;
     private int downVotes;
@@ -90,5 +91,13 @@ public class Video {
 
     public void setDownVotes(int downVotes) {
         this.downVotes = downVotes;
+    }
+
+    public UUID getQuestUuid() {
+        return questUuid;
+    }
+
+    public void setQuestUuid(UUID questUuid) {
+        this.questUuid = questUuid;
     }
 }

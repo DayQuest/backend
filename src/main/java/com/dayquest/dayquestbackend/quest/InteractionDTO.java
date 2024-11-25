@@ -23,4 +23,3 @@ public class InteractionDTO {
         this.userUuid = userUuid;
     }
 }
-

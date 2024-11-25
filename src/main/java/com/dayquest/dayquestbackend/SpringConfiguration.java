@@ -48,8 +48,8 @@ public class SpringConfiguration implements WebMvcConfigurer, AsyncConfigurer {
 
   private QuestService questService;
 
-  //@Autowired
-  //private JwtAuthenticationFilter jwtAuthFilter;
+  @Autowired
+  private JwtAuthenticationFilter jwtAuthFilter;
 
   @Bean
   public Cache<Integer, String> videoCache() {
@@ -103,11 +103,11 @@ public class SpringConfiguration implements WebMvcConfigurer, AsyncConfigurer {
             .authorizeHttpRequests(authorize -> authorize
                     .requestMatchers("/api/users/register", "/api/users/login", "/api/users/auth", "**").permitAll()
                     .anyRequest().authenticated()
-            );
-           // .sessionManagement(session -> session
-             //       .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-           // )
-           // .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+            )
+            .sessionManagement(session -> session
+                    .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
     return http.build();
   }

@@ -1,5 +1,6 @@
 package com.dayquest.dayquestbackend.user;
 
+import com.dayquest.dayquestbackend.JwtUtil;
 import com.dayquest.dayquestbackend.beta.BetaKey;
 import com.dayquest.dayquestbackend.beta.KeyRepository;
 import com.dayquest.dayquestbackend.quest.QuestRepository;
@@ -9,6 +10,7 @@ import java.util.Optional;
 import com.dayquest.dayquestbackend.video.Video;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -28,6 +30,9 @@ public class UserService {
 
   @Autowired
   private QuestRepository questRepository;
+
+  @Autowired
+  private JwtUtil jwtUtil;
 
   @Autowired
   private BCryptPasswordEncoder passwordEncoder;
@@ -73,9 +78,9 @@ public class UserService {
       newUser.setPassword(passwordEncoder.encode(password));
       newUser.setUuid(UUID.randomUUID());
       newUser.setBetaKey(betaKey);
-
       userRepository.save(newUser);
       return ResponseEntity.ok("Successfully registered new user");
+
     });
   }
 
@@ -83,7 +88,13 @@ public class UserService {
   public CompletableFuture<Boolean> authenticateUser(UUID uuid, String token) {
     return CompletableFuture.supplyAsync(() -> {
       Optional<User> user = userRepository.findById(uuid);
-      return user.isPresent() && !user.get().isBanned();
+      if(user.isEmpty() || user.get().isBanned()) {
+        return false;
+      }
+      if(jwtUtil.validateToken(token)) {
+        return jwtUtil.extractUuid(token).equals(uuid);
+      }
+        return false;
     });
   }
 

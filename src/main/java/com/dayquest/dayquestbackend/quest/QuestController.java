@@ -94,7 +94,7 @@ public class QuestController {
                 return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Already disliked");
             }
 
-            user.get().getDislikedVideos().add(interactionDTO.getUuid());
+            user.get().getDislikedQuests().add(interactionDTO.getUuid());
             quest.get().setDislikes(quest.get().getDislikes() + 1);
             questRepository.save(quest.get());
             userRepository.save(user.get());

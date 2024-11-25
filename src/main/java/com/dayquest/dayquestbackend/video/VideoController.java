@@ -1,5 +1,7 @@
 package com.dayquest.dayquestbackend.video;
 
+import com.dayquest.dayquestbackend.quest.Quest;
+import com.dayquest.dayquestbackend.quest.QuestRepository;
 import com.dayquest.dayquestbackend.user.User;
 
 import com.dayquest.dayquestbackend.user.UserRepository;
@@ -34,6 +36,8 @@ public class VideoController {
 
   @Autowired
   private Cache<Integer, String> videoCache;
+    @Autowired
+    private QuestRepository questRepository;
 
   @Async
   @GetMapping
@@ -83,13 +87,17 @@ public class VideoController {
                         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                                 .body("No video found");
                       }
-                      VideoDTO videoDTO = new VideoDTO(video.getTitle(), video.getDescription(), video.getUpVotes(), video.getDownVotes(), video.getUser().getUsername(), video.getFilePath(), null);
+                      Optional<Quest> quest = questRepository.findById(video.getQuestUuid());
+                      VideoDTO videoDTO = new VideoDTO(video.getTitle(), video.getDescription(), video.getUpVotes(), video.getDownVotes(), video.getUser().getUsername(), video.getFilePath(), null, quest.orElse(null), video.getUuid());
+                      if(user.getLikedVideos().contains(video.getUuid())) {
+                          videoDTO.setLiked(true);
+                      } else if(user.getDislikedVideos().contains(video.getUuid())) {
+                          videoDTO.setDisliked(true);
+                      }
                       return ResponseEntity.ok(videoDTO);
                     }))
-            .orElseGet(() -> CompletableFuture.completedFuture(
-                    ResponseEntity.notFound().build()));
+            .orElseGet(() -> CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("User not found")));
   }
-
 
   @Async
   @PostMapping("/{uuid}/like")
@@ -105,7 +113,12 @@ public class VideoController {
         return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
       }
 
+      if(user.get().getDislikedVideos().contains(uuid)) {
+        user.get().getDislikedVideos().remove(uuid);
+      }
+
       user.get().getLikedVideos().add(uuid);
+      userRepository.save(user.get());
       return videoService.likeVideo(uuid).join();
     });
   }
@@ -124,7 +137,12 @@ public class VideoController {
         return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
       }
 
-      user.get().getDislikedQuests().add(uuid);
+        if(user.get().getLikedVideos().contains(uuid)) {
+            user.get().getLikedVideos().remove(uuid);
+        }
+
+      user.get().getDislikedVideos().add(uuid);
+        userRepository.save(user.get());
       return videoService.dislikeVideo(uuid).join();
     });
   }
