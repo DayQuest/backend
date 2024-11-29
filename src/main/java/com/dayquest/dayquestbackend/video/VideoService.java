@@ -12,6 +12,10 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+
+import com.dayquest.dayquestbackend.streak.Streak;
+import com.dayquest.dayquestbackend.streak.StreakRepository;
+import com.dayquest.dayquestbackend.streak.StreakService;
 import com.dayquest.dayquestbackend.user.User;
 import com.dayquest.dayquestbackend.user.UserRepository;
 import jakarta.transaction.Transactional;
@@ -50,6 +54,12 @@ public class VideoService {
 
     @Autowired
     private PlatformTransactionManager transactionManager;
+
+    @Autowired
+    private StreakService streakService;
+
+    @Autowired
+    private StreakRepository streakRepository;
 
     private final TransactionTemplate transactionTemplate;
 
@@ -137,6 +147,12 @@ public class VideoService {
 
                     userRepository.save(managedUser);
 
+                    Streak streak = streakRepository.findByUserId(managedUser.getUuid());
+                    if (streak == null) {
+                        streakService.createStreak(managedUser.getUuid());
+                    } else {
+                        streakService.updateStreak(managedUser.getUuid());
+                    }
                     return fileName;
                 });
 

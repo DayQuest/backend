@@ -35,8 +35,8 @@ public class QuestService {
                 return allQuests;
             }
 
-            int top10PercentCount = Math.max(1, (int) Math.ceil(allQuests.size() * 0.1));
-            return allQuests.subList(0, top10PercentCount);
+            int top40PercentCount = Math.max(1, (int) Math.ceil(allQuests.size() * 0.4));
+            return allQuests.subList(0, top40PercentCount);
         });
     }
 }

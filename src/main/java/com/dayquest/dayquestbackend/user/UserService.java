@@ -10,6 +10,7 @@ import com.dayquest.dayquestbackend.quest.Quest;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+import com.dayquest.dayquestbackend.quest.QuestService;
 import com.dayquest.dayquestbackend.video.Video;
 import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
@@ -47,6 +48,8 @@ public class UserService {
     private EmailService emailService;
 
   private final Random random = new Random();
+    @Autowired
+    private QuestService questService;
 
 
   @Async
@@ -77,6 +80,8 @@ public class UserService {
       key.setInUse(true);
       key.setUsername(username);
       keyRepository.save(key);
+      List<Quest> topQuests = questService.getTop10PercentQuests().join();
+      Quest randomQuest = topQuests.get(random.nextInt(topQuests.size()));
 
       User newUser = new User();
       newUser.setUsername(username);
@@ -88,6 +93,7 @@ public class UserService {
       newUser.setVerificationCodeExpiresAt(LocalDateTime.now().plusHours(1));
       newUser.setEnabled(false);
       sendVerificationEmail(newUser);
+      newUser.setDailyQuest(randomQuest);
       userRepository.save(newUser);
       return ResponseEntity.ok("Successfully registered new user");
 
@@ -114,7 +120,11 @@ public class UserService {
 
       List<User> allUsers = userRepository.findAll();
       for (User user : allUsers) {
+        Quest lastQuest = user.getDailyQuest();
         Quest randomQuest = topQuests.get(random.nextInt(topQuests.size()));
+        while (randomQuest.equals(lastQuest) && topQuests.size() > 1) {
+          randomQuest = topQuests.get(random.nextInt(topQuests.size()));
+        }
         user.setDailyQuest(randomQuest);
         userRepository.save(user);
       }
@@ -175,9 +185,9 @@ public class UserService {
     }
   }
 
-  private void sendVerificationEmail(User user) { //TODO: Update with company logo
+  private void sendVerificationEmail(User user) {
     String subject = "Account Verification";
-    String verificationCode = "VERIFICATION CODE " + user.getVerificationCode();
+    String verificationCode = user.getVerificationCode();
     String htmlMessage = "<html>"
             + "<body style=\"font-family: Arial, sans-serif;\">"
             + "<div style=\"background-color: #f5f5f5; padding: 20px;\">"
