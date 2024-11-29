@@ -92,6 +92,13 @@ public class UserController {
         return userService.verifyAccount(token);
     }
 
+    @PostMapping("/resendcode")
+    @Async
+    public CompletableFuture<ResponseEntity<String>> resendVerificationCode(@RequestBody String email) {
+        userService.resendVerificationCode(email);
+        return CompletableFuture.completedFuture(ResponseEntity.ok("Verification code resent"));
+    }
+
 
  /* @PostMapping("/ban")
   @Async
