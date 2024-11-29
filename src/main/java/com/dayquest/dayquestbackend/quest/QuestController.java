@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -28,6 +30,7 @@ public class QuestController {
 
     @GetMapping
     @Async
+    @PreAuthorize("isAuthenticated()")
     public CompletableFuture<ResponseEntity<List<Quest>>> getQuests(@RequestParam(defaultValue = "0") int page) {
         return CompletableFuture.supplyAsync(() -> {
             List<Quest> allQuests = questRepository.findAll();
@@ -70,6 +73,11 @@ public class QuestController {
                 return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Already liked");
             }
 
+            if (user.get().getDislikedQuests().contains(interactionDTO.getUuid())) {
+                user.get().getDislikedQuests().remove(interactionDTO.getUuid());
+                quest.get().setDislikes(quest.get().getDislikes() - 1);
+            }
+
             user.get().getLikedQuests().add(interactionDTO.getUuid());
             quest.get().setLikes(quest.get().getLikes() + 1);
             questRepository.save(quest.get());
@@ -92,6 +100,11 @@ public class QuestController {
 
             if (user.get().getDislikedQuests().contains(interactionDTO.getUuid())) {
                 return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Already disliked");
+            }
+
+            if (user.get().getLikedQuests().contains(interactionDTO.getUuid())) {
+                user.get().getLikedQuests().remove(interactionDTO.getUuid());
+                quest.get().setLikes(quest.get().getLikes() - 1);
             }
 
             user.get().getDislikedQuests().add(interactionDTO.getUuid());

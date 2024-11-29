@@ -1,10 +1,12 @@
 package com.dayquest.dayquestbackend.video;
 
+import com.dayquest.dayquestbackend.comment.Comment;
 import com.dayquest.dayquestbackend.user.User;
 import jakarta.persistence.*;
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
 
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity

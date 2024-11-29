@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -14,4 +15,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     @Query("SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.postedVideos v LEFT JOIN FETCH v.user WHERE u.username = :username")
     User findByUsernameWithVideos(@PathVariable String username);
     User findByEmail(String email);
+    Optional<User> findByEmailIgnoreCase(String email);
+    User findByVerificationCode(String verificationCode);
 }

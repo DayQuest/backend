@@ -105,6 +105,7 @@ public class VideoController {
       @RequestBody UuidDTO userUuid) {
     return CompletableFuture.supplyAsync(() -> {
       Optional<User> user = userRepository.findById(UUID.fromString(userUuid.getUuid()));
+      Optional<Video> video = videoRepository.findById(uuid);
       if (user.isEmpty()) {
         return ResponseEntity.notFound().build();
       }
@@ -115,6 +116,8 @@ public class VideoController {
 
       if(user.get().getDislikedVideos().contains(uuid)) {
         user.get().getDislikedVideos().remove(uuid);
+        video.get().setDownVotes(video.get().getDownVotes() - 1);
+        videoRepository.save(video.get());
       }
 
       user.get().getLikedVideos().add(uuid);
@@ -129,7 +132,8 @@ public class VideoController {
       @RequestBody UUID userUuid) {
     return CompletableFuture.supplyAsync(() -> {
       Optional<User> user = userRepository.findById(userUuid);
-      if (user.isEmpty()) {
+      Optional<Video> video = videoRepository.findById(uuid);
+      if (user.isEmpty() || video.isEmpty()) {
         return ResponseEntity.notFound().build();
       }
 
@@ -139,6 +143,9 @@ public class VideoController {
 
         if(user.get().getLikedVideos().contains(uuid)) {
             user.get().getLikedVideos().remove(uuid);
+            video.get().setUpVotes(video.get().getUpVotes() - 1);
+            videoRepository.save(video.get());
+
         }
 
       user.get().getDislikedVideos().add(uuid);

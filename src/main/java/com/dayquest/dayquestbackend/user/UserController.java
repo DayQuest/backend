@@ -4,12 +4,10 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Base64;
 import java.util.Optional;
 
-import com.dayquest.dayquestbackend.JwtUtil;
+import com.dayquest.dayquestbackend.JwtService;
 import jakarta.validation.Valid;
-import org.bytedeco.opencv.presets.opencv_core;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
@@ -17,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -39,8 +38,9 @@ public class UserController {
   @Autowired
   private BCryptPasswordEncoder passwordEncoder;
 
-  @Autowired
-  private JwtUtil jwtUtil;
+    @Autowired
+    private JwtService jwtService;
+
 
   @PostMapping("/register")
   @Async
@@ -62,7 +62,8 @@ public class UserController {
       User user = userRepository.findByUsername(loginDTO.getUsername());
 
       if (user == null) {
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new LoginResponse(null, null, "User not found"));
       }
 
       if (user.isBanned()) {
@@ -75,10 +76,22 @@ public class UserController {
                 .body(new LoginResponse(null, null, "Invalid password"));
       }
 
-      String token = jwtUtil.generateToken(user.getUuid());
-      return ResponseEntity.ok(new LoginResponse(user.getUuid(), token, "Login permitted"));
+      if(!user.isEnabled()) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new LoginResponse(null, null, "User not verified"));
+      }
+
+      String token = jwtService.generateToken(user);
+
+      return ResponseEntity.ok(new LoginResponse(user.getUuid(), token, "Login successful"));
     });
   }
+
+    @PostMapping("/verify")
+    public ResponseEntity<String> verifyUser(@RequestBody String token) {
+        return userService.verifyAccount(token);
+    }
+
 
  /* @PostMapping("/ban")
   @Async
@@ -95,8 +108,12 @@ public class UserController {
   @PostMapping("/auth")
   @Async
   public CompletableFuture<ResponseEntity<String>> authUser(@RequestBody UUID uuid , @RequestHeader("Authorization") String token) {
+    return auth(uuid, token);
+  }
+
+  private CompletableFuture<ResponseEntity<String>> auth(UUID uuid, String token) {
     return CompletableFuture.supplyAsync(() -> {
-      if(userService.authenticateUser(uuid, token).join()) {
+      if (userService.authenticateUser(uuid, token).join()) {
         return ResponseEntity.ok("User authenticated");
       } else {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
@@ -202,6 +219,7 @@ public class UserController {
       return ResponseEntity.status(500).body("Failed to process the file");
     }
   }
+
 
   public byte[] compressImage(MultipartFile originalFile) throws IOException {
     BufferedImage originalImage = ImageIO.read(originalFile.getInputStream());

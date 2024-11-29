@@ -2,7 +2,11 @@ package com.dayquest.dayquestbackend.user;
 import com.dayquest.dayquestbackend.quest.Quest;
 import com.dayquest.dayquestbackend.video.Video;
 import jakarta.persistence.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.ArrayList;
@@ -10,7 +14,7 @@ import java.util.ArrayList;
 
 @Entity
 @Table(name = "users")
-public class User {
+public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -46,6 +50,19 @@ public class User {
     @CollectionTable(name = "liked_videos", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "video_id")
     private List<UUID> likedVideos;
+
+    @ElementCollection
+    private List<UUID> followedUsers;
+
+    @Column(name = "verification_code")
+    private String verificationCode;
+
+    @Column(name = "verification_expiration")
+    private LocalDateTime verificationCodeExpiresAt;
+
+    private boolean enabled;
+
+    private int followers;
 
     @ManyToOne
     @JoinColumn(name = "daily_quest_id")
@@ -152,6 +169,22 @@ public class User {
         this.dislikedVideos = dislikedVideos;
     }
 
+    public List<UUID> getFollowedUsers() {
+        return followedUsers;
+    }
+
+    public void setFollowedUsers(List<UUID> followedUsers) {
+        this.followedUsers = followedUsers;
+    }
+
+    public int getFollowers() {
+        return followers;
+    }
+
+    public void setFollowers(int followers) {
+        this.followers = followers;
+    }
+
     public List<UUID> getLikedQuests() {
         return likedQuests;
     }
@@ -174,5 +207,50 @@ public class User {
 
     public void setDailyQuest(Quest dailyQuest) {
         this.dailyQuest = dailyQuest;
+    }
+
+    public String getVerificationCode() {
+        return verificationCode;
+    }
+
+    public void setVerificationCode(String verificationCode) {
+        this.verificationCode = verificationCode;
+    }
+
+    public LocalDateTime getVerificationCodeExpiresAt() {
+        return verificationCodeExpiresAt;
+    }
+
+    public void setVerificationCodeExpiresAt(LocalDateTime verificationCodeExpiresAt) {
+        this.verificationCodeExpiresAt = verificationCodeExpiresAt;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of();
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return enabled;
     }
 }
