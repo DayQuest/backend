@@ -10,9 +10,14 @@ import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.http.*;
 
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.task.DelegatingSecurityContextAsyncTaskExecutor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,6 +25,10 @@ import com.github.benmanes.caffeine.cache.Cache;
 
 import java.util.List;
 import java.util.UUID;
+import java.security.Principal;
+import java.util.concurrent.Executor;
+
+import org.slf4j.Logger;
 
 @RestController
 @RequestMapping("/api/videos")
@@ -38,6 +47,9 @@ public class VideoController {
   private Cache<Integer, String> videoCache;
     @Autowired
     private QuestRepository questRepository;
+
+  @Autowired
+  private AsyncTaskExecutor delegatingSecurityContextAsyncTaskExecutor;
 
   @Async
   @GetMapping
@@ -99,32 +111,42 @@ public class VideoController {
             .orElseGet(() -> CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("User not found")));
   }
 
-  @Async
   @PostMapping("/{uuid}/like")
-  public CompletableFuture<ResponseEntity<Video>> likeVideo(@PathVariable UUID uuid,
-      @RequestBody UuidDTO userUuid) {
+  @Async
+  public CompletableFuture<ResponseEntity<Video>> likeVideo(
+          @PathVariable UUID uuid,
+          @RequestBody UuidDTO userUuid) {
+
     return CompletableFuture.supplyAsync(() -> {
-      Optional<User> user = userRepository.findById(UUID.fromString(userUuid.getUuid()));
-      Optional<Video> video = videoRepository.findById(uuid);
-      if (user.isEmpty()) {
-        return ResponseEntity.notFound().build();
-      }
+      try {
+        Optional<User> user = userRepository.findById(UUID.fromString(userUuid.getUuid()));
+        Optional<Video> video = videoRepository.findById(uuid);
 
-      if (user.get().getLikedVideos().contains(uuid)) {
-        return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
-      }
+        // Verify the user matches the authenticated user
+        if (user.isEmpty()) {
+          return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
-      if(user.get().getDislikedVideos().contains(uuid)) {
-        user.get().getDislikedVideos().remove(uuid);
-        video.get().setDownVotes(video.get().getDownVotes() - 1);
-        videoRepository.save(video.get());
-      }
+        if (user.get().getLikedVideos().contains(uuid)) {
+          return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
+        }
 
-      user.get().getLikedVideos().add(uuid);
-      userRepository.save(user.get());
-      return videoService.likeVideo(uuid).join();
-    });
+        if (user.get().getDislikedVideos().contains(uuid)) {
+          user.get().getDislikedVideos().remove(uuid);
+          video.get().setDownVotes(video.get().getDownVotes() - 1);
+          videoRepository.save(video.get());
+        }
+
+        user.get().getLikedVideos().add(uuid);
+        userRepository.save(user.get());
+        return videoService.likeVideo(uuid).join();
+      } catch (Exception e) {
+        System.out.println(e.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+      }
+    }, delegatingSecurityContextAsyncTaskExecutor);
   }
+
 
   @Async
   @PostMapping("/{uuid}/dislike")

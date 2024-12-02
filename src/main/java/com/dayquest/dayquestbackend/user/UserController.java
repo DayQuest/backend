@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.Optional;
 
 import com.dayquest.dayquestbackend.JwtService;
+import com.dayquest.dayquestbackend.streak.StreakService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
@@ -40,6 +41,8 @@ public class UserController {
 
     @Autowired
     private JwtService jwtService;
+    @Autowired
+    private StreakService streakService;
 
 
   @PostMapping("/register")
@@ -51,7 +54,6 @@ public class UserController {
 
   @PostMapping("/status")
   public ResponseEntity<Object> status() {
-    //TODO: Implement, documentation
     return ResponseEntity.ok().build();
   }
 
@@ -121,6 +123,7 @@ public class UserController {
   private CompletableFuture<ResponseEntity<String>> auth(UUID uuid, String token) {
     return CompletableFuture.supplyAsync(() -> {
       if (userService.authenticateUser(uuid, token).join()) {
+        streakService.checkStreak(uuid);
         return ResponseEntity.ok("User authenticated");
       } else {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");

@@ -20,8 +20,8 @@ import java.util.function.Function;
 
 @Service
 public class JwtService {
-
   private final UserRepository userRepository;
+
   @Value("${jwt.secret}")
   private String secretKey;
 
@@ -33,7 +33,13 @@ public class JwtService {
   }
 
   public String extractUsername(String token) {
-    return extractClaim(token, Claims::getSubject);
+    try {
+      return extractClaim(token, Claims::getSubject);
+    } catch (Exception e) {
+      // Log the specific token parsing error
+      System.out.println("Token parsing error: " + e.getMessage());
+      throw e;
+    }
   }
 
   public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
@@ -59,24 +65,30 @@ public class JwtService {
             .compact();
   }
 
-  public boolean isTokenValid(String token, UserDetails userDetails) {
+  private Claims extractAllClaims(String token) {
     try {
-      Jwts.parserBuilder()
+      return Jwts.parserBuilder()
               .setSigningKey(getSignInKey())
               .build()
-              .parseClaimsJws(token);
+              .parseClaimsJws(token)
+              .getBody();
+    } catch (Exception e) {
+      System.out.println("Detailed token parsing error: " + e.getMessage());
+      throw new RuntimeException("Invalid JWT token", e);
+    }
+  }
 
+  private Key getSignInKey() {
+    byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+    return Keys.hmacShaKeyFor(keyBytes);
+  }
+
+  public boolean isTokenValid(String token, UserDetails userDetails) {
+    try {
       final String username = extractUsername(token);
-      User user = userRepository.findByUsername(username);
-
-      if (user == null) {
-        System.out.println("User not found");
-        return false;
-      }
-
-      return username.equals(userDetails.getUsername())
-              && !isTokenExpired(token);
-    } catch (JwtException e) {
+      return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+    } catch (Exception e) {
+      System.out.println("Token validation error: " + e.getMessage());
       return false;
     }
   }
@@ -87,18 +99,5 @@ public class JwtService {
 
   private Date extractExpiration(String token) {
     return extractClaim(token, Claims::getExpiration);
-  }
-
-  private Claims extractAllClaims(String token) {
-    return Jwts.parserBuilder()
-            .setSigningKey(getSignInKey())
-            .build()
-            .parseClaimsJws(token)
-            .getBody();
-  }
-
-  private Key getSignInKey() {
-    byte[] keyBytes = Decoders.BASE64.decode(secretKey);
-    return Keys.hmacShaKeyFor(keyBytes);
   }
 }

@@ -70,7 +70,6 @@ public class VideoService {
                 TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
-    //TODO: Remove code dupe in down and upvote
     @Async
     public CompletableFuture<ResponseEntity<Video>> likeVideo(UUID uuid) {
         return CompletableFuture.supplyAsync(() -> {

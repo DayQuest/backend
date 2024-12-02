@@ -1,24 +1,49 @@
 package com.dayquest.dayquestbackend;
 
+import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.AsyncTaskExecutor;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.concurrent.DelegatingSecurityContextExecutor;
+import org.springframework.security.task.DelegatingSecurityContextAsyncTaskExecutor;
+import org.springframework.security.web.context.DelegatingSecurityContextRepository;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 @Configuration
 @EnableAsync
 public class AsyncConfig implements AsyncConfigurer {
-    @Override
-    public Executor getAsyncExecutor() {
+
+    @Bean("threadPoolTaskExecutor")
+    public TaskExecutor getAsyncExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(10);
-        executor.setMaxPoolSize(20);
-        executor.setQueueCapacity(500);
-        executor.setThreadNamePrefix("DayQuest-");
-        executor.initialize();
-        return new DelegatingSecurityContextExecutor(executor.getThreadPoolExecutor());
+        executor.setCorePoolSize(20);
+        executor.setMaxPoolSize(1000);
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setThreadNamePrefix("Async-");
+        executor.initialize(); // this is important, otherwise an error is thrown
+        return new DelegatingSecurityContextAsyncTaskExecutor(executor);
     }
+
+    @Bean
+    public AsyncTaskExecutor delegatingSecurityContextAsyncTaskExecutor(ThreadPoolTaskExecutor threadPoolTaskExecutor) {
+        return new DelegatingSecurityContextAsyncTaskExecutor(threadPoolTaskExecutor);
+    }
+
+    @Bean
+    public SecurityContextRepository securityContextRepository() {
+        return new DelegatingSecurityContextRepository(
+                new RequestAttributeSecurityContextRepository(),
+                new HttpSessionSecurityContextRepository()
+        );
+    }
+
 }
