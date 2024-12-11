@@ -1,7 +1,6 @@
 package com.dayquest.dayquestbackend.friends;
 
 
-//TODO: Remove this
 public class FriendDTO {
     private final String username;
 

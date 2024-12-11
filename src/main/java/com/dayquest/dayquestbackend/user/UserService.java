@@ -11,9 +11,7 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 import com.dayquest.dayquestbackend.quest.QuestService;
-import com.dayquest.dayquestbackend.video.Video;
 import jakarta.mail.MessagingException;
-import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -77,9 +75,6 @@ public class UserService {
         }
 
       BetaKey key = keyRepository.findByKey(betaKey);
-      key.setInUse(true);
-      key.setUsername(username);
-      keyRepository.save(key);
       List<Quest> topQuests = questService.getTop10PercentQuests().join();
       Quest randomQuest = topQuests.get(random.nextInt(topQuests.size()));
 
@@ -88,13 +83,16 @@ public class UserService {
       newUser.setEmail(email);
       newUser.setPassword(passwordEncoder.encode(password));
       newUser.setUuid(UUID.randomUUID());
-      newUser.setBetaKey(betaKey);
       newUser.setVerificationCode(generateVerificationCode());
       newUser.setVerificationCodeExpiresAt(LocalDateTime.now().plusHours(1));
       newUser.setEnabled(false);
+      newUser.setAuthorities(List.of("ROLE_USER"));
       sendVerificationEmail(newUser);
       newUser.setDailyQuest(randomQuest);
       userRepository.save(newUser);
+      key.setInUse(true);
+      key.setUsername(username);
+      keyRepository.save(key);
       return ResponseEntity.ok("Successfully registered new user");
 
     });
@@ -114,6 +112,7 @@ public class UserService {
   @Async
   public CompletableFuture<Void> assignDailyQuests(List<Quest> topQuests) {
     return CompletableFuture.runAsync(() -> {
+      int i = 0;
       if (topQuests == null || topQuests.isEmpty()) {
         throw new IllegalArgumentException("The list of top quests must not be null or empty");
       }
@@ -122,9 +121,14 @@ public class UserService {
       for (User user : allUsers) {
         Quest lastQuest = user.getDailyQuest();
         Quest randomQuest = topQuests.get(random.nextInt(topQuests.size()));
-        while (randomQuest.equals(lastQuest) && topQuests.size() > 1) {
+        while (randomQuest.equals(lastQuest) || user.getDoneQuests().contains(randomQuest.getUuid()) && topQuests.size() > 1) {
           randomQuest = topQuests.get(random.nextInt(topQuests.size()));
+            i++;
+            if(i>100) {
+                break;
+            }
         }
+        user.addDoneQuest(lastQuest.getUuid());
         user.setDailyQuest(randomQuest);
         userRepository.save(user);
       }
@@ -217,7 +221,7 @@ public class UserService {
           user.setVerificationCode(null);
           user.setVerificationCodeExpiresAt(null);
           userRepository.save(user);
-          return ResponseEntity.ok("Account verified successfully");
+          return ResponseEntity.ok(user.getUuid().toString());
         } else {
           return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Invalid verification code");
         }

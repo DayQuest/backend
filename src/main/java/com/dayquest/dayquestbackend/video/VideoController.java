@@ -44,15 +44,20 @@ public class VideoController {
   private VideoRepository videoRepository;
 
   @Autowired
+  private ViewedVideoRepository viewedVideoRepository;
+
+  @Autowired
   private Cache<Integer, String> videoCache;
     @Autowired
     private QuestRepository questRepository;
 
   @Autowired
   private AsyncTaskExecutor delegatingSecurityContextAsyncTaskExecutor;
+  ;
 
   @Async
   @GetMapping
+
   public CompletableFuture<ResponseEntity<List<Video>>> getAllVideos() {
     return CompletableFuture.supplyAsync(() -> ResponseEntity.ok(videoRepository.findAll()));
   }
@@ -93,23 +98,49 @@ public class VideoController {
   @PostMapping("/next-vid")
   public CompletableFuture<ResponseEntity<?>> nextVideo(@RequestBody UUID userUuid) {
     return userRepository.findById(userUuid)
-            .map(user -> videoService.getRandomVideo()
-                    .thenApply(video -> {
-                      if (video == null) {
-                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .body("No video found");
-                      }
-                      Optional<Quest> quest = questRepository.findById(video.getQuestUuid());
-                      VideoDTO videoDTO = new VideoDTO(video.getTitle(), video.getDescription(), video.getUpVotes(), video.getDownVotes(), video.getUser().getUsername(), video.getFilePath(), null, quest.orElse(null), video.getUuid());
-                      if(user.getLikedVideos().contains(video.getUuid())) {
-                          videoDTO.setLiked(true);
-                      } else if(user.getDislikedVideos().contains(video.getUuid())) {
-                          videoDTO.setDisliked(true);
-                      }
-                      return ResponseEntity.ok(videoDTO);
-                    }))
-            .orElseGet(() -> CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("User not found")));
+            .map(user -> CompletableFuture.supplyAsync(() -> {
+              List<Video> unviewedVideos = videoRepository.findUnviewedVideosByUserId(user.getUuid());
+
+              if (unviewedVideos.isEmpty()) {
+                Optional<Video> randomVideoOpt = videoRepository.findRandomVideo();
+                if (randomVideoOpt.isPresent()) {
+                  Video randomVideo = randomVideoOpt.get();
+                  viewedVideoRepository.save(new ViewedVideo(new ViewedVideoId(user.getUuid(), randomVideo.getUuid())));
+                  return ResponseEntity.ok(createVideoDTO(randomVideo, user));
+                } else {
+                  return ResponseEntity.status(HttpStatus.NO_CONTENT).body("No videos available");
+                }
+              }
+
+              Video video = unviewedVideos.get(0);
+              viewedVideoRepository.save(new ViewedVideo(new ViewedVideoId(user.getUuid(), video.getUuid())));
+              return ResponseEntity.ok(createVideoDTO(video, user));
+            }))
+            .orElseGet(() -> CompletableFuture.completedFuture(
+                    ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found")
+            ));
   }
+
+  private VideoDTO createVideoDTO(Video video, User user) {
+    VideoDTO videoDTO = new VideoDTO(
+            video.getTitle(),
+            video.getDescription(),
+            video.getUpVotes(),
+            video.getDownVotes(),
+            video.getUser().getUsername(),
+            video.getFilePath(),
+            null,
+            questRepository.findById(video.getQuestUuid()).orElse(null),
+            video.getUuid()
+    );
+
+    videoDTO.setLiked(user.getLikedVideos().contains(video.getUuid()));
+    videoDTO.setDisliked(user.getDislikedVideos().contains(video.getUuid()));
+    return videoDTO;
+  }
+
+
+
 
   @PostMapping("/{uuid}/like")
   @Async

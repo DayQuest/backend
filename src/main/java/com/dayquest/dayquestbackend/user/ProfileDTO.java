@@ -13,12 +13,14 @@ public class ProfileDTO {
     private String profilePicture;
     private List<VideoDTO> videos = new ArrayList<>();
     private Quest quest;
+    private boolean isBanned;
 
-    public ProfileDTO(String username, String profilePicture, List<Video> videos, Quest quest) {
+    public ProfileDTO(String username, String profilePicture, List<Video> videos, Quest quest, boolean isBanned) {
         this.username = username;
         this.profilePicture = profilePicture;
         this.videos = new ArrayList<>();
         this.quest = quest;
+        this.isBanned = isBanned;
         if (videos != null) {
             for(Video video : videos) {
                 this.videos.add(new VideoDTO(

@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface QuestRepository extends JpaRepository<Quest, UUID> {
+    Quest findByUuid(UUID uuid);
 }

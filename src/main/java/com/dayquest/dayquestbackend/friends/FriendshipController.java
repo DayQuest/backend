@@ -25,7 +25,6 @@ public class FriendshipController {
   @Autowired
   private UserRepository userRepository;
 
-  // Send a friend request from one user to another
   @Async
   @PostMapping("/send-request")
   public CompletableFuture<ResponseEntity<String>> sendFriendRequest(@RequestBody UUID uuid,
@@ -33,7 +32,6 @@ public class FriendshipController {
     return friendshipService.sendFriendRequest(uuid, targetUsername);
   }
 
-  // Accept a friend request
   @Async
   @PostMapping("/accept-request")
   public CompletableFuture<ResponseEntity<String>> acceptFriendRequest(
@@ -41,7 +39,6 @@ public class FriendshipController {
     return friendshipService.acceptFriendRequest(uuid, targetUuid);
   }
 
-  // List all friends of a user
   @Async
   @GetMapping("/list")
   public CompletableFuture<ResponseEntity<List<FriendDTO>>> listFriends(@RequestParam UUID uuid) {

@@ -22,7 +22,6 @@ public class FriendshipService {
     @Autowired
     private UserRepository userRepository;
 
-    // Send a friend request from one user to another
     @Async
     public CompletableFuture<ResponseEntity<String>> sendFriendRequest(UUID uuid, String friendUsername) {
         return CompletableFuture.supplyAsync(() -> {
@@ -44,7 +43,6 @@ public class FriendshipService {
         });
     }
 
-    // Accept a friend request
     @Async
     public CompletableFuture<ResponseEntity<String>> acceptFriendRequest(UUID uuid, UUID targetUuid) {
         return CompletableFuture.supplyAsync(() -> {
@@ -70,8 +68,6 @@ public class FriendshipService {
         });
     }
 
-
-    // Get all accepted friends of a user
     @Async
     public CompletableFuture<List<Friendship>> getFriendshipsOfUserByState(UUID uuid, FriendRequestStatus state) {
         return CompletableFuture.supplyAsync(() -> {

@@ -6,6 +6,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import org.springframework.security.core.GrantedAuthority;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,8 +16,10 @@ import org.springframework.stereotype.Service;
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class JwtService {
@@ -34,10 +37,10 @@ public class JwtService {
 
   public String extractUsername(String token) {
     try {
-      return extractClaim(token, Claims::getSubject);
+      Claims claims = extractAllClaims(token);
+      return claims.getSubject();
     } catch (Exception e) {
-      // Log the specific token parsing error
-      System.out.println("Token parsing error: " + e.getMessage());
+      System.out.println("Username extraction error: " + e.getMessage());
       throw e;
     }
   }
@@ -48,8 +51,14 @@ public class JwtService {
   }
 
   public String generateToken(UserDetails userDetails) {
-    return generateToken(new HashMap<>(), userDetails);
+    Map<String, Object> extraClaims = new HashMap<>();
+    List<String> roles = userDetails.getAuthorities().stream()
+            .map(GrantedAuthority::getAuthority)
+            .collect(Collectors.toList());
+    extraClaims.put("roles", roles);
+    return generateToken(extraClaims, userDetails);
   }
+
 
   public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
     return buildToken(extraClaims, userDetails, jwtExpiration);
@@ -65,7 +74,7 @@ public class JwtService {
             .compact();
   }
 
-  private Claims extractAllClaims(String token) {
+  public Claims extractAllClaims(String token) {
     try {
       return Jwts.parserBuilder()
               .setSigningKey(getSignInKey())

@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.security.concurrent.DelegatingSecurityContextExecutor;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,17 +18,36 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextRepository;
 
-import java.util.Collections;
-
 @Configuration
 public class SecurityConfiguration {
 
-    private final SecurityContextRepository repository;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final SecurityContextRepository repository;
+    private final UserRepository userRepository;
 
-    public SecurityConfiguration(SecurityContextRepository repository, JwtAuthenticationFilter jwtAuthenticationFilter) {
-        this.repository = repository;
+    public SecurityConfiguration(
+            JwtAuthenticationFilter jwtAuthenticationFilter,
+            SecurityContextRepository repository,
+            UserRepository userRepository
+    ) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.repository = repository;
+        this.userRepository = userRepository;
+    }
+
+    @Bean
+    public UserDetailsService userDetailsService() {
+        return username -> {
+            User user = userRepository.findByEmail(username);
+            if (user == null) {
+                throw new UsernameNotFoundException("User not found with email: " + username);
+            }
+            return org.springframework.security.core.userdetails.User
+                    .withUsername(user.getEmail())
+                    .password(user.getPassword())
+                    .authorities(user.getAuthorities())
+                    .build();
+        };
     }
 
     @Bean
@@ -49,7 +69,8 @@ public class SecurityConfiguration {
                                 "/api/beta/get-key",
                                 "/api/beta/remove-key",
                                 "/api/users/profilepicture/**",
-                                "/api/videos/thumbnail/**"
+                                "/api/videos/thumbnail/**",
+                                "/api/users/profile/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
@@ -68,21 +89,6 @@ public class SecurityConfiguration {
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
-    }
-
-    @Bean
-    public UserDetailsService userDetailsService(UserRepository userRepository) {
-        return username -> {
-            User user = userRepository.findByEmail(username);
-            if (user == null) {
-                throw new UsernameNotFoundException("User not found with email: " + username);
-            }
-            return org.springframework.security.core.userdetails.User
-                    .withUsername(user.getEmail())
-                    .password(user.getPassword())
-                    .authorities(Collections.emptyList())
-                    .build();
-        };
     }
 
     @Bean

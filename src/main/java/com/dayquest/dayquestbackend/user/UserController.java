@@ -8,19 +8,24 @@ import java.util.Optional;
 
 import com.dayquest.dayquestbackend.JwtService;
 import com.dayquest.dayquestbackend.streak.StreakService;
+import com.drew.imaging.ImageMetadataReader;
+import com.drew.metadata.Directory;
+import com.drew.metadata.Metadata;
+import com.drew.metadata.exif.ExifIFD0Directory;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import java.io.InputStream;
 
 import javax.imageio.ImageIO;
 import java.util.UUID;
@@ -154,7 +159,8 @@ public class UserController {
               userWithVideos.getUsername(),
               profilePictureLink,
               userWithVideos.getPostedVideos(),
-                userWithVideos.getDailyQuest()
+                userWithVideos.getDailyQuest(),
+                userWithVideos.isBanned()
       );
       return ResponseEntity.ok(profileDTO);
     });
@@ -169,12 +175,16 @@ public class UserController {
       if (userWithVideos == null) {
         return ResponseEntity.notFound().build();
       }
-      String profilePictureLink = "http://77.90.21.53:8010/api/users/profilepicture/" + username;
+      String profilePictureLink = "https://static.vecteezy.com/system/resources/thumbnails/003/337/584/small/default-avatar-photo-placeholder-profile-icon-vector.jpg";
+      if(userWithVideos.getProfilePicture() != null) {
+        profilePictureLink = "http://77.90.21.53:8010/api/users/profilepicture/" + username;
+      }
       ProfileDTO profileDTO = new ProfileDTO(
               userWithVideos.getUsername(),
               profilePictureLink,
               userWithVideos.getPostedVideos(),
-              userWithVideos.getDailyQuest()
+              userWithVideos.getDailyQuest(),
+                userWithVideos.isBanned()
       );
       return ResponseEntity.ok(profileDTO);
     });
@@ -186,11 +196,15 @@ public class UserController {
     return CompletableFuture.supplyAsync(() -> {
       try {
         User user = userRepository.findByUsername(username);
-        if (user == null) {
-          return ResponseEntity.notFound().build();
+        byte[] imageBytes;
+
+        if (user == null || user.getProfilePicture() == null) {
+          ClassPathResource defaultPicture = new ClassPathResource("pfp.jpg");
+          imageBytes = defaultPicture.getInputStream().readAllBytes();
+        } else {
+          imageBytes = user.getProfilePicture();
         }
 
-        byte[] imageBytes = user.getProfilePicture();
         ByteArrayResource resource = new ByteArrayResource(imageBytes);
 
         HttpHeaders headers = new HttpHeaders();
@@ -201,11 +215,14 @@ public class UserController {
                 .contentLength(imageBytes.length)
                 .body(resource);
 
+      } catch (IOException e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
       } catch (IllegalArgumentException e) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
       }
     });
   }
+
 
 
   @PostMapping("/setprofilepicture")
@@ -234,16 +251,69 @@ public class UserController {
   public byte[] compressImage(MultipartFile originalFile) throws IOException {
     BufferedImage originalImage = ImageIO.read(originalFile.getInputStream());
 
-    BufferedImage resizedImage = new BufferedImage(360, 360, BufferedImage.TYPE_INT_RGB);
+    originalImage = fixImageOrientation(originalImage, originalFile);
 
+    int originalWidth = originalImage.getWidth();
+    int originalHeight = originalImage.getHeight();
+
+    double scale = Math.min(360.0 / originalWidth, 360.0 / originalHeight);
+
+    int newWidth = (int) Math.round(originalWidth * scale);
+    int newHeight = (int) Math.round(originalHeight * scale);
+
+    BufferedImage resizedImage = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_INT_RGB);
     Graphics2D g2d = resizedImage.createGraphics();
     g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-    g2d.drawImage(originalImage, 0, 0, 360, 360, null);
+    g2d.drawImage(originalImage, 0, 0, newWidth, newHeight, null);
     g2d.dispose();
 
+    // Write resized image to byte array
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     ImageIO.write(resizedImage, "jpg", baos);
 
     return baos.toByteArray();
   }
+
+  // Fix orientation based on Exif metadata
+  private BufferedImage fixImageOrientation(BufferedImage image, MultipartFile originalFile) throws IOException {
+    try (InputStream inputStream = originalFile.getInputStream()) {
+      Metadata metadata = ImageMetadataReader.readMetadata(inputStream);
+      Directory directory = metadata.getFirstDirectoryOfType(ExifIFD0Directory.class);
+
+      if (directory != null && directory.containsTag(ExifIFD0Directory.TAG_ORIENTATION)) {
+        int orientation = directory.getInt(ExifIFD0Directory.TAG_ORIENTATION);
+
+        switch (orientation) {
+          case 6: // Rotate 90 degrees clockwise
+            return rotateImage(image, 90);
+          case 3: // Rotate 180 degrees
+            return rotateImage(image, 180);
+          case 8: // Rotate 90 degrees counterclockwise
+            return rotateImage(image, -90);
+          default:
+            return image; // No rotation needed
+        }
+      }
+    } catch (Exception e) {
+      System.err.println("Could not read EXIF metadata: " + e.getMessage());
+    }
+
+    return image;
+  }
+
+  private BufferedImage rotateImage(BufferedImage image, int angle) {
+    int width = image.getWidth();
+    int height = image.getHeight();
+
+    BufferedImage rotatedImage = new BufferedImage(height, width, image.getType());
+    Graphics2D g2d = rotatedImage.createGraphics();
+
+    g2d.rotate(Math.toRadians(angle), height / 2.0, height / 2.0);
+    g2d.translate((height - width) / 2.0, (width - height) / 2.0);
+    g2d.drawRenderedImage(image, null);
+    g2d.dispose();
+
+    return rotatedImage;
+  }
+
 }

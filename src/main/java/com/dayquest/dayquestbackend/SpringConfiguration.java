@@ -34,7 +34,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @EnableWebSecurity
 @EnableScheduling
 @EnableTransactionManagement
-public class SpringConfiguration implements WebMvcConfigurer{
+public class SpringConfiguration implements WebMvcConfigurer {
 
   @Autowired
   @Lazy
@@ -44,25 +44,23 @@ public class SpringConfiguration implements WebMvcConfigurer{
 
   private QuestService questService;
 
-    @Autowired
-    private UserRepository userRepository;
-
+  @Autowired
+  private UserRepository userRepository;
 
 
   @Bean
   public Cache<Integer, String> videoCache() {
     return Caffeine.newBuilder()
-        .expireAfterWrite(1, TimeUnit.HOURS)
-        .maximumSize(500)
-        .build();
+            .expireAfterWrite(1, TimeUnit.HOURS)
+            .maximumSize(500)
+            .build();
   }
 
   @Scheduled(cron = "0 0 0 * * ?")
   @Async
-  @PostConstruct
   public CompletableFuture<Void> assignDailyQuest() {
     return CompletableFuture.runAsync(() ->
-        userService.assignDailyQuests(questService.getTop10PercentQuests().join()).join());
+            userService.assignDailyQuests(questService.getTop10PercentQuests().join()).join());
   }
 
   @Bean
@@ -73,22 +71,8 @@ public class SpringConfiguration implements WebMvcConfigurer{
   @Override
   public void addCorsMappings(CorsRegistry registry) {
     registry.addMapping("/**")
-        .allowedOrigins("*")
-        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-        .allowedHeaders("*");
+            .allowedOrigins("*")
+            .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+            .allowedHeaders("*");
   }
-
-  @Bean
-  public AsyncTaskExecutor delegatingSecurityContextAsyncTaskExecutor(ThreadPoolTaskExecutor threadPoolTaskExecutor) {
-    return new DelegatingSecurityContextAsyncTaskExecutor(threadPoolTaskExecutor);
-  }
-
-
-
-  @Bean
-  UserDetailsService userDetailsService() {
-    return username -> userRepository.findByEmail(username);
-  }
-
-
 }

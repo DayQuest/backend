@@ -7,7 +7,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 @SpringBootApplication
 public class DayQuestApplication {
 	public static void main(String[] args) {
-		SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
 		SpringApplication.run(DayQuestApplication.class, args);
 	}
 }

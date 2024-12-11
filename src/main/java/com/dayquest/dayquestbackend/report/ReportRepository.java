@@ -10,5 +10,5 @@ import java.util.List;
 @Repository
 public interface ReportRepository extends JpaRepository<Report, UUID> {
     List<Report> findByUserUuid(UUID userUuid);
-    List<Report> findByVideoUuid(UUID videoId);
+    List<Report> findByEntityUuid(UUID entityUuid);
 }

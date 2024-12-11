@@ -1,7 +1,7 @@
 package com.dayquest.dayquestbackend;
 
-import com.dayquest.dayquestbackend.JwtService;
 import com.dayquest.dayquestbackend.user.UserRepository;
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,28 +11,29 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     private final JwtService jwtService;
-    private final UserDetailsService userDetailsService;
     private final UserRepository userRepository;
 
     @Autowired
-    public JwtAuthenticationFilter(JwtService jwtService, UserDetailsService userDetailsService, UserRepository userRepository) {
+    public JwtAuthenticationFilter(JwtService jwtService, UserRepository userRepository) {
         this.jwtService = jwtService;
-        this.userDetailsService = userDetailsService;
         this.userRepository = userRepository;
     }
 
@@ -53,45 +54,34 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             final String jwt = authHeader.substring(7);
             final String username = jwtService.extractUsername(jwt);
 
-            // More robust null and authentication checks
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = userRepository.findByUsername(username);
 
-                if (userDetails == null) {
-                    logger.warn("No user found for username: {}", username);
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    return;
-                }
-                if (jwtService.isTokenValid(jwt, userDetails)) {
+                if (userDetails != null && jwtService.isTokenValid(jwt, userDetails)) {
+                    Claims claims = jwtService.extractAllClaims(jwt);
+                    List<String> roles = claims.get("roles", List.class);
+
+                    List<GrantedAuthority> authorities = roles.stream()
+                            .map(SimpleGrantedAuthority::new)
+                            .collect(Collectors.toList());
+
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails,
                             null,
-                            userDetails.getAuthorities()
+                            authorities
                     );
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                    // Set SecurityContext
-                    SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
-                    securityContext.setAuthentication(authToken);
-                    SecurityContextHolder.setContext(securityContext);
-
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
                     logger.info("Authentication successfully set for user: {}", username);
-                } else {
-                    logger.warn("Invalid JWT token for user: {}", username);
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.getWriter().write("Invalid token");
-                    return;
                 }
             }
 
-            // Proceed with the filter chain
             filterChain.doFilter(request, response);
         } catch (Exception e) {
             logger.error("Error occurred during JWT processing", e);
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write("Authentication failed: " + e.getMessage());
-        } finally {
-            logger.debug("End of doFilterInternal: Authentication: {}", SecurityContextHolder.getContext().getAuthentication());
         }
     }
+
 }

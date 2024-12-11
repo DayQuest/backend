@@ -7,11 +7,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.Optional;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import com.dayquest.dayquestbackend.streak.Streak;
 import com.dayquest.dayquestbackend.streak.StreakRepository;
@@ -28,6 +26,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
@@ -43,14 +42,17 @@ public class VideoService {
     @Value("${video.upload.path}")
     private String uploadPath;
 
-    @Autowired
-    private VideoRepository videoRepository;
 
     @Autowired
     private VideoCompressor videoCompressor;
 
     @Autowired
     private UserRepository userRepository;
+
+    private final ViewedVideoRepository viewedVideoRepository;
+    private final VideoRepository videoRepository;
+
+
 
     @Autowired
     private PlatformTransactionManager transactionManager;
@@ -64,7 +66,9 @@ public class VideoService {
     private final TransactionTemplate transactionTemplate;
 
     @Autowired
-    public VideoService(PlatformTransactionManager transactionManager) {
+    public VideoService(ViewedVideoRepository viewedVideoRepository, VideoRepository videoRepository, PlatformTransactionManager transactionManager) {
+        this.viewedVideoRepository = viewedVideoRepository;
+        this.videoRepository = videoRepository;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
         this.transactionTemplate.setPropagationBehavior(
                 TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -82,6 +86,10 @@ public class VideoService {
             videoRepository.save(video.get());
             return ResponseEntity.ok().build();
         });
+    }
+
+    public Page<Video> getAllVideos(Pageable pageable) {
+        return videoRepository.findAll(pageable);
     }
 
     @Async
@@ -164,6 +172,15 @@ public class VideoService {
         });
     }
 
+
+    public CompletableFuture<List<Video>> getUnviewedVideos(UUID userId) {
+        return CompletableFuture.supplyAsync(() -> videoRepository.findUnviewedVideosByUserId(userId));
+    }
+
+    public void markVideoAsViewed(UUID userId, UUID videoId) {
+        viewedVideoRepository.save(new ViewedVideo(new ViewedVideoId(userId, videoId)));
+    }
+
     private byte[] generateThumbnail(String videoPath) {
         try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(videoPath)) {
             grabber.setFormat("mp4");
@@ -210,21 +227,5 @@ public class VideoService {
             videoRepository.deleteById(uuid);
             return ResponseEntity.ok("Deleted");
         });
-    }
-
-
-    //Unused
-    public Resource loadVideoAsResource(String fileName) {
-        try {
-            Path filePath = Paths.get(uploadPath).resolve(fileName).normalize();
-            Resource resource = new UrlResource(filePath.toUri());
-            if (resource.exists() || resource.isReadable()) {
-                return resource;
-            } else {
-                throw new RuntimeException("Could not read file: " + fileName);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Could not read file: " + fileName, e);
-        }
     }
 }

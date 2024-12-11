@@ -48,20 +48,14 @@ public class VideoCompressor {
 
       int width = 0;
       int height = 0;
-      String videoCodec = "";
 
       try {
         String jsonOutput = probeOutput.toString();
         width = extractIntFromJson(jsonOutput, "width");
         height = extractIntFromJson(jsonOutput, "height");
-        videoCodec = extractStringFromJson(jsonOutput, "codec_name");
       } catch (Exception e) {
         System.err.println("Failed to parse video metadata: " + e.getMessage());
       }
-
-      int adjustedWidth = width % 2 == 0 ? width : width - 1;
-      int adjustedHeight = (int) Math.floor((double) adjustedWidth * height / width);
-      adjustedHeight = adjustedHeight % 2 == 0 ? adjustedHeight : adjustedHeight - 1;
 
       boolean useX265 = true;
       int attempts = 0;
@@ -77,26 +71,26 @@ public class VideoCompressor {
         if (useX265) {
           compressCommand.addAll(Arrays.asList(
                   "-c:v", "libx265",
-                  "-preset", "slow",
-                  "-crf", "28",
-                  "-tag:v", "hvc1",
-                  "-vf", String.format("scale=%d:%d", adjustedWidth, adjustedHeight),
-                  "-r", "30"
+                  "-preset", "medium",
+                  "-crf", "26",
+                  "-tag:v", "hvc1"
           ));
         } else {
           compressCommand.addAll(Arrays.asList(
                   "-c:v", "libx264",
                   "-preset", "medium",
-                  "-crf", "23",
-                  "-vf", String.format("scale=%d:%d", adjustedWidth, adjustedHeight)
+                  "-crf", "20"
           ));
         }
 
         compressCommand.addAll(Arrays.asList(
+                "-vf", "scale=iw:ih",
+                "-r", "30",
                 "-c:a", "copy",
                 "-movflags", "+faststart",
                 outputFile.getPath()
         ));
+
 
         ProcessBuilder pb = new ProcessBuilder(compressCommand);
         pb.redirectErrorStream(true);
@@ -119,7 +113,6 @@ public class VideoCompressor {
         if (useX265) {
           System.out.println("x265 compression failed, falling back to x264");
           useX265 = false;
-          // Delete failed output file if it exists
           if (outputFile.exists()) {
             outputFile.delete();
           }
@@ -152,24 +145,12 @@ public class VideoCompressor {
     return 0;
   }
 
-  private String extractStringFromJson(String json, String key) {
-    String searchKey = "\"" + key + "\":\"";
-    int index = json.indexOf(searchKey);
-    if (index != -1) {
-      int start = index + searchKey.length();
-      int end = json.indexOf("\"", start);
-      return json.substring(start, end);
-    }
-    return "";
-  }
-
   public void removeUnprocessed(String path) {
     File file = new File(path);
     if (!file.delete()) {
       Logger.getGlobal().info("Unable to delete unprocessed file: " + path);
     }
   }
-
 
   @PostConstruct
   public void compressAllUnprocessed() {

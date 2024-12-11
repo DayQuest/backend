@@ -3,6 +3,7 @@ import com.dayquest.dayquestbackend.quest.Quest;
 import com.dayquest.dayquestbackend.video.Video;
 import jakarta.persistence.*;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
@@ -10,6 +11,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 
 @Entity
@@ -29,10 +31,7 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String password;
 
-    @Column(nullable = false)
-    private String betaKey;
-
-    private boolean banned;
+    private boolean banned = false;
 
     @ElementCollection
     @CollectionTable(name = "disliked_quests", joinColumns = @JoinColumn(name = "user_id"))
@@ -54,6 +53,9 @@ public class User implements UserDetails {
     @ElementCollection
     private List<UUID> followedUsers;
 
+    @ElementCollection
+    private List<UUID> doneQuests;
+
     @Column(name = "verification_code")
     private String verificationCode;
 
@@ -61,6 +63,11 @@ public class User implements UserDetails {
     private LocalDateTime verificationCodeExpiresAt;
 
     private boolean enabled;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_authorities", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "authority")
+    private List<String> authorities = new ArrayList<>();
 
     private int followers;
 
@@ -91,13 +98,6 @@ public class User implements UserDetails {
         this.likedVideos = new ArrayList<>();
     }
 
-    public String getBetaKey() {
-        return betaKey;
-    }
-
-    public void setBetaKey(String betaKey) {
-        this.betaKey = betaKey;
-    }
 
     public void addPostedVideo(Video video) {
         postedVideos.add(video);
@@ -231,8 +231,12 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
+        return authorities == null ? List.of() :
+                authorities.stream()
+                        .map(SimpleGrantedAuthority::new)
+                        .collect(Collectors.toList());
     }
+
 
     @Override
     public boolean isAccountNonExpired() {
@@ -252,5 +256,25 @@ public class User implements UserDetails {
     @Override
     public boolean isEnabled() {
         return enabled;
+    }
+
+    public List<UUID> getDoneQuests() {
+        return doneQuests;
+    }
+
+    public void setDoneQuests(List<UUID> doneQuests) {
+        this.doneQuests = doneQuests;
+    }
+
+    public void addDoneQuest(UUID questId) {
+        doneQuests.add(questId);
+    }
+
+    public void setAuthorities(List<String> authorities) {
+        this.authorities = authorities;
+    }
+
+    public List<String> getAuthoritiesList() {
+        return authorities;
     }
 }

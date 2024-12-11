@@ -6,7 +6,6 @@ public class InteractionDTO {
     private UUID uuid;
     private UUID userUuid;
 
-    // Getters and setters
     public UUID getUuid() {
         return uuid;
     }

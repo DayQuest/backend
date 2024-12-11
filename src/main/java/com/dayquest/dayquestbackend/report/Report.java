@@ -14,16 +14,17 @@ public class Report {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID uuid;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String description;
 
     @Column(nullable = false)
-    private UUID videoUuid;
+    private UUID entityUuid;
 
     @Column(nullable = false)
     private UUID userUuid;
 
-    // Getters and Setters
+    private Type type;
+
     public UUID getUuid() {
         return uuid;
     }
@@ -40,16 +41,24 @@ public class Report {
         this.description = description;
     }
 
-    public UUID getVideoUuid() {
-        return videoUuid;
+    public UUID getEntityUuid() {
+        return entityUuid;
     }
 
-    public void setVideoUuid(UUID videoUuid) {
-        this.videoUuid = videoUuid;
+    public void setEntityUuid(UUID videoUuid) {
+        this.entityUuid = videoUuid;
     }
 
     public UUID getUserUuid() {
         return userUuid;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public void setType(Type type) {
+        this.type = type;
     }
 
     public void setUserUuid(UUID userUuid) {

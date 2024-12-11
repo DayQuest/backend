@@ -1,5 +1,6 @@
 package com.dayquest.dayquestbackend.video;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.hibernate.annotations.Fetch;
@@ -7,6 +8,7 @@ import org.hibernate.annotations.FetchMode;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -18,5 +20,16 @@ public interface  VideoRepository extends JpaRepository<Video, UUID> {
 
     @Query(value = "SELECT * FROM video ORDER BY RAND() LIMIT 1", nativeQuery = true)
     Optional<Video> findRandomVideo();
+
+    @Query(value = "SELECT * " +
+            "FROM video " +
+            "WHERE uuid NOT IN (" +
+            "  SELECT video_id " +
+            "  FROM viewed_video " +
+            "  WHERE user_id = :userId" +
+            ")" +
+            "ORDER BY RAND()" +
+            "LIMIT 10;", nativeQuery = true)
+    List<Video> findUnviewedVideosByUserId(@Param("userId") UUID userId);
 }
 
