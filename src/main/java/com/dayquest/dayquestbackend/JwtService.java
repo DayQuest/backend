@@ -1,9 +1,7 @@
 package com.dayquest.dayquestbackend;
 
-import com.dayquest.dayquestbackend.user.User;
 import com.dayquest.dayquestbackend.user.UserRepository;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.security.core.GrantedAuthority;

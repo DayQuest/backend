@@ -57,7 +57,7 @@ public class AdminController {
         });
     }
 
-    @PostMapping("/getVideos")
+    @GetMapping("/videos")
     @Async
     public CompletableFuture<ResponseEntity<List<VideoDTO>>> getVideos(@RequestHeader("Authorization") String token,
                                                                        @RequestParam(defaultValue = "0") int page,
@@ -69,13 +69,15 @@ public class AdminController {
                     .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"))) {
                 List<Video> videos = videoRepository.findAll(PageRequest.of(page, size)).getContent();
                 List<VideoDTO> videoDTOS = videos.stream()
-                        .map(video -> new VideoDTO(video.getTitle(), video.getDescription(), video.getUpVotes(), video.getDownVotes(), video.getUser().getUsername(), video.getFilePath(), "http://77.90.21.53:8010/api/videos/thumbnail/" + video.getUuid().toString(), questRepository.findByUuid(video.getQuestUuid()), video.getUuid()))
+                        .map(video -> new VideoDTO(video.getTitle(), video.getDescription(), video.getUpVotes(), video.getDownVotes(), video.getUser().getUsername(), video.getFilePath(), "http://77.90.21.53:8010/api/videos/thumbnail/" + video.getUuid().toString(), questRepository.findByUuid(video.getQuestUuid()), video.getUuid(), video.getCreatedAt()))
                         .collect(Collectors.toList());
                 return ResponseEntity.ok(videoDTOS);
             }
             return ResponseEntity.ok(null);
         });
     }
+
+
 
     @PostMapping("/deleteVideo")
     @Async
@@ -164,21 +166,6 @@ public class AdminController {
         });
     }
 
-    @PostMapping("/deleteUser")
-    @Async
-    public CompletableFuture<ResponseEntity<String>> deleteUser(@RequestHeader("Authorization") String token, @RequestBody String uuid) {
-        return CompletableFuture.supplyAsync(() -> {
-            String username = jwtService.extractUsername(token.substring(7));
-            User user = userRepository.findByUsername(username);
-            if (user.getAuthorities().stream()
-                    .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"))) {
-                userRepository.deleteById(UUID.fromString(uuid));
-                return ResponseEntity.ok("User deleted");
-            }
-            return ResponseEntity.badRequest().body("You are not an admin");
-        });
-    }
-
     @PostMapping("/setAdmin")
     @Async
     public CompletableFuture<ResponseEntity<String>> setAdmin(@RequestBody String username) {
@@ -190,6 +177,71 @@ public class AdminController {
             user.setAuthorities(listOf("ROLE_USER", "ROLE_ADMIN"));
             userRepository.save(user);
             return ResponseEntity.ok("User is now an admin");
+        });
+    }
+
+    @GetMapping("/users/{uuid}")
+    @Async
+    public CompletableFuture<ResponseEntity<UserDetailsDTO>> getUserDetails(@RequestHeader("Authorization") String token, @PathVariable String uuid) {
+        return CompletableFuture.supplyAsync(() -> {
+            String username = jwtService.extractUsername(token.substring(7));
+            User user = userRepository.findByUsername(username);
+            if (user.getAuthorities().stream()
+                    .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"))) {
+                User userToGet = userRepository.findById(UUID.fromString(uuid)).orElse(null);
+                UserDetailsDTO userDetailsDTO = new UserDetailsDTO();
+                userDetailsDTO.setUsername(userToGet.getUsername());
+                userDetailsDTO.setEmail(userToGet.getEmail());
+                userDetailsDTO.setBetaKey(userToGet.getBetaKey());
+                userDetailsDTO.setAdminComment(userToGet.getAdminComment());
+                userDetailsDTO.setEnabled(userToGet.isEnabled());
+                userDetailsDTO.setBanned(userToGet.isBanned());
+                userDetailsDTO.setVerificationCode(userToGet.getVerificationCode());
+                return ResponseEntity.ok(userDetailsDTO);
+            }
+            return ResponseEntity.badRequest().body(null);
+        });
+    }
+
+    @PutMapping("/users/{uuid}")
+    @Async
+    public CompletableFuture<ResponseEntity<String>> updateUserDetails(@RequestHeader("Authorization") String token, @PathVariable String uuid, @RequestBody UserDetailsDTO userDetailsDTO) {
+        return CompletableFuture.supplyAsync(() -> {
+            String username = jwtService.extractUsername(token.substring(7));
+            User user = userRepository.findByUsername(username);
+            if (user.getAuthorities().stream()
+                    .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"))) {
+                User userToUpdate = userRepository.findById(UUID.fromString(uuid)).orElse(null);
+                userToUpdate.setUsername(userDetailsDTO.getUsername());
+                userToUpdate.setEmail(userDetailsDTO.getEmail());
+                userToUpdate.setBetaKey(userDetailsDTO.getBetaKey());
+                userToUpdate.setAdminComment(userDetailsDTO.getAdminComment());
+                userToUpdate.setEnabled(userDetailsDTO.isEnabled());
+                userToUpdate.setBanned(userDetailsDTO.isBanned());
+                userToUpdate.setVerificationCode(userDetailsDTO.getVerificationCode());
+                userRepository.save(userToUpdate);
+                return ResponseEntity.ok("User details updated");
+            }
+            return ResponseEntity.badRequest().body("You are not an admin");
+        });
+    }
+
+    @DeleteMapping("/users/{uuid}")
+    @Async
+    public CompletableFuture<ResponseEntity<String>> deleteUser(@RequestHeader("Authorization") String token, @PathVariable String uuid) {
+        return CompletableFuture.supplyAsync(() -> {
+            String username = jwtService.extractUsername(token.substring(7));
+            User user = userRepository.findByUsername(username);
+            if (user.getAuthorities().stream()
+                    .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"))) {
+                User userToDelete = userRepository.findById(UUID.fromString(uuid)).orElse(null);
+                if (userToDelete == null) {
+                    return ResponseEntity.badRequest().body("User not found");
+                }
+                userRepository.delete(userToDelete);
+                return ResponseEntity.ok("User deleted");
+            }
+            return ResponseEntity.badRequest().body("You are not an admin");
         });
     }
 }

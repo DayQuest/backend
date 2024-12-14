@@ -54,6 +54,13 @@ public class User implements UserDetails {
     private List<UUID> followedUsers;
 
     @ElementCollection
+    private List<UUID> followerList;
+
+    private String betaKey;
+
+    private String passwordResetToken;
+
+    @ElementCollection
     private List<UUID> doneQuests;
 
     @Column(name = "verification_code")
@@ -81,6 +88,8 @@ public class User implements UserDetails {
     @Lob
     @Column(columnDefinition = "LONGBLOB")
     private byte[] profilePicture;
+
+    private String adminComment;
 
     public byte[] getProfilePicture() {
         return profilePicture;
@@ -115,6 +124,14 @@ public class User implements UserDetails {
 
     public UUID getUuid() {
         return uuid;
+    }
+
+    public String getBetaKey() {
+        return betaKey;
+    }
+
+    public void setBetaKey(String betaKey) {
+        this.betaKey = betaKey;
     }
 
     public void setUuid(UUID uuid) {
@@ -201,6 +218,22 @@ public class User implements UserDetails {
         this.likedVideos = likedVideos;
     }
 
+    public String getAdminComment() {
+        return adminComment;
+    }
+
+    public void setAdminComment(String adminComment) {
+        this.adminComment = adminComment;
+    }
+
+    public String getPasswordResetToken() {
+        return passwordResetToken;
+    }
+
+    public void setPasswordResetToken(String passwordResetToken) {
+        this.passwordResetToken = passwordResetToken;
+    }
+
     public Quest getDailyQuest() {
         return dailyQuest;
     }
@@ -268,6 +301,14 @@ public class User implements UserDetails {
 
     public void addDoneQuest(UUID questId) {
         doneQuests.add(questId);
+    }
+
+    public List<UUID> getFollowerList() {
+        return followerList;
+    }
+
+    public void setFollowerList(List<UUID> followerList) {
+        this.followerList = followerList;
     }
 
     public void setAuthorities(List<String> authorities) {

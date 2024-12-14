@@ -1,5 +1,6 @@
 package com.dayquest.dayquestbackend.video;
 
+import com.dayquest.dayquestbackend.JwtService;
 import com.dayquest.dayquestbackend.quest.Quest;
 import com.dayquest.dayquestbackend.quest.QuestRepository;
 import com.dayquest.dayquestbackend.user.User;
@@ -47,23 +48,18 @@ public class VideoController {
   private ViewedVideoRepository viewedVideoRepository;
 
   @Autowired
+  JwtService jwtService;
+
+  @Autowired
   private Cache<Integer, String> videoCache;
     @Autowired
     private QuestRepository questRepository;
 
   @Autowired
   private AsyncTaskExecutor delegatingSecurityContextAsyncTaskExecutor;
-  ;
 
   @Async
-  @GetMapping
-
-  public CompletableFuture<ResponseEntity<List<Video>>> getAllVideos() {
-    return CompletableFuture.supplyAsync(() -> ResponseEntity.ok(videoRepository.findAll()));
-  }
-
-  @Async
-  @PostMapping("/upload")
+  @PostMapping
   public CompletableFuture<ResponseEntity<String>> uploadVideo(
       @RequestParam("file") MultipartFile file,
       @RequestParam("title") String title,
@@ -88,10 +84,21 @@ public class VideoController {
   }
 
   @Async
-  @PostMapping("/delete")
-  public CompletableFuture<ResponseEntity<String>> deleteVideo(@RequestParam UUID uuid) {
-    return videoService.deleteVideo(uuid);
-  }
+  @DeleteMapping("/{uuid}")
+    public CompletableFuture<ResponseEntity<String>> deleteVideo(@PathVariable UUID uuid, @RequestHeader("Authorization") String token) {
+        return CompletableFuture.supplyAsync(() -> {
+        Optional<Video> video = videoRepository.findById(uuid);
+        if (video.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        String username = jwtService.extractUsername(token);
+        if (!video.get().getUser().getUsername().equals(username)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        videoRepository.delete(video.get());
+        return ResponseEntity.ok("Deleted");
+        });
+    }
 
 
   @Async
@@ -121,7 +128,7 @@ public class VideoController {
             ));
   }
 
-  private VideoDTO createVideoDTO(Video video, User user) {
+  public VideoDTO createVideoDTO(Video video, User user) {
     VideoDTO videoDTO = new VideoDTO(
             video.getTitle(),
             video.getDescription(),
@@ -131,7 +138,8 @@ public class VideoController {
             video.getFilePath(),
             null,
             questRepository.findById(video.getQuestUuid()).orElse(null),
-            video.getUuid()
+            video.getUuid(),
+            video.getCreatedAt()
     );
 
     videoDTO.setLiked(user.getLikedVideos().contains(video.getUuid()));
@@ -153,7 +161,6 @@ public class VideoController {
         Optional<User> user = userRepository.findById(UUID.fromString(userUuid.getUuid()));
         Optional<Video> video = videoRepository.findById(uuid);
 
-        // Verify the user matches the authenticated user
         if (user.isEmpty()) {
           return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
@@ -177,6 +184,37 @@ public class VideoController {
       }
     }, delegatingSecurityContextAsyncTaskExecutor);
   }
+  
+  @DeleteMapping("/{uuid}/like")
+  @Async
+    public CompletableFuture<ResponseEntity<Video>> unlikeVideo(
+            @PathVariable UUID uuid,
+            @RequestBody UuidDTO userUuid) {
+    
+        return CompletableFuture.supplyAsync(() -> {
+        try {
+            Optional<User> user = userRepository.findById(UUID.fromString(userUuid.getUuid()));
+            Optional<Video> video = videoRepository.findById(uuid);
+    
+            if (user.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+    
+            if (!user.get().getLikedVideos().contains(uuid)) {
+            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
+            }
+    
+            user.get().getLikedVideos().remove(uuid);
+            video.get().setUpVotes(video.get().getUpVotes() - 1);
+            videoRepository.save(video.get());
+            userRepository.save(user.get());
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+        }, delegatingSecurityContextAsyncTaskExecutor);
+    }
 
 
   @Async
@@ -206,16 +244,48 @@ public class VideoController {
       return videoService.dislikeVideo(uuid).join();
     });
   }
+  
+    @DeleteMapping("/{uuid}/dislike")
+    @Async
+    public CompletableFuture<ResponseEntity<Video>> undislikeVideo(
+            @PathVariable UUID uuid,
+            @RequestBody UuidDTO userUuid) {
+    
+        return CompletableFuture.supplyAsync(() -> {
+        try {
+            Optional<User> user = userRepository.findById(UUID.fromString(userUuid.getUuid()));
+            Optional<Video> video = videoRepository.findById(uuid);
+    
+            if (user.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+    
+            if (!user.get().getDislikedVideos().contains(uuid)) {
+            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
+            }
+    
+            user.get().getDislikedVideos().remove(uuid);
+            video.get().setDownVotes(video.get().getDownVotes() - 1);
+            videoRepository.save(video.get());
+            userRepository.save(user.get());
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+        }, delegatingSecurityContextAsyncTaskExecutor);
+    }
 
   @Async
-  @PostMapping("/{uuid}")
-  public CompletableFuture<ResponseEntity<Video>> getVideoById(@PathVariable UUID uuid) {
+  @GetMapping("/{uuid}")
+  public CompletableFuture<ResponseEntity<VideoDTO>> getVideoById(@PathVariable UUID uuid) {
     return CompletableFuture.supplyAsync(() -> {
       if (videoRepository.findById(uuid).isEmpty()) {
         return ResponseEntity.notFound().build();
       }
 
-      return ResponseEntity.ok(videoRepository.findById(uuid).get());
+      Video video = videoRepository.findById(uuid).get();
+      return ResponseEntity.ok(createVideoDTO(video, video.getUser()));
     });
   }
 

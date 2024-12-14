@@ -5,7 +5,6 @@ import java.util.UUID;
 public class UpdateUserDTO {
     private UUID uuid;
     private String username;
-    private String email;
 
     // Getter und Setter
     public UUID getUuid() {
@@ -22,13 +21,5 @@ public class UpdateUserDTO {
 
     public void setUsername(String username) {
         this.username = username;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
     }
 }

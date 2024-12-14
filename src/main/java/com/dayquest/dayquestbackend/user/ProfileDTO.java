@@ -13,14 +13,16 @@ public class ProfileDTO {
     private String profilePicture;
     private List<VideoDTO> videos = new ArrayList<>();
     private Quest quest;
+    private int followers;
     private boolean isBanned;
 
-    public ProfileDTO(String username, String profilePicture, List<Video> videos, Quest quest, boolean isBanned) {
+    public ProfileDTO(String username, String profilePicture, List<Video> videos, Quest quest, boolean isBanned, int followers) {
         this.username = username;
         this.profilePicture = profilePicture;
         this.videos = new ArrayList<>();
         this.quest = quest;
         this.isBanned = isBanned;
+        this.followers = followers;
         if (videos != null) {
             for(Video video : videos) {
                 this.videos.add(new VideoDTO(
@@ -32,7 +34,8 @@ public class ProfileDTO {
                         video.getFilePath(),
                         "http://77.90.21.53:8010/api/videos/thumbnail/" + video.getUuid().toString(),
                         quest,
-                        video.getUuid()
+                        video.getUuid(),
+                        video.getCreatedAt()
                 ));
             }
         }

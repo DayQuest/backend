@@ -5,6 +5,7 @@ import com.dayquest.dayquestbackend.user.User;
 import jakarta.persistence.*;
 
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -30,6 +31,8 @@ public class Video {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    private LocalDateTime createdAt;
 
     public void setUser(User user) {
         this.user = user;
@@ -97,6 +100,14 @@ public class Video {
 
     public UUID getQuestUuid() {
         return questUuid;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
     public void setQuestUuid(UUID questUuid) {

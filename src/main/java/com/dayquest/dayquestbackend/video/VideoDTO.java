@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.Transient;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class VideoDTO {
@@ -16,6 +17,7 @@ public class VideoDTO {
     private String username;
     private String filePath;
     private String thumbnail;
+    private LocalDateTime createdAt;
 
     @Transient
     @Nullable
@@ -28,7 +30,6 @@ public class VideoDTO {
     @JsonManagedReference
     private Quest quest;
 
-    // Constructor
     public VideoDTO(
             String title,
             String description,
@@ -38,8 +39,10 @@ public class VideoDTO {
             String filePath,
             String thumbnail,
             Quest quest,
-            UUID uuid) {
+            UUID uuid,
+            LocalDateTime createdAt) {
         this.title = title;
+        this.createdAt = createdAt;
         this.description = description;
         this.upVotes = upVotes;
         this.downVotes = downVotes;

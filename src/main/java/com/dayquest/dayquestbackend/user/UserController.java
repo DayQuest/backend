@@ -4,7 +4,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Optional;
+import java.util.*;
 
 import com.dayquest.dayquestbackend.JwtService;
 import com.dayquest.dayquestbackend.streak.StreakService;
@@ -16,6 +16,8 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -28,8 +30,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.InputStream;
 
 import javax.imageio.ImageIO;
-import java.util.UUID;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/users")
@@ -61,6 +64,18 @@ public class UserController {
   public ResponseEntity<Object> status() {
     return ResponseEntity.ok().build();
   }
+
+    @PostMapping("/verify")
+    public ResponseEntity<String> verifyUser(@RequestBody String token) {
+        return userService.verifyAccount(token);
+    }
+
+    @PostMapping("/resendcode")
+    @Async
+    public CompletableFuture<ResponseEntity<String>> resendVerificationCode(@RequestBody String email) {
+        userService.resendVerificationCode(email);
+        return CompletableFuture.completedFuture(ResponseEntity.ok("Verification code resent"));
+    }
 
   @PostMapping("/login")
   @Async
@@ -94,31 +109,6 @@ public class UserController {
     });
   }
 
-    @PostMapping("/verify")
-    public ResponseEntity<String> verifyUser(@RequestBody String token) {
-        return userService.verifyAccount(token);
-    }
-
-    @PostMapping("/resendcode")
-    @Async
-    public CompletableFuture<ResponseEntity<String>> resendVerificationCode(@RequestBody String email) {
-        userService.resendVerificationCode(email);
-        return CompletableFuture.completedFuture(ResponseEntity.ok("Verification code resent"));
-    }
-
-
- /* @PostMapping("/ban")
-  @Async
-  public CompletableFuture<ResponseEntity<String>> banUser(@RequestBody UUID uuid) {
-    return userService.changeBanStatus(uuid, true);
-  }
-
-  @PostMapping("/unban")
-  @Async
-  public CompletableFuture<ResponseEntity<String>> unbanUser(@RequestBody UUID uuid) {
-    return userService.changeBanStatus(uuid, false);
-  }*/
-
   @PostMapping("/auth")
   @Async
   public CompletableFuture<ResponseEntity<String>> authUser(@RequestBody UUID uuid , @RequestHeader("Authorization") String token) {
@@ -139,10 +129,9 @@ public class UserController {
   @PostMapping("/update")
   @Async
   public CompletableFuture<ResponseEntity<String>> updateUser(
-      @RequestBody UpdateUserDTO updateUserDTO) {
-
-    return userService.updateUserProfile(updateUserDTO.getUuid(), updateUserDTO.getUsername(),
-        updateUserDTO.getEmail());
+      @RequestBody UpdateUserDTO updateUserDTO, @RequestHeader("Authorization") String token) {
+       String username = jwtService.extractUsername(token.substring(7));
+    return userService.updateUserProfile(updateUserDTO.getUuid(), updateUserDTO.getUsername());
   }
 
   @GetMapping("/{uuid}")
@@ -160,11 +149,127 @@ public class UserController {
               profilePictureLink,
               userWithVideos.getPostedVideos(),
                 userWithVideos.getDailyQuest(),
-                userWithVideos.isBanned()
+                userWithVideos.isBanned(),
+                userWithVideos.getFollowers()
       );
       return ResponseEntity.ok(profileDTO);
     });
   }
+
+  @GetMapping("/{uuid}/followers")
+    @Async
+  public CompletableFuture<ResponseEntity<List<UUID>>> getFollowers(@PathVariable UUID uuid, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
+        return CompletableFuture.supplyAsync(() -> {
+            User user = userRepository.findById(uuid).get();
+            if (user == null) {
+                return ResponseEntity.notFound().build();
+            }
+            List<UUID> followers = user.getFollowerList().stream()
+                    .skip((long) page * size)
+                    .limit(size)
+                    .toList();
+            return ResponseEntity.ok(followers);
+        });
+    }
+
+    @GetMapping("/{uuid}/following")
+    @Async
+    public CompletableFuture<ResponseEntity<List<UUID>>> getFollowing(@PathVariable UUID uuid, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
+        return CompletableFuture.supplyAsync(() -> {
+            User user = userRepository.findById(uuid).get();
+            if (user == null) {
+                return ResponseEntity.notFound().build();
+            }
+            List<UUID> following = user.getFollowedUsers().stream()
+                    .skip((long) page * size)
+                    .limit(size)
+                    .toList();
+            return ResponseEntity.ok(following);
+        });
+    }
+
+    @PostMapping("/{uuid}/follow")
+    @Async
+    public CompletableFuture<ResponseEntity<String>> followUser(@PathVariable UUID uuid, @RequestHeader("Authorization") String token) {
+        return CompletableFuture.supplyAsync(() -> {
+            String username = jwtService.extractUsername(token.substring(7));
+            User user = userRepository.findByUsername(username);
+            User userToFollow = userRepository.findById(uuid).get();
+            if (user == null|| userToFollow == null) {
+                return ResponseEntity.notFound().build();
+            }
+            if (user.getFollowedUsers().contains(userToFollow.getUuid())) {
+                return ResponseEntity.badRequest().body("User already followed");
+            }
+            userToFollow.getFollowerList().add(user.getUuid());
+            userToFollow.setFollowers(userToFollow.getFollowers() + 1);
+            user.getFollowedUsers().add(userToFollow.getUuid());
+            userRepository.save(user);
+            userRepository.save(userToFollow);
+            return ResponseEntity.ok("User followed");
+        });
+    }
+
+    @PostMapping("/{uuid}/unfollow")
+    @Async
+    public CompletableFuture<ResponseEntity<String>> unfollowUser(@PathVariable UUID uuid, @RequestHeader("Authorization") String token) {
+        return CompletableFuture.supplyAsync(() -> {
+            String username = jwtService.extractUsername(token.substring(7));
+            User user = userRepository.findByUsername(username);
+            User userToUnfollow = userRepository.findById(uuid).get();
+            if (user == null|| userToUnfollow == null) {
+                return ResponseEntity.notFound().build();
+            }
+            if (!user.getFollowedUsers().contains(userToUnfollow.getUuid())) {
+                return ResponseEntity.badRequest().body("User not followed");
+            }
+            userToUnfollow.getFollowerList().remove(user.getUuid());
+            userToUnfollow.setFollowers(userToUnfollow.getFollowers() - 1);
+            user.getFollowedUsers().remove(userToUnfollow.getUuid());
+            userRepository.save(user);
+            userRepository.save(userToUnfollow);
+            return ResponseEntity.ok("User unfollowed");
+        });
+    }
+
+  @GetMapping("/search")
+  @Async
+  public CompletableFuture<ResponseEntity<Map<String, Object>>> searchUsers(
+          @RequestParam String query,
+          @RequestParam(defaultValue = "0") int page,
+          @RequestParam(defaultValue = "10") int size) {
+    return CompletableFuture.supplyAsync(() -> {
+      Page<User> userPage = userRepository.findUsersByUsernameContainingIgnoreCase(
+              query,
+              PageRequest.of(page, size)
+      );
+
+      List<ProfileDTO> profileDTOs = userPage.getContent().stream()
+              .map(user -> new ProfileDTO(
+                      user.getUsername(),
+                      "http://77.90.21.53:8010/api/users/profilepicture/" + user.getUsername(),
+                      user.getPostedVideos(),
+                      user.getDailyQuest(),
+                      user.isBanned(),
+                      user.getFollowers()
+              ))
+              .collect(Collectors.toList());
+
+      if (profileDTOs.isEmpty()) {
+        return ResponseEntity.notFound().build();
+      }
+
+      Map<String, Object> response = new HashMap<>();
+      response.put("users", profileDTOs);
+      response.put("currentPage", userPage.getNumber());
+      response.put("totalItems", userPage.getTotalElements());
+      response.put("totalPages", userPage.getTotalPages());
+
+      return ResponseEntity.ok(response);
+    });
+  }
+
+
 
   @GetMapping("/profile/{username}")
   @Async
@@ -184,7 +289,8 @@ public class UserController {
               profilePictureLink,
               userWithVideos.getPostedVideos(),
               userWithVideos.getDailyQuest(),
-                userWithVideos.isBanned()
+                userWithVideos.isBanned(),
+                userWithVideos.getFollowers()
       );
       return ResponseEntity.ok(profileDTO);
     });
@@ -284,14 +390,14 @@ public class UserController {
         int orientation = directory.getInt(ExifIFD0Directory.TAG_ORIENTATION);
 
         switch (orientation) {
-          case 6: // Rotate 90 degrees clockwise
+          case 6:
             return rotateImage(image, 90);
-          case 3: // Rotate 180 degrees
+          case 3:
             return rotateImage(image, 180);
-          case 8: // Rotate 90 degrees counterclockwise
+          case 8:
             return rotateImage(image, -90);
           default:
-            return image; // No rotation needed
+            return image;
         }
       }
     } catch (Exception e) {
@@ -315,5 +421,4 @@ public class UserController {
 
     return rotatedImage;
   }
-
 }

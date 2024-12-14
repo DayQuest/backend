@@ -86,6 +86,7 @@ public class UserService {
       newUser.setVerificationCode(generateVerificationCode());
       newUser.setVerificationCodeExpiresAt(LocalDateTime.now().plusHours(1));
       newUser.setEnabled(false);
+      newUser.setBetaKey(betaKey);
       newUser.setAuthorities(List.of("ROLE_USER"));
       sendVerificationEmail(newUser);
       newUser.setDailyQuest(randomQuest);
@@ -159,7 +160,7 @@ public class UserService {
 
 
   @Async
-  public CompletableFuture<ResponseEntity<String>> updateUserProfile(UUID uuid, String username, String email) {
+  public CompletableFuture<ResponseEntity<String>> updateUserProfile(UUID uuid, String username) {
     return CompletableFuture.supplyAsync(() -> {
       Optional<User> user = userRepository.findById(uuid);
       if (user.isEmpty()) {
@@ -167,7 +168,6 @@ public class UserService {
       }
 
       user.get().setUsername(username);
-      user.get().setEmail(email);
       userRepository.save(user.get());
       return ResponseEntity.ok("Updated successfully");
     });
@@ -207,6 +207,29 @@ public class UserService {
 
     try {
       emailService.sendVerificationEmail(user.getEmail(), subject, htmlMessage);
+    } catch (MessagingException e) {
+      e.printStackTrace();
+    }
+  }
+
+  public void sendResetPasswordEmail(String email) {
+    String subject = "Reset Password";
+    String resetCode = generateVerificationCode();
+    String htmlMessage = "<html>"
+            + "<body style=\"font-family: Arial, sans-serif;\">"
+            + "<div style=\"background-color: #f5f5f5; padding: 20px;\">"
+            + "<h2 style=\"color: #333;\">Passwort vergessen!</h2>"
+            + "<p style=\"font-size: 16px;\">Hier ist dein Code:</p>"
+            + "<div style=\"background-color: #fff; padding: 20px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1);\">"
+            + "<p style=\"font-size: 18px; font-weight: bold; color: #007bff;\">" + resetCode + "</p>"
+            + "</div>"
+            + "</div>"
+            + "</body>"
+            + "</html>";
+
+    try {
+      emailService.sendVerificationEmail(email, subject, htmlMessage);
+      userRepository.findByEmail(email).setPasswordResetToken(resetCode);
     } catch (MessagingException e) {
       e.printStackTrace();
     }
