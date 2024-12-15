@@ -9,7 +9,9 @@ import com.dayquest.dayquestbackend.video.Video;
 import com.dayquest.dayquestbackend.video.VideoDTO;
 import com.dayquest.dayquestbackend.video.VideoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
@@ -59,20 +61,42 @@ public class AdminController {
 
     @GetMapping("/videos")
     @Async
-    public CompletableFuture<ResponseEntity<List<VideoDTO>>> getVideos(@RequestHeader("Authorization") String token,
-                                                                       @RequestParam(defaultValue = "0") int page,
-                                                                       @RequestParam(defaultValue = "10") int size) {
+    public CompletableFuture<ResponseEntity<List<VideoDTO>>> getVideos(
+            @RequestHeader("Authorization") String token,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "DESC") Sort.Direction sortDirection) {
         return CompletableFuture.supplyAsync(() -> {
             String username = jwtService.extractUsername(token.substring(7));
             User user = userRepository.findByUsername(username);
+
             if (user.getAuthorities().stream()
                     .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"))) {
-                List<Video> videos = videoRepository.findAll(PageRequest.of(page, size)).getContent();
-                List<VideoDTO> videoDTOS = videos.stream()
-                        .map(video -> new VideoDTO(video.getTitle(), video.getDescription(), video.getUpVotes(), video.getDownVotes(), video.getUser().getUsername(), video.getFilePath(), "http://77.90.21.53:8010/api/videos/thumbnail/" + video.getUuid().toString(), questRepository.findByUuid(video.getQuestUuid()), video.getUuid(), video.getCreatedAt()))
+
+                Sort sort = Sort.by(sortDirection, sortBy);
+
+                PageRequest pageRequest = PageRequest.of(page, size, sort);
+
+                Page<Video> videoPage = videoRepository.findAll(pageRequest);
+
+                List<VideoDTO> videoDTOS = videoPage.getContent().stream()
+                        .map(video -> new VideoDTO(
+                                video.getTitle(),
+                                video.getDescription(),
+                                video.getUpVotes(),
+                                video.getDownVotes(),
+                                video.getUser().getUsername(),
+                                video.getFilePath(),
+                                "http://77.90.21.53:8010/api/videos/thumbnail/" + video.getUuid().toString(),
+                                questRepository.findByUuid(video.getQuestUuid()),
+                                video.getUuid(),
+                                video.getCreatedAt()))
                         .collect(Collectors.toList());
+
                 return ResponseEntity.ok(videoDTOS);
             }
+
             return ResponseEntity.ok(null);
         });
     }

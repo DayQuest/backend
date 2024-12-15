@@ -210,7 +210,7 @@ public class UserController {
         });
     }
 
-    @PostMapping("/{uuid}/unfollow")
+    @DeleteMapping("/{uuid}/follow")
     @Async
     public CompletableFuture<ResponseEntity<String>> unfollowUser(@PathVariable UUID uuid, @RequestHeader("Authorization") String token) {
         return CompletableFuture.supplyAsync(() -> {
