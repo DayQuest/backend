@@ -39,6 +39,7 @@ services:
       - SERVER_PORT=${SERVER_PORT}
     ports:
       - ${SERVER_PORT}:${SERVER_PORT}
+      - "8010:8010"
     depends_on:
       - mysql
     restart: unless-stopped
