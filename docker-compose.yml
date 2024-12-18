@@ -30,6 +30,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    volumes:
+      - /opt/dayquestcdn/videos/processed:/opt/dayquestcdn/videos/processed
+      - /opt/dayquestcdn/videos/unprocessed:/opt/dayquestcdn/videos/unprocessed
     container_name: dayquest-backend
     environment:
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
