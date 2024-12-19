@@ -126,14 +126,6 @@ public class UserController {
     });
   }
 
-  @PostMapping("/update")
-  @Async
-  public CompletableFuture<ResponseEntity<String>> updateUser(
-      @RequestBody UpdateUserDTO updateUserDTO, @RequestHeader("Authorization") String token) {
-       String username = jwtService.extractUsername(token.substring(7));
-    return userService.updateUserProfile(updateUserDTO.getUuid(), updateUserDTO.getUsername());
-  }
-
   @GetMapping("/{uuid}")
   @Async
   public CompletableFuture<ResponseEntity<ProfileDTO>> getUserByUuid(@PathVariable UUID uuid) {
@@ -352,6 +344,26 @@ public class UserController {
       return ResponseEntity.status(500).body("Failed to process the file");
     }
   }
+
+  @PutMapping("/me")
+  @Async
+    public CompletableFuture<ResponseEntity<String>> updateUserProfile(@RequestBody UpdateUserDTO updateUserDTO, @RequestHeader("Authorization") String token) {
+        return CompletableFuture.supplyAsync(() -> {
+            String username = jwtService.extractUsername(token.substring(7));
+            User user = userRepository.findByUsername(username);
+            if (user == null) {
+                return ResponseEntity.notFound().build();
+            }
+            if (updateUserDTO.getUsername() != null) {
+                user.setUsername(updateUserDTO.getUsername());
+            }
+            if (updateUserDTO.getEmail() != null) {
+                user.setEmail(updateUserDTO.getEmail());
+            }
+            userRepository.save(user);
+            return ResponseEntity.ok("User profile updated");
+        });
+    }
 
 
   public byte[] compressImage(MultipartFile originalFile) throws IOException {

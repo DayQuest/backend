@@ -16,8 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.OperatingSystemMXBean;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
@@ -45,19 +43,19 @@ public class AdminController {
     @Autowired
     private VideoRepository videoRepository;
 
-    @PostMapping("/test")
+    @PostMapping("/auth")
     @Async
-    public CompletableFuture<String> test(@RequestHeader("Authorization") String token) {
+    public CompletableFuture<ResponseEntity<String>> test(@RequestHeader("Authorization") String token) {
         return CompletableFuture.supplyAsync(() -> {
             String username = jwtService.extractUsername(token.substring(7));
             User user = userRepository.findByUsername(username);
             if (user.getAuthorities().stream()
                     .noneMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"))) {
-                return "Hello, admin " + user.getUsername();
+                return ResponseEntity.ok("Authenticated");
             }
 
 
-            return "Hello, " + user.getUsername();
+            return ResponseEntity.status(403).body("You are not an admin");
         });
     }
 
@@ -236,7 +234,7 @@ public class AdminController {
             String username = jwtService.extractUsername(token.substring(7));
             User user = userRepository.findByUsername(username);
             if (user.getAuthorities().stream()
-                    .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"))) {
+                    .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN")) || user.getUsername().equals(username)) {
                 User userToUpdate = userRepository.findById(UUID.fromString(uuid)).orElse(null);
                 userToUpdate.setUsername(userDetailsDTO.getUsername());
                 userToUpdate.setEmail(userDetailsDTO.getEmail());
