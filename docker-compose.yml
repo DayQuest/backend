@@ -1,0 +1,72 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: dayquest-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    restart: unless-stopped
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: dayquest-phpmyadmin
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    ports:
+      - "8081:80"
+    depends_on:
+      - mysql
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - /opt/dayquestcdn/videos/processed:/opt/dayquestcdn/videos/processed
+      - /opt/dayquestcdn/videos/unprocessed:/opt/dayquestcdn/videos/unprocessed
+    container_name: dayquest-backend
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO}
+      SPRING_JPA_SHOW_SQL: ${SPRING_JPA_SHOW_SQL}
+      SPRING_JPA_PROPERTIES_HIBERNATE_ENABLE_LAZY_LOAD_NO_TRANS: ${SPRING_JPA_PROPERTIES_HIBERNATE_ENABLE_LAZY_LOAD_NO_TRANS}
+      SPRING_JPA_OPEN_IN_VIEW: ${SPRING_JPA_OPEN_IN_VIEW}
+      SPRING_OUTPUT_ANSI_ENABLED: ${SPRING_OUTPUT_ANSI_ENABLED}
+      SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE: ${SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE}
+      SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE: ${SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE}
+      SERVER_PORT: ${SERVER_PORT}
+      VIDEO_PROCESSED_PATH: ${VIDEO_PROCESSED_PATH}
+      VIDEO_UPLOAD_PATH: ${VIDEO_UPLOAD_PATH}
+      FFMPEG_PATH: ${FFMPEG_PATH}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      JWT_SECRET: ${JWT_SECRET}
+      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST}
+      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE}
+      SPRING_MAIN_ALLOW_CIRCULAR_REFERENCES: ${SPRING_MAIN_ALLOW_CIRCULAR_REFERENCES}
+      SPRING_MAIN_ALLOW_BEAN_DEFINITION_OVERRIDING: ${SPRING_MAIN_ALLOW_BEAN_DEFINITION_OVERRIDING}
+    ports:
+      - ${SERVER_PORT}:${SERVER_PORT}
+    depends_on:
+      - mysql
+    restart: unless-stopped
+    pull_policy: build
+
+
+volumes:
+  mysql-data:
