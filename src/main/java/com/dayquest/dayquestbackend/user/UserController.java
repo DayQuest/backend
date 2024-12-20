@@ -309,6 +309,18 @@ public class UserController {
     });
   }
 
+  @GetMapping("/{username}/uuid")
+    @Async
+    public CompletableFuture<ResponseEntity<UUID>> getUuidByUsername(@PathVariable String username) {
+        return CompletableFuture.supplyAsync(() -> {
+            User user = userRepository.findByUsername(username);
+            if (user == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(user.getUuid());
+        });
+    }
+
   @GetMapping("/profilepicture/{username}")
   @Async
   public CompletableFuture<ResponseEntity<ByteArrayResource>> getDecodedImage(@PathVariable("username") String username) {
