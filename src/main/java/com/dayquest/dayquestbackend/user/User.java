@@ -25,6 +25,9 @@ public class User implements UserDetails {
     @Column(nullable = false, unique = true)
     private String username;
 
+    //This is just for beta: every interaction such as liking, commenting etc. will increase this to
+    //have a look at the beta tester activities.
+    private int interactions;
     @Column(nullable = false)
     private String email;
 
@@ -56,7 +59,6 @@ public class User implements UserDetails {
     @ElementCollection
     private List<UUID> followerList;
 
-    private String betaKey;
 
     private String passwordResetToken;
 
@@ -128,16 +130,20 @@ public class User implements UserDetails {
         return uuid;
     }
 
-    public String getBetaKey() {
-        return betaKey;
-    }
-
-    public void setBetaKey(String betaKey) {
-        this.betaKey = betaKey;
-    }
-
     public void setUuid(UUID uuid) {
         this.uuid = uuid;
+    }
+
+    public int getInteractions() {
+        return interactions;
+    }
+
+    public void increaseInteractions() {
+        setInteractions(getInteractions() + 1);
+    }
+
+    public void setInteractions(int interactions) {
+        this.interactions = interactions;
     }
 
     public String getUsername() {

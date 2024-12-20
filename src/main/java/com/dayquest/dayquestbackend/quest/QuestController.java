@@ -1,5 +1,6 @@
 package com.dayquest.dayquestbackend.quest;
 
+import com.dayquest.dayquestbackend.user.ActivityUpdater;
 import com.dayquest.dayquestbackend.user.UserRepository;
 import com.dayquest.dayquestbackend.user.User;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,9 @@ public class QuestController {
     @Autowired
     private QuestRepository questRepository;
 
+    @Autowired
+    private ActivityUpdater activityUpdater;
+
     @GetMapping
     @Async
     @PreAuthorize("isAuthenticated()")
@@ -55,6 +59,7 @@ public class QuestController {
         if (quest.getDescription().toLowerCase().contains("penis")) {
             return CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null));
         }
+
         return questService.createQuest(quest.getTitle(), quest.getDescription())
             .thenApply(newQuest -> ResponseEntity.status(HttpStatus.CREATED).body(newQuest));
     }
@@ -81,6 +86,7 @@ public class QuestController {
             user.get().getLikedQuests().add(interactionDTO.getUuid());
             quest.get().setLikes(quest.get().getLikes() + 1);
             questRepository.save(quest.get());
+            activityUpdater.increaseInteractions(user);
             userRepository.save(user.get());
             return ResponseEntity.ok("Successfully liked quest");
         });
@@ -110,6 +116,7 @@ public class QuestController {
             user.get().getDislikedQuests().add(interactionDTO.getUuid());
             quest.get().setDislikes(quest.get().getDislikes() + 1);
             questRepository.save(quest.get());
+            activityUpdater.increaseInteractions(user);
             userRepository.save(user.get());
             return ResponseEntity.ok("Successfully disliked quest");
         });
