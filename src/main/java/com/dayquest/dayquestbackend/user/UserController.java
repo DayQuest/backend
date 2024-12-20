@@ -4,6 +4,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.*;
 
 import com.dayquest.dayquestbackend.JwtService;
@@ -103,6 +104,8 @@ public class UserController {
                 .body(new LoginResponse(null, null, "User not verified"));
       }
 
+      user.setLastLogin(LocalDateTime.now());
+      userRepository.save(user);
       String token = jwtService.generateToken(user);
 
       return ResponseEntity.ok(new LoginResponse(user.getUuid(), token, "Login successful"));
@@ -119,6 +122,12 @@ public class UserController {
     return CompletableFuture.supplyAsync(() -> {
       if (userService.authenticateUser(uuid, token).join()) {
         streakService.checkStreak(uuid);
+        User user = userRepository.findById(uuid).get();
+        if (user.isBanned()) {
+          return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User has been banned");
+        }
+        user.setLastLogin(LocalDateTime.now());
+        userRepository.save(user);
         return ResponseEntity.ok("User authenticated");
       } else {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");

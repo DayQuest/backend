@@ -1,7 +1,6 @@
 package com.dayquest.dayquestbackend.video;
 
 import com.dayquest.dayquestbackend.JwtService;
-import com.dayquest.dayquestbackend.quest.Quest;
 import com.dayquest.dayquestbackend.quest.QuestRepository;
 import com.dayquest.dayquestbackend.user.User;
 
@@ -15,10 +14,6 @@ import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.http.*;
 
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.task.DelegatingSecurityContextAsyncTaskExecutor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,10 +21,6 @@ import com.github.benmanes.caffeine.cache.Cache;
 
 import java.util.List;
 import java.util.UUID;
-import java.security.Principal;
-import java.util.concurrent.Executor;
-
-import org.slf4j.Logger;
 
 @RestController
 @RequestMapping("/api/videos")
