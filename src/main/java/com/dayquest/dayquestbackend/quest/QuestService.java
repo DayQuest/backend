@@ -2,6 +2,8 @@ package com.dayquest.dayquestbackend.quest;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+
+import com.dayquest.dayquestbackend.user.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -13,11 +15,12 @@ public class QuestService {
     private QuestRepository questRepository;
 
     @Async
-    public CompletableFuture<Quest> createQuest(String title, String description) {
+    public CompletableFuture<Quest> createQuest(String title, String description, User user) {
         return CompletableFuture.supplyAsync(() -> {
             Quest quest = new Quest();
             quest.setTitle(title);
             quest.setDescription(description);
+            quest.setCreatorUuid(user.getUuid());
             questRepository.save(quest);
 
             return quest;

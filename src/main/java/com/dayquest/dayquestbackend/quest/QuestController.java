@@ -1,5 +1,6 @@
 package com.dayquest.dayquestbackend.quest;
 
+import com.dayquest.dayquestbackend.JwtService;
 import com.dayquest.dayquestbackend.user.ActivityUpdater;
 import com.dayquest.dayquestbackend.user.UserRepository;
 import com.dayquest.dayquestbackend.user.User;
@@ -31,6 +32,8 @@ public class QuestController {
 
     @Autowired
     private ActivityUpdater activityUpdater;
+    @Autowired
+    private JwtService jwtService;
 
     @GetMapping
     @Async
@@ -55,12 +58,12 @@ public class QuestController {
 
     @PostMapping("/create")
     @Async
-    public CompletableFuture<ResponseEntity<Quest>> createQuest(@RequestBody Quest quest) {
+    public CompletableFuture<ResponseEntity<Quest>> createQuest(@RequestBody Quest quest, @RequestHeader("Authorization") String token) {
         if (quest.getDescription().toLowerCase().contains("penis")) {
             return CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null));
         }
 
-        return questService.createQuest(quest.getTitle(), quest.getDescription())
+        return questService.createQuest(quest.getTitle(), quest.getDescription(), userRepository.findByUsername(jwtService.extractUsername(token)))
             .thenApply(newQuest -> ResponseEntity.status(HttpStatus.CREATED).body(newQuest));
     }
 

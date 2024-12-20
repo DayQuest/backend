@@ -11,6 +11,7 @@ public class Quest {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID uuid;
+    private UUID creatorUuid;
     private String title;
     private String description;
     private int likes;
@@ -54,5 +55,13 @@ public class Quest {
 
     public void setDislikes(int dislikes) {
         this.dislikes = dislikes;
+    }
+
+    public UUID getCreatorUuid() {
+        return creatorUuid;
+    }
+
+    public void setCreatorUuid(UUID creatorUuid) {
+        this.creatorUuid = creatorUuid;
     }
 }
