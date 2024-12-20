@@ -4,6 +4,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.*;
 
 import com.dayquest.dayquestbackend.JwtService;
@@ -103,6 +104,8 @@ public class UserController {
                 .body(new LoginResponse(null, null, "User not verified"));
       }
 
+      user.setLastLogin(LocalDateTime.now());
+      userRepository.save(user);
       String token = jwtService.generateToken(user);
 
       return ResponseEntity.ok(new LoginResponse(user.getUuid(), token, "Login successful"));
@@ -119,19 +122,17 @@ public class UserController {
     return CompletableFuture.supplyAsync(() -> {
       if (userService.authenticateUser(uuid, token).join()) {
         streakService.checkStreak(uuid);
+        User user = userRepository.findById(uuid).get();
+        if (user.isBanned()) {
+          return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User has been banned");
+        }
+        user.setLastLogin(LocalDateTime.now());
+        userRepository.save(user);
         return ResponseEntity.ok("User authenticated");
       } else {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
       }
     });
-  }
-
-  @PostMapping("/update")
-  @Async
-  public CompletableFuture<ResponseEntity<String>> updateUser(
-      @RequestBody UpdateUserDTO updateUserDTO, @RequestHeader("Authorization") String token) {
-       String username = jwtService.extractUsername(token.substring(7));
-    return userService.updateUserProfile(updateUserDTO.getUuid(), updateUserDTO.getUsername());
   }
 
   @GetMapping("/{uuid}")
@@ -269,6 +270,18 @@ public class UserController {
     });
   }
 
+    @GetMapping("{username}/followersAsInt")
+    @Async
+    public CompletableFuture<ResponseEntity<Integer>> getFollowersAsInt(@PathVariable String username) {
+        return CompletableFuture.supplyAsync(() -> {
+            User user = userRepository.findByUsername(username);
+            if (user == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(user.getFollowers());
+        });
+    }
+
 
 
   @GetMapping("/profile/{username}")
@@ -352,6 +365,26 @@ public class UserController {
       return ResponseEntity.status(500).body("Failed to process the file");
     }
   }
+
+  @PutMapping("/me")
+  @Async
+    public CompletableFuture<ResponseEntity<String>> updateUserProfile(@RequestBody UpdateUserDTO updateUserDTO, @RequestHeader("Authorization") String token) {
+        return CompletableFuture.supplyAsync(() -> {
+            String username = jwtService.extractUsername(token.substring(7));
+            User user = userRepository.findByUsername(username);
+            if (user == null) {
+                return ResponseEntity.notFound().build();
+            }
+            if (updateUserDTO.getUsername() != null) {
+                user.setUsername(updateUserDTO.getUsername());
+            }
+            if (updateUserDTO.getEmail() != null) {
+                user.setEmail(updateUserDTO.getEmail());
+            }
+            userRepository.save(user);
+            return ResponseEntity.ok("User profile updated");
+        });
+    }
 
 
   public byte[] compressImage(MultipartFile originalFile) throws IOException {

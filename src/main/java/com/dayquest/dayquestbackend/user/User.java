@@ -63,6 +63,8 @@ public class User implements UserDetails {
     @ElementCollection
     private List<UUID> doneQuests;
 
+    private LocalDateTime lastLogin;
+
     @Column(name = "verification_code")
     private String verificationCode;
 
@@ -317,5 +319,13 @@ public class User implements UserDetails {
 
     public List<String> getAuthoritiesList() {
         return authorities;
+    }
+
+    public LocalDateTime getLastLogin() {
+        return lastLogin;
+    }
+
+    public void setLastLogin(LocalDateTime lastLogin) {
+        this.lastLogin = lastLogin;
     }
 }

@@ -43,19 +43,19 @@ public class AdminController {
     @Autowired
     private VideoRepository videoRepository;
 
-    @PostMapping("/test")
+    @PostMapping("/auth")
     @Async
-    public CompletableFuture<String> test(@RequestHeader("Authorization") String token) {
+    public CompletableFuture<ResponseEntity<String>> test(@RequestHeader("Authorization") String token) {
         return CompletableFuture.supplyAsync(() -> {
             String username = jwtService.extractUsername(token.substring(7));
             User user = userRepository.findByUsername(username);
             if (user.getAuthorities().stream()
                     .noneMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"))) {
-                return "Hello, admin " + user.getUsername();
+                return ResponseEntity.ok("Authenticated");
             }
 
 
-            return "Hello, " + user.getUsername();
+            return ResponseEntity.status(403).body("You are not an admin");
         });
     }
 
@@ -234,7 +234,7 @@ public class AdminController {
             String username = jwtService.extractUsername(token.substring(7));
             User user = userRepository.findByUsername(username);
             if (user.getAuthorities().stream()
-                    .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"))) {
+                    .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN")) || user.getUsername().equals(username)) {
                 User userToUpdate = userRepository.findById(UUID.fromString(uuid)).orElse(null);
                 userToUpdate.setUsername(userDetailsDTO.getUsername());
                 userToUpdate.setEmail(userDetailsDTO.getEmail());
