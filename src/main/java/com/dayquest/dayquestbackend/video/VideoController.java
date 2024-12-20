@@ -260,7 +260,6 @@ public class VideoController {
                 Optional<Video> video = videoRepository.findById(uuid);
 
                 if (user.isEmpty()) {
-                    return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
                 }
 
                 if (!user.get().getDislikedVideos().contains(uuid)) {
