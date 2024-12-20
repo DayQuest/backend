@@ -270,6 +270,18 @@ public class UserController {
     });
   }
 
+    @GetMapping("{username}/followersAsInt")
+    @Async
+    public CompletableFuture<ResponseEntity<Integer>> getFollowersAsInt(@PathVariable String username) {
+        return CompletableFuture.supplyAsync(() -> {
+            User user = userRepository.findByUsername(username);
+            if (user == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(user.getFollowers());
+        });
+    }
+
 
 
   @GetMapping("/profile/{username}")
