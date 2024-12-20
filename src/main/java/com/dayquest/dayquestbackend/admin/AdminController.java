@@ -216,7 +216,6 @@ public class AdminController {
                 UserDetailsDTO userDetailsDTO = new UserDetailsDTO();
                 userDetailsDTO.setUsername(userToGet.getUsername());
                 userDetailsDTO.setEmail(userToGet.getEmail());
-                userDetailsDTO.setBetaKey(userToGet.getBetaKey());
                 userDetailsDTO.setAdminComment(userToGet.getAdminComment());
                 userDetailsDTO.setEnabled(userToGet.isEnabled());
                 userDetailsDTO.setBanned(userToGet.isBanned());
@@ -238,7 +237,6 @@ public class AdminController {
                 User userToUpdate = userRepository.findById(UUID.fromString(uuid)).orElse(null);
                 userToUpdate.setUsername(userDetailsDTO.getUsername());
                 userToUpdate.setEmail(userDetailsDTO.getEmail());
-                userToUpdate.setBetaKey(userDetailsDTO.getBetaKey());
                 userToUpdate.setAdminComment(userDetailsDTO.getAdminComment());
                 userToUpdate.setEnabled(userDetailsDTO.isEnabled());
                 userToUpdate.setBanned(userDetailsDTO.isBanned());

@@ -21,17 +21,12 @@ import java.util.stream.Collectors;
 
 @Service
 public class JwtService {
-  private final UserRepository userRepository;
 
   @Value("${jwt.secret}")
   private String secretKey;
 
   @Value("${jwt.expiration}")
   private long jwtExpiration;
-
-  public JwtService(UserRepository userRepository) {
-    this.userRepository = userRepository;
-  }
 
   public String extractUsername(String token) {
     try {
