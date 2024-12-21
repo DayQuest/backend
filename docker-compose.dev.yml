@@ -5,7 +5,7 @@ services:
     volumes:
       - mysql-data-dev:/var/lib/mysql
     env_file:
-      - stack.env
+      - .env
     restart: unless-stopped
 
   phpmyadmin:
@@ -16,14 +16,16 @@ services:
     depends_on:
       - mysql
     env_file:
-      - stack.env
+      - .env
     restart: unless-stopped
 
   app:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     volumes:
+      - .:/app:delegated
+      - ~/.m2:/root/.m2:cached
       - video-processed:/opt/dayquestcdn/videos/processed
       - video-cache:/opt/dayquestcdn/videos/unprocessed
     container_name: dayquest-backend
@@ -32,10 +34,12 @@ services:
     depends_on:
       - mysql
     env_file:
-      - stack.env
+      - .env
     restart: unless-stopped
+    environment:
+      - SPRING_DEVTOOLS_RESTART_ENABLED=true
 
 volumes:
-  mysql-data-dev:
-  video-processed:
-  video-cache:
+    mysql-data-dev:
+    video-processed:
+    video-cache:
