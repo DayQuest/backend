@@ -423,6 +423,8 @@ public class UserController {
     }
 
 
+
+
     public byte[] compressImage(MultipartFile originalFile) throws IOException {
         BufferedImage originalImage = ImageIO.read(originalFile.getInputStream());
 

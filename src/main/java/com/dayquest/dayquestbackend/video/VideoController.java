@@ -55,9 +55,38 @@ public class VideoController {
     @Autowired
     private ActivityUpdater activityUpdater;
 
+    //new endpoint
     @Async
     @PostMapping
     public CompletableFuture<ResponseEntity<String>> uploadVideo(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("title") String title,
+            @RequestParam("description") String description,
+            @RequestParam("userUuid") UUID userUuid) {
+        return CompletableFuture.supplyAsync(() -> {
+            Optional<User> user = userRepository.findById(userUuid);
+            if (user.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Could not find user with that UUID");
+            }
+
+            String path = videoService.uploadVideo(file, title, description, user.get()).join();
+
+            activityUpdater.increaseInteractions(user);
+
+            if (path == null) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Failed to upload video due to internal error");
+            }
+
+            return ResponseEntity.ok("Uploaded");
+        });
+    }
+
+    //old endpoint just for the period where the frontend is not updated
+    @Async
+    @PostMapping("/upload")
+    public CompletableFuture<ResponseEntity<String>> uploadVideo1(
             @RequestParam("file") MultipartFile file,
             @RequestParam("title") String title,
             @RequestParam("description") String description,
