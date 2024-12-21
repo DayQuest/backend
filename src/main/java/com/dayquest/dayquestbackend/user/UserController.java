@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import com.dayquest.dayquestbackend.JwtService;
+import com.dayquest.dayquestbackend.quest.Quest;
+import com.dayquest.dayquestbackend.quest.QuestService;
 import com.dayquest.dayquestbackend.streak.StreakService;
 import com.drew.imaging.ImageMetadataReader;
 import com.drew.metadata.Directory;
@@ -45,6 +47,9 @@ public class UserController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private QuestService questService;
 
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
@@ -441,8 +446,25 @@ public class UserController {
         });
     }
 
-
-
+    @PostMapping("/rerollQuest")
+    @Async
+    public CompletableFuture<ResponseEntity<String>> rerollQuest(@RequestHeader("Authorization") String token) {
+        return CompletableFuture.supplyAsync(() -> {
+            String username = jwtService.extractUsername(token.substring(7));
+            User user = userRepository.findByUsername(username);
+            if (user == null) {
+                return ResponseEntity.notFound().build();
+            }
+            List<Quest> topQuests = questService.getTop10PercentQuests().join();
+            Quest newQuest;
+            do {
+                newQuest = topQuests.get(new Random().nextInt(topQuests.size()));
+            } while (user.getDailyQuest().equals(newQuest));
+            user.setDailyQuest(newQuest);
+            userRepository.save(user);
+            return ResponseEntity.ok("Quest rerolled");
+        });
+    }
 
     public byte[] compressImage(MultipartFile originalFile) throws IOException {
         BufferedImage originalImage = ImageIO.read(originalFile.getInputStream());
