@@ -203,19 +203,25 @@ public class UserController {
         return CompletableFuture.supplyAsync(() -> {
             String username = jwtService.extractUsername(token.substring(7));
             User user = userRepository.findByUsername(username);
-            User userToFollow = userRepository.findById(uuid).get();
+            User userToFollow = userRepository.findById(uuid).orElse(null);
+
             if (user == null || userToFollow == null) {
                 return ResponseEntity.notFound().build();
             }
+
             if (user.getFollowedUsers().contains(userToFollow.getUuid())) {
                 return ResponseEntity.badRequest().body("User already followed");
             }
+
+            user.getFollowTimestamps().put(userToFollow.getUuid(), System.currentTimeMillis());
             userToFollow.getFollowerList().add(user.getUuid());
             userToFollow.setFollowers(userToFollow.getFollowers() + 1);
             user.getFollowedUsers().add(userToFollow.getUuid());
+
             userRepository.save(user);
             activityUpdater.increaseInteractions(user);
             userRepository.save(userToFollow);
+
             return ResponseEntity.ok("User followed");
         });
     }
@@ -226,22 +232,34 @@ public class UserController {
         return CompletableFuture.supplyAsync(() -> {
             String username = jwtService.extractUsername(token.substring(7));
             User user = userRepository.findByUsername(username);
-            User userToUnfollow = userRepository.findById(uuid).get();
+            User userToUnfollow = userRepository.findById(uuid).orElse(null);
+
             if (user == null || userToUnfollow == null) {
                 return ResponseEntity.notFound().build();
             }
+
             if (!user.getFollowedUsers().contains(userToUnfollow.getUuid())) {
                 return ResponseEntity.badRequest().body("User not followed");
             }
+
+            Long followTimestamp = user.getFollowTimestamps().get(userToUnfollow.getUuid());
+            if (followTimestamp != null && System.currentTimeMillis() - followTimestamp < 3000) {
+                return ResponseEntity.badRequest().body("Cannot unfollow so soon after following");
+            }
+
             userToUnfollow.getFollowerList().remove(user.getUuid());
             userToUnfollow.setFollowers(userToUnfollow.getFollowers() - 1);
             user.getFollowedUsers().remove(userToUnfollow.getUuid());
+            user.getFollowTimestamps().remove(userToUnfollow.getUuid());
+
             userRepository.save(user);
             activityUpdater.increaseInteractions(user);
             userRepository.save(userToUnfollow);
+
             return ResponseEntity.ok("User unfollowed");
         });
     }
+
 
     @GetMapping("/search")
     @Async

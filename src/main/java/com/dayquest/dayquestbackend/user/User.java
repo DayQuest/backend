@@ -7,10 +7,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -33,6 +30,7 @@ public class User implements UserDetails {
 
     @Column(nullable = false)
     private String password;
+
 
     private boolean banned = false;
 
@@ -59,6 +57,8 @@ public class User implements UserDetails {
     @ElementCollection
     private List<UUID> followerList;
 
+    @ElementCollection
+    private Map<UUID, Long> followTimestamps = new HashMap<>();
 
     private String passwordResetToken;
 
@@ -325,6 +325,14 @@ public class User implements UserDetails {
 
     public List<String> getAuthoritiesList() {
         return authorities;
+    }
+
+    public Map<UUID, Long> getFollowTimestamps() {
+        return followTimestamps;
+    }
+
+    public void setFollowTimestamps(Map<UUID, Long> followTimestamps) {
+        this.followTimestamps = followTimestamps;
     }
 
     public LocalDateTime getLastLogin() {
