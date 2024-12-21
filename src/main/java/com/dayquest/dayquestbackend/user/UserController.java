@@ -109,7 +109,7 @@ public class UserController {
             }
 
 
-            activityUpdater.increaseInteraction(user);
+            activityUpdater.increaseInteractions(user);
             user.setLastLogin(LocalDateTime.now());
             userRepository.save(user);
             String token = jwtService.generateToken(user);
@@ -212,7 +212,7 @@ public class UserController {
             userToFollow.setFollowers(userToFollow.getFollowers() + 1);
             user.getFollowedUsers().add(userToFollow.getUuid());
             userRepository.save(user);
-            activityUpdater.increaseInteraction(user);
+            activityUpdater.increaseInteractions(user);
             userRepository.save(userToFollow);
             return ResponseEntity.ok("User followed");
         });
@@ -235,7 +235,7 @@ public class UserController {
             userToUnfollow.setFollowers(userToUnfollow.getFollowers() - 1);
             user.getFollowedUsers().remove(userToUnfollow.getUuid());
             userRepository.save(user);
-            activityUpdater.increaseInteraction(user);
+            activityUpdater.increaseInteractions(user);
             userRepository.save(userToUnfollow);
             return ResponseEntity.ok("User unfollowed");
         });

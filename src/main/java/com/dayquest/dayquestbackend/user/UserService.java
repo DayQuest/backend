@@ -86,7 +86,6 @@ public class UserService {
       newUser.setVerificationCode(generateVerificationCode());
       newUser.setVerificationCodeExpiresAt(LocalDateTime.now().plusHours(1));
       newUser.setEnabled(false);
-      newUser.setBetaKey(betaKey);
       newUser.setAuthorities(List.of("ROLE_USER"));
       sendVerificationEmail(newUser);
       newUser.setDailyQuest(randomQuest);

@@ -95,7 +95,7 @@ public class VideoController {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
-            activityUpdater.increaseInteraction(video.get().getUser());
+            activityUpdater.increaseInteractions(video.get().getUser());
             videoRepository.delete(video.get());
             return ResponseEntity.ok("Deleted");
         });
