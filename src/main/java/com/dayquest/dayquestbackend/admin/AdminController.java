@@ -91,7 +91,8 @@ public class AdminController {
                                 "http://77.90.21.53:8010/api/videos/thumbnail/" + video.getUuid().toString(),
                                 questRepository.findByUuid(video.getQuestUuid()),
                                 video.getUuid(),
-                                video.getCreatedAt()))
+                                video.getCreatedAt(),
+                                false))
                         .collect(Collectors.toList());
 
                 return ResponseEntity.ok(videoDTOS);
@@ -216,7 +217,6 @@ public class AdminController {
                 UserDetailsDTO userDetailsDTO = new UserDetailsDTO();
                 userDetailsDTO.setUsername(userToGet.getUsername());
                 userDetailsDTO.setEmail(userToGet.getEmail());
-                userDetailsDTO.setBetaKey(userToGet.getBetaKey());
                 userDetailsDTO.setAdminComment(userToGet.getAdminComment());
                 userDetailsDTO.setEnabled(userToGet.isEnabled());
                 userDetailsDTO.setBanned(userToGet.isBanned());
@@ -238,7 +238,6 @@ public class AdminController {
                 User userToUpdate = userRepository.findById(UUID.fromString(uuid)).orElse(null);
                 userToUpdate.setUsername(userDetailsDTO.getUsername());
                 userToUpdate.setEmail(userDetailsDTO.getEmail());
-                userToUpdate.setBetaKey(userDetailsDTO.getBetaKey());
                 userToUpdate.setAdminComment(userDetailsDTO.getAdminComment());
                 userToUpdate.setEnabled(userDetailsDTO.isEnabled());
                 userToUpdate.setBanned(userDetailsDTO.isBanned());

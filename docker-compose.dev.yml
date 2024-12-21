@@ -1,0 +1,45 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: dayquest-mysql
+    volumes:
+      - mysql-data-dev:/var/lib/mysql
+    env_file:
+      - .env
+    restart: unless-stopped
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: dayquest-phpmyadmin
+    ports:
+      - ${PHPMYADMIN_PORT}:80
+    depends_on:
+      - mysql
+    env_file:
+      - .env
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app:delegated
+      - ~/.m2:/root/.m2:cached
+      - video-processed:/opt/dayquestcdn/videos/processed
+      - video-cache:/opt/dayquestcdn/videos/unprocessed
+    container_name: dayquest-backend
+    ports:
+      - "${SERVER_PORT}:${SERVER_PORT}"
+    depends_on:
+      - mysql
+    env_file:
+      - .env
+    restart: unless-stopped
+    environment:
+      - SPRING_DEVTOOLS_RESTART_ENABLED=true
+
+volumes:
+    mysql-data-dev:
+    video-processed:
+    video-cache:

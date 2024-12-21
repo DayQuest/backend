@@ -1,0 +1,41 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: dayquest-mysql
+    volumes:
+      - mysql-data-dev:/var/lib/mysql
+    env_file:
+      - stack.env
+    restart: unless-stopped
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: dayquest-phpmyadmin
+    ports:
+      - ${PHPMYADMIN_PORT}:80
+    depends_on:
+      - mysql
+    env_file:
+      - stack.env
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - video-processed:/opt/dayquestcdn/videos/processed
+      - video-cache:/opt/dayquestcdn/videos/unprocessed
+    container_name: dayquest-backend
+    ports:
+      - "${SERVER_PORT}:${SERVER_PORT}"
+    depends_on:
+      - mysql
+    env_file:
+      - stack.env
+    restart: unless-stopped
+
+volumes:
+  mysql-data-dev:
+  video-processed:
+  video-cache:
