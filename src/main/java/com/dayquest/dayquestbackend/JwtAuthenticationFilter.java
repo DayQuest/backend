@@ -27,12 +27,13 @@ import java.util.stream.Collectors;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
-    private final JwtService jwtService;
+    @Autowired
+    private JwtService jwtService;
+
     private final UserRepository userRepository;
 
-    @Autowired
-    public JwtAuthenticationFilter(JwtService jwtService, UserRepository userRepository) {
-        this.jwtService = jwtService;
+
+    public JwtAuthenticationFilter(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 

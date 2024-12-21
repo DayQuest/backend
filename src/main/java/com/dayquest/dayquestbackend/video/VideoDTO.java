@@ -17,6 +17,7 @@ public class VideoDTO {
     private String username;
     private String filePath;
     private String thumbnail;
+    private boolean isFollowing;
     private LocalDateTime createdAt;
 
     @Transient
@@ -40,7 +41,8 @@ public class VideoDTO {
             String thumbnail,
             Quest quest,
             UUID uuid,
-            LocalDateTime createdAt) {
+            LocalDateTime createdAt,
+            boolean liked) {
         this.title = title;
         this.createdAt = createdAt;
         this.description = description;
@@ -51,6 +53,7 @@ public class VideoDTO {
         this.thumbnail = thumbnail;
         this.uuid = uuid;
         this.quest = quest;
+        this.liked = liked;
     }
 
     public String getTitle() { return title; }
