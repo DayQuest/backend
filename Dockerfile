@@ -1,4 +1,4 @@
-FROM openjdk:17-jdk-slim as build
+FROM openjdk:17-jdk-slim AS build
 
 RUN apt-get update && apt-get install -y maven
 
