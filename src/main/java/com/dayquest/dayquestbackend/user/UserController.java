@@ -404,6 +404,19 @@ public class UserController {
         });
     }
 
+    @GetMapping("{uuid}/isFollowed")
+    @Async
+    public CompletableFuture<ResponseEntity<Boolean>> isFollowed(@PathVariable UUID uuid, @RequestHeader("Authorization") String token) {
+        return CompletableFuture.supplyAsync(() -> {
+            String username = jwtService.extractUsername(token.substring(7));
+            User user = userRepository.findByUsername(username);
+            if (user == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(user.getFollowedUsers().contains(uuid));
+        });
+    }
+
 
     public byte[] compressImage(MultipartFile originalFile) throws IOException {
         BufferedImage originalImage = ImageIO.read(originalFile.getInputStream());
