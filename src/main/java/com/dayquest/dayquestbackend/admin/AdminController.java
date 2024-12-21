@@ -91,7 +91,8 @@ public class AdminController {
                                 "http://77.90.21.53:8010/api/videos/thumbnail/" + video.getUuid().toString(),
                                 questRepository.findByUuid(video.getQuestUuid()),
                                 video.getUuid(),
-                                video.getCreatedAt()))
+                                video.getCreatedAt(),
+                                false))
                         .collect(Collectors.toList());
 
                 return ResponseEntity.ok(videoDTOS);

@@ -140,7 +140,8 @@ public class VideoController {
                 null,
                 questRepository.findById(video.getQuestUuid()).orElse(null),
                 video.getUuid(),
-                video.getCreatedAt()
+                video.getCreatedAt(),
+                user.getFollowedUsers().contains(video.getUser().getUuid())
         );
 
         videoDTO.setLiked(user.getLikedVideos().contains(video.getUuid()));

@@ -143,9 +143,10 @@ public class UserController {
 
     @GetMapping("/{uuid}")
     @Async
-    public CompletableFuture<ResponseEntity<ProfileDTO>> getUserByUuid(@PathVariable UUID uuid) {
+    public CompletableFuture<ResponseEntity<ProfileDTO>> getUserByUuid(@PathVariable UUID uuid, @RequestHeader("Authorization") String token) {
         return CompletableFuture.supplyAsync(() -> {
             String username = userRepository.findById(uuid).get().getUsername();
+            User user = userRepository.findByUsername(jwtService.extractUsername(token.substring(7)));
             User userWithVideos = userRepository.findByUsernameWithVideos(username);
             if (userWithVideos == null) {
                 return ResponseEntity.notFound().build();
@@ -157,7 +158,8 @@ public class UserController {
                     userWithVideos.getPostedVideos(),
                     userWithVideos.getDailyQuest(),
                     userWithVideos.isBanned(),
-                    userWithVideos.getFollowers()
+                    userWithVideos.getFollowers(),
+                    user.getFollowedUsers().contains(uuid)
             );
             return ResponseEntity.ok(profileDTO);
         });
@@ -260,7 +262,8 @@ public class UserController {
                             user.getPostedVideos(),
                             user.getDailyQuest(),
                             user.isBanned(),
-                            user.getFollowers()
+                            user.getFollowers(),
+                            false
                     ))
                     .collect(Collectors.toList());
 
@@ -294,9 +297,10 @@ public class UserController {
     @GetMapping("/profile/{username}")
     @Async
     @Transactional(readOnly = true)
-    public CompletableFuture<ResponseEntity<ProfileDTO>> getUserByUsername(@PathVariable String username) {
+    public CompletableFuture<ResponseEntity<ProfileDTO>> getUserByUsername(@PathVariable String username, @RequestHeader("Authorization") String token) {
         return CompletableFuture.supplyAsync(() -> {
             User userWithVideos = userRepository.findByUsernameWithVideos(username);
+            User user = userRepository.findByUsername(jwtService.extractUsername(token.substring(7)));
             if (userWithVideos == null) {
                 return ResponseEntity.notFound().build();
             }
@@ -310,7 +314,8 @@ public class UserController {
                     userWithVideos.getPostedVideos(),
                     userWithVideos.getDailyQuest(),
                     userWithVideos.isBanned(),
-                    userWithVideos.getFollowers()
+                    userWithVideos.getFollowers(),
+                    user.getFollowedUsers().contains(userWithVideos.getUuid())
             );
             return ResponseEntity.ok(profileDTO);
         });
