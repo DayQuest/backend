@@ -17,6 +17,9 @@ services:
       - mysql
     env_file:
       - stack.env
+    volumes:
+      - /opt/docker/configs/phpmyadmin/themes:/www/phpMyAdmin/themes
+      - /opt/docker/configs/phpmyadmin/config:/etc/phpmyadmin
     restart: unless-stopped
 
   app:
