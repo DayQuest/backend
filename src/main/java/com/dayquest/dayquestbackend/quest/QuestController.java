@@ -5,6 +5,8 @@ import com.dayquest.dayquestbackend.user.ActivityUpdater;
 import com.dayquest.dayquestbackend.user.UserRepository;
 import com.dayquest.dayquestbackend.user.User;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
@@ -37,22 +39,29 @@ public class QuestController {
 
     @GetMapping
     @Async
-    @PreAuthorize("isAuthenticated()")
-    public CompletableFuture<ResponseEntity<List<Quest>>> getQuests(@RequestParam(defaultValue = "0") int page) {
+    public CompletableFuture<ResponseEntity<List<QuestDTO>>> getQuests(@RequestHeader("Authorization") String token,
+                                                                    @RequestParam(defaultValue = "0") int page,
+                                                                    @RequestParam(defaultValue = "10") int size,
+                                                                    @RequestParam(defaultValue = "createdAt") String sortBy,
+                                                                    @RequestParam(defaultValue = "DESC") Sort.Direction sortDirection) {
         return CompletableFuture.supplyAsync(() -> {
-            List<Quest> allQuests = questRepository.findAll();
-            Collections.shuffle(allQuests);
-
-            int pageSize = 10;
-            int startIndex = page * pageSize;
-            int endIndex = Math.min(startIndex + pageSize, allQuests.size());
-
-            if (startIndex >= allQuests.size()) {
-                return ResponseEntity.notFound().build();
-            }
-
-            List<Quest> pagedQuests = allQuests.subList(startIndex, endIndex);
-            return ResponseEntity.ok(pagedQuests);
+            Sort sort = Sort.by(sortDirection, sortBy);
+            PageRequest pageRequest = PageRequest.of(page, size, sort);
+            List<Quest> quests = questRepository.findAll(pageRequest).getContent();
+            List<QuestDTO> questDTOS = quests.stream().map(quest -> {
+                QuestDTO questDTO = new QuestDTO();
+                questDTO.setUuid(quest.getUuid());
+                questDTO.setCreatorUuid(quest.getCreatorUuid());
+                questDTO.setTitle(quest.getTitle());
+                questDTO.setDescription(quest.getDescription());
+                questDTO.setLikes(quest.getLikes());
+                questDTO.setDislikes(quest.getDislikes());
+                questDTO.setCreatedAt(quest.getCreatedAt());
+                questDTO.setLiked(userRepository.findByUsername(jwtService.extractUsername(token.substring(7))).getLikedQuests().contains(quest.getUuid()));
+                questDTO.setDisliked(userRepository.findByUsername(jwtService.extractUsername(token.substring(7))).getDislikedQuests().contains(quest.getUuid()));
+                return questDTO;
+            }).toList();
+            return ResponseEntity.ok(questDTOS);
         });
     }
 

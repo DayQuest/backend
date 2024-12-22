@@ -1,17 +1,9 @@
 package com.dayquest.dayquestbackend.quest;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Entity
-public class Quest {
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+public class QuestDTO {
     private UUID uuid;
     private UUID creatorUuid;
     private String title;
@@ -19,6 +11,8 @@ public class Quest {
     private int likes;
     private int dislikes;
     private LocalDateTime createdAt;
+    private boolean isLiked;
+    private boolean isDisliked;
 
     public UUID getUuid() {
         return uuid;
@@ -26,6 +20,14 @@ public class Quest {
 
     public void setUuid(UUID uuid) {
         this.uuid = uuid;
+    }
+
+    public UUID getCreatorUuid() {
+        return creatorUuid;
+    }
+
+    public void setCreatorUuid(UUID creatorUuid) {
+        this.creatorUuid = creatorUuid;
     }
 
     public String getTitle() {
@@ -60,19 +62,27 @@ public class Quest {
         this.dislikes = dislikes;
     }
 
-    public UUID getCreatorUuid() {
-        return creatorUuid;
-    }
-
-    public void setCreatorUuid(UUID creatorUuid) {
-        this.creatorUuid = creatorUuid;
-    }
-
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public boolean isLiked() {
+        return isLiked;
+    }
+
+    public void setLiked(boolean liked) {
+        isLiked = liked;
+    }
+
+    public boolean isDisliked() {
+        return isDisliked;
+    }
+
+    public void setDisliked(boolean disliked) {
+        isDisliked = disliked;
     }
 }
