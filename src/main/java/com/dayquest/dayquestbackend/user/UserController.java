@@ -213,7 +213,9 @@ public class UserController {
             if (user == null || userToFollow == null) {
                 return ResponseEntity.notFound().build();
             }
-
+            if(uuid.equals(user.getUuid())) {
+                return ResponseEntity.badRequest().body("Cannot follow yourself");
+            }
             if (user.getFollowedUsers().contains(userToFollow.getUuid())) {
                 return ResponseEntity.badRequest().body("User already followed");
             }
