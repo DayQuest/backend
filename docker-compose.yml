@@ -18,7 +18,7 @@ services:
     env_file:
       - stack.env
     volumes:
-      - /opt/docker/configs/phpmyadmin/themes:/var/www/html/themes:ro
+      - /opt/docker/configs/phpmyadmin:/var/www/html:ro
     restart: unless-stopped
 
   app:
