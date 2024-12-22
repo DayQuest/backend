@@ -4,6 +4,8 @@ services:
     container_name: dayquest-mysql
     volumes:
       - mysql-data-dev:/var/lib/mysql
+    ports:
+      - "3306:3306"
     env_file:
       - .env
     restart: unless-stopped
