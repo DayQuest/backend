@@ -357,7 +357,7 @@ public class UserController {
             return ResponseEntity.ok(user.getUuid());
         });
     }
-
+    //test
     @GetMapping("/profilepicture/{username}")
     @Async
     public CompletableFuture<ResponseEntity<ByteArrayResource>> getDecodedImage(@PathVariable("username") String username) {
