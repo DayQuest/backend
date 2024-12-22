@@ -16,7 +16,7 @@ services:
     depends_on:
       - mysql
     volumes:
-      - /opt/docker/phpmyadmin/boodark-teal:/var/www/html/themes/boodark-teal
+      - /opt/docker/phpmyadmin/boodark-nord:/var/www/html/themes/boodark-nord
     environment:
         - PMA_THEME=BooDark
     env_file:
