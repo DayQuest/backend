@@ -17,6 +17,7 @@ services:
       - mysql
     volumes:
       - /opt/docker/phpmyadmin/boodark-nord:/var/www/html/themes/boodark-nord
+      - /opt/docker/phpmyadmin/config.inc.php:/etc/phpmyadmin/config.user.inc.php
     environment:
         - PMA_THEME=BooDark
     env_file:
