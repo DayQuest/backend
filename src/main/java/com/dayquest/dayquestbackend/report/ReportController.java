@@ -30,7 +30,7 @@ public class ReportController {
     @Async
     public CompletableFuture<ResponseEntity<Report>> createReport(@RequestBody Report report) {
         return CompletableFuture.supplyAsync(() -> {
-            if (reportRepository.findByUserUuidAndEntityUuid(report.getUserUuid(), report.getEntityUuid()) != null) {
+            if (reportRepository.findByUserIdAndEntityId(report.getUserUuid(), report.getEntityUuid()) != null) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).build();
             }
             if(report.getType() == Type.VIDEO){
@@ -38,11 +38,11 @@ public class ReportController {
                 if(Objects.isNull(video)){
                     return ResponseEntity.notFound().build();
                 }
-                if(reportRepository.findByEntityUuid(report.getEntityUuid()).size() > 2){
+                if(reportRepository.findByEntityId(report.getEntityUuid()).size() > 2){
                     video.setSecurityLevel(SecurityLevel.SUS);
                     videoRepository.save(video);
                 }
-                else if(reportRepository.findByEntityUuid(report.getEntityUuid()).size() > 5){
+                else if(reportRepository.findByEntityId(report.getEntityUuid()).size() > 5){
                     video.setSecurityLevel(SecurityLevel.SUS2);
                     videoRepository.save(video);
                 }

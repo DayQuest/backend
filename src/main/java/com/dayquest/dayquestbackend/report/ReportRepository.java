@@ -11,8 +11,7 @@ import java.util.List;
 
 @Repository
 public interface ReportRepository extends JpaRepository<Report, UUID> {
-    List<Report> findByUserUuid(UUID userUuid);
-    List<Report> findByEntityUuid(UUID entityUuid);
+    List<Report> findByEntityId(UUID entityUuid);
     List<Report> findAllByType(Type type, PageRequest pageRequest);
-    Report findByUserUuidAndEntityUuid(UUID userUuid, UUID entityUuid);
+    Report findByUserIdAndEntityId(UUID userId, UUID entityId);
 }
