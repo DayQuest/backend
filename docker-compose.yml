@@ -4,6 +4,8 @@ services:
     container_name: dayquest-mysql
     volumes:
       - mysql-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
     env_file:
       - stack.env
     restart: unless-stopped
@@ -15,6 +17,11 @@ services:
       - ${PHPMYADMIN_PORT}:80
     depends_on:
       - mysql
+    volumes:
+      - /opt/docker/phpmyadmin/boodark-nord:/var/www/html/themes/boodark-nord
+      - /opt/docker/phpmyadmin/config.inc.php:/etc/phpmyadmin/config.user.inc.php
+    environment:
+        - PMA_THEME=BooDark
     env_file:
       - stack.env
     restart: unless-stopped
