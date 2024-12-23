@@ -40,7 +40,7 @@ services:
     restart: unless-stopped
     environment:
       - SPRING_DEVTOOLS_RESTART_ENABLED=true
-    build_policy: build
+    pull_policy: build
 
 
 volumes:
