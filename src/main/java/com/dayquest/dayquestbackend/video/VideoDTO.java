@@ -19,6 +19,7 @@ public class VideoDTO {
     private String thumbnail;
     private boolean isFollowing;
     private LocalDateTime createdAt;
+    private int views;
 
     @Transient
     @Nullable
@@ -122,5 +123,29 @@ public class VideoDTO {
 
     public void setDisliked(boolean disliked) {
         this.disliked = disliked;
+    }
+
+    public boolean isFollowing() {
+        return isFollowing;
+    }
+
+    public void setFollowing(boolean following) {
+        isFollowing = following;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public int getViews() {
+        return views;
+    }
+
+    public void setViews(int views) {
+        this.views = views;
     }
 }

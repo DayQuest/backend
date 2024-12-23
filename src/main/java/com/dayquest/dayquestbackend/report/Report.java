@@ -18,10 +18,10 @@ public class Report {
     private String description;
 
     @Column(nullable = false)
-    private UUID entityUuid;
+    private UUID entityId;
 
     @Column(nullable = false)
-    private UUID userUuid;
+    private UUID userId;
 
     private Type type;
 
@@ -42,15 +42,15 @@ public class Report {
     }
 
     public UUID getEntityUuid() {
-        return entityUuid;
+        return entityId;
     }
 
     public void setEntityUuid(UUID videoUuid) {
-        this.entityUuid = videoUuid;
+        this.entityId = videoUuid;
     }
 
     public UUID getUserUuid() {
-        return userUuid;
+        return userId;
     }
 
     public Type getType() {
@@ -62,6 +62,6 @@ public class Report {
     }
 
     public void setUserUuid(UUID userUuid) {
-        this.userUuid = userUuid;
+        this.userId = userUuid;
     }
 }

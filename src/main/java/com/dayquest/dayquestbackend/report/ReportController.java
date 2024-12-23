@@ -29,10 +29,13 @@ public class ReportController {
         });
     }
 
-    @PostMapping("/get")
+    @GetMapping
     @Async
-    public CompletableFuture<ResponseEntity<List<Report>>> getAllReports(@RequestParam int page, @RequestParam int size) {
-        return CompletableFuture.supplyAsync(() -> ResponseEntity.ok(reportRepository.findAll(PageRequest.of(page, size)).getContent()));
+    public CompletableFuture<ResponseEntity<List<Report>>> getAllReports(@RequestParam int page, @RequestParam int size, @RequestParam Type type) {
+        return CompletableFuture.supplyAsync(() -> {
+            List<Report> reports = reportRepository.findAllByType(type, PageRequest.of(page, size));
+            return ResponseEntity.ok(reports);
+        });
     }
 
     @PostMapping("/delete/{id}")

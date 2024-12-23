@@ -23,6 +23,10 @@ public class Video {
 
     private int upVotes;
     private int downVotes;
+    private int views;
+    private double length;
+
+    private SecurityLevel securityLevel = SecurityLevel.NORMAL;
 
     @Lob
     @Column(columnDefinition = "LONGBLOB")
@@ -112,5 +116,21 @@ public class Video {
 
     public void setQuestUuid(UUID questUuid) {
         this.questUuid = questUuid;
+    }
+
+    public int getViews() {
+        return views;
+    }
+
+    public void setViews(int views) {
+        this.views = views;
+    }
+
+    public SecurityLevel getSecurityLevel() {
+        return securityLevel;
+    }
+
+    public void setSecurityLevel(SecurityLevel securityLevel) {
+        this.securityLevel = securityLevel;
     }
 }
