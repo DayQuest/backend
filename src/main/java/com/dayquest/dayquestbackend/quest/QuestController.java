@@ -72,7 +72,7 @@ public class QuestController {
             return CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null));
         }
 
-        return questService.createQuest(quest.getTitle(), quest.getDescription(), userRepository.findByUsername(jwtService.extractUsername(token)))
+        return questService.createQuest(quest.getTitle(), quest.getDescription(), userRepository.findByUsername(jwtService.extractUsername(token.substring(7))))
             .thenApply(newQuest -> ResponseEntity.status(HttpStatus.CREATED).body(newQuest));
     }
 
