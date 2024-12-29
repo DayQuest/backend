@@ -70,7 +70,8 @@ public class SecurityConfiguration {
                                 "/api/beta/remove-key",
                                 "/api/users/profilepicture/**",
                                 "/api/videos/thumbnail/**",
-                                "/api/users/profile/**"
+                                "/api/users/profile/**",
+                                "/api/admin/stats"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

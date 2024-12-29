@@ -1,5 +1,6 @@
 package com.dayquest.dayquestbackend.admin;
 import com.dayquest.dayquestbackend.JwtService;
+import com.dayquest.dayquestbackend.comment.CommentRepository;
 import com.dayquest.dayquestbackend.quest.Quest;
 import com.dayquest.dayquestbackend.quest.QuestRepository;
 import com.dayquest.dayquestbackend.quest.QuestService;
@@ -46,6 +47,9 @@ public class AdminController {
 
     @Autowired
     private VideoRepository videoRepository;
+
+    @Autowired
+    private CommentRepository commentRepository;
 
     @PostMapping("/auth")
     @Async
@@ -121,6 +125,22 @@ public class AdminController {
                 return ResponseEntity.ok("Video deleted");
             }
             return ResponseEntity.badRequest().body("You are not an admin");
+        });
+    }
+
+    @GetMapping("/stats")
+    @Async
+    public CompletableFuture<ResponseEntity<StatsDTO>> getStats(){
+        return CompletableFuture.supplyAsync(() -> {
+            StatsDTO statsDTO = new StatsDTO();
+            statsDTO.setTotalUsers(userRepository.findAll().size());
+            statsDTO.setTotalVideos(videoRepository.findAll().size());
+            statsDTO.setTotalQuests(questRepository.findAll().size());
+            statsDTO.setTotalInteractions(userRepository.findAll().stream().mapToInt(User::getInteractions).sum());
+            statsDTO.setTotalComments(commentRepository.findAll().size());
+            statsDTO.setTotalLikes(videoRepository.findAll().stream().mapToInt(Video::getUpVotes).sum());
+            statsDTO.setTotalDislikes(videoRepository.findAll().stream().mapToInt(Video::getDownVotes).sum());
+            return ResponseEntity.ok(statsDTO);
         });
     }
 
