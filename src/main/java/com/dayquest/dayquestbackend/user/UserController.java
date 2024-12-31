@@ -457,6 +457,12 @@ public class UserController {
             if (user == null) {
                 return ResponseEntity.notFound().build();
             }
+            if(user.getLastReroll() == null || user.getLastReroll().plusDays(1).isBefore(LocalDateTime.now())) {
+                user.setLeftRerolls(3);
+            }
+            if(user.getLeftRerolls() == 0) {
+                return ResponseEntity.badRequest().body("No rerolls left");
+            }
             List<Quest> topQuests = questService.getTop10PercentQuests().join();
             Quest newQuest;
             do {
@@ -465,6 +471,19 @@ public class UserController {
             user.setDailyQuest(newQuest);
             userRepository.save(user);
             return ResponseEntity.ok("Quest rerolled");
+        });
+    }
+
+    @GetMapping("/rerolls")
+    @Async
+    public CompletableFuture<ResponseEntity<Integer>> getRerolls(@RequestHeader("Authorization") String token) {
+        return CompletableFuture.supplyAsync(() -> {
+            String username = jwtService.extractUsername(token.substring(7));
+            User user = userRepository.findByUsername(username);
+            if (user == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return user.getLastReroll() == null ? ResponseEntity.ok(3) : ResponseEntity.ok(user.getLeftRerolls());
         });
     }
 

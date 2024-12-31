@@ -57,6 +57,9 @@ public class User implements UserDetails {
     @ElementCollection
     private List<UUID> followerList;
 
+    private int leftRerolls;
+    private LocalDateTime lastReroll;
+
     @ElementCollection
     private Map<UUID, Long> followTimestamps = new HashMap<>();
 
@@ -341,5 +344,21 @@ public class User implements UserDetails {
 
     public void setLastLogin(LocalDateTime lastLogin) {
         this.lastLogin = lastLogin;
+    }
+
+    public int getLeftRerolls() {
+        return leftRerolls;
+    }
+
+    public void setLeftRerolls(int leftRerolls) {
+        this.leftRerolls = leftRerolls;
+    }
+
+    public LocalDateTime getLastReroll() {
+        return lastReroll;
+    }
+
+    public void setLastReroll(LocalDateTime lastReroll) {
+        this.lastReroll = lastReroll;
     }
 }
