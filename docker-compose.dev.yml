@@ -29,7 +29,7 @@ services:
     environment:
       STORAGE_TYPE: "minio"
       MINIO_ROOT_USER: "root"
-      MINIO_ROOT_PASSWORD: "root"
+      MINIO_ROOT_PASSWORD: "rootpassword"
       SERVER_PORT: "9000"
     command: minio server --console-address ":9001" /data
     volumes:
