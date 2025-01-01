@@ -3,6 +3,8 @@ package com.dayquest.dayquestbackend.video;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.file.Files;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -13,6 +15,8 @@ import com.dayquest.dayquestbackend.streak.StreakService;
 import com.dayquest.dayquestbackend.user.User;
 import com.dayquest.dayquestbackend.user.UserRepository;
 import io.minio.*;
+import io.minio.errors.*;
+import io.minio.http.Method;
 import jakarta.transaction.Transactional;
 import org.apache.commons.io.FileUtils;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
@@ -137,13 +141,14 @@ public class VideoService {
                         .contentType("video/mp4")
                         .build());
 
+                File finalProcessedTempFile = processedTempFile;
                 return transactionTemplate.execute(status -> {
                     User managedUser = userRepository.findById(user.getUuid())
                             .orElseThrow(() -> new RuntimeException("User not found"));
 
                     Video video = new Video();
                     video.setTitle(title);
-                    video.setThumbnail(generateThumbnail(processedTempFile.getAbsolutePath()));
+                    video.setThumbnail(generateThumbnail(finalProcessedTempFile.getAbsolutePath()));
                     video.setDescription(description);
                     video.setFilePath(processedFileName);
                     video.setUser(managedUser);
@@ -220,7 +225,9 @@ public class VideoService {
 
                 return thumbnailBytes;
             }
-        } catch (IOException e) {
+        } catch (IOException | ErrorResponseException | InsufficientDataException | InternalException |
+                 InvalidKeyException | InvalidResponseException | NoSuchAlgorithmException | ServerException |
+                 XmlParserException e) {
             throw new RuntimeException("Failed to generate thumbnail: " + e.getMessage(), e);
         }
     }

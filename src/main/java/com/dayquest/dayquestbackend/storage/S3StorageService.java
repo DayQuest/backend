@@ -1,7 +1,9 @@
 package com.dayquest.dayquestbackend.storage;
 
 import io.minio.*;
+import io.minio.http.Method;
 import io.minio.messages.Item;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -10,7 +12,9 @@ import java.io.InputStream;
 
 @Service
 public class S3StorageService {
-    private final MinioClient minioClient;
+    @Autowired
+    private MinioClient minioClient;
+
     private final String bucket;
 
     public S3StorageService(
@@ -20,10 +24,6 @@ public class S3StorageService {
             @Value("${minio.bucket}") String bucket) {
 
         this.bucket = bucket;
-        this.minioClient = MinioClient.builder()
-                .endpoint(endpoint)
-                .credentials(accessKey, secretKey)
-                .build();
 
         initializeBucket();
     }

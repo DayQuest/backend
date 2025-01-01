@@ -21,6 +21,20 @@ services:
       - .env
     restart: unless-stopped
 
+  minio:
+    image: minio/minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      STORAGE_TYPE: "minio"
+      MINIO_ROOT_USER: "root"
+      MINIO_ROOT_PASSWORD: "root"
+      SERVER_PORT: "9000"
+    command: minio server --console-address ":9001" /data
+    volumes:
+      - minio_data:/data
+
   app:
     build:
       context: .
