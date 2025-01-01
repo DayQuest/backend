@@ -1,30 +1,26 @@
 package com.dayquest.dayquestbackend.video;
 
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 import com.dayquest.dayquestbackend.streak.Streak;
 import com.dayquest.dayquestbackend.streak.StreakRepository;
 import com.dayquest.dayquestbackend.streak.StreakService;
 import com.dayquest.dayquestbackend.user.User;
 import com.dayquest.dayquestbackend.user.UserRepository;
+import io.minio.*;
 import jakarta.transaction.Transactional;
+import org.apache.commons.io.FileUtils;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.Java2DFrameConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,13 +30,16 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
+
 import javax.imageio.ImageIO;
 
 @Service
 public class VideoService {
-    @Value("${video.upload.path}")
-    private String uploadPath;
+    @Value("${minio.bucket}")
+    private String bucket;
 
+    @Autowired
+    private MinioClient minioClient;
 
     @Autowired
     private VideoCompressor videoCompressor;
@@ -50,8 +49,6 @@ public class VideoService {
 
     private final ViewedVideoRepository viewedVideoRepository;
     private final VideoRepository videoRepository;
-
-
 
     @Autowired
     private PlatformTransactionManager transactionManager;
@@ -65,12 +62,12 @@ public class VideoService {
     private final TransactionTemplate transactionTemplate;
 
     @Autowired
-    public VideoService(ViewedVideoRepository viewedVideoRepository, VideoRepository videoRepository, PlatformTransactionManager transactionManager) {
+    public VideoService(ViewedVideoRepository viewedVideoRepository, VideoRepository videoRepository,
+                        PlatformTransactionManager transactionManager) {
         this.viewedVideoRepository = viewedVideoRepository;
         this.videoRepository = videoRepository;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
-        this.transactionTemplate.setPropagationBehavior(
-                TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        this.transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
     @Async
@@ -112,30 +109,33 @@ public class VideoService {
             if (count == 0) {
                 return null;
             }
-
-            return videoRepository.findRandomVideo().orElseThrow(() -> new RuntimeException("Failed to find random video"));
+            return videoRepository.findRandomVideo()
+                    .orElseThrow(() -> new RuntimeException("Failed to find random video"));
         });
     }
-
 
     @Async
     @Transactional
     public CompletableFuture<String> uploadVideo(MultipartFile file, String title, String description, User user) {
         return CompletableFuture.supplyAsync(() -> {
-            String fileName = UUID.randomUUID() + ".mp4";
-            Path filePath = Paths.get(uploadPath, fileName);
+            String fileName = UUID.randomUUID().toString() + ".mp4";
+            File tempFile = null;
+            File processedTempFile = null;
 
             try {
-                Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+                tempFile = File.createTempFile("unprocessed_", ".mp4");
+                file.transferTo(tempFile);
 
-                videoCompressor.compressVideo(filePath.toString(), fileName);
-                videoCompressor.removeUnprocessed(filePath.toString());
+                processedTempFile = File.createTempFile("processed_", ".mp4");
+                videoCompressor.compressVideo(tempFile.getAbsolutePath(), processedTempFile.getAbsolutePath());
 
-                String processedFilePath = filePath.toString().replace("unprocessed", "processed");
-
-                if (!Files.exists(Paths.get(processedFilePath))) {
-                    throw new RuntimeException("Processed video file not found: " + processedFilePath);
-                }
+                String processedFileName = "videos/" + fileName;
+                minioClient.putObject(PutObjectArgs.builder()
+                        .bucket(bucket)
+                        .object(processedFileName)
+                        .stream(new FileInputStream(processedTempFile), processedTempFile.length(), -1)
+                        .contentType("video/mp4")
+                        .build());
 
                 return transactionTemplate.execute(status -> {
                     User managedUser = userRepository.findById(user.getUuid())
@@ -143,15 +143,14 @@ public class VideoService {
 
                     Video video = new Video();
                     video.setTitle(title);
-                    video.setThumbnail(generateThumbnail(processedFilePath));
+                    video.setThumbnail(generateThumbnail(processedTempFile.getAbsolutePath()));
                     video.setDescription(description);
-                    video.setFilePath(fileName.replace(".mp4", ""));
+                    video.setFilePath(processedFileName);
                     video.setUser(managedUser);
                     video.setQuestUuid(managedUser.getDailyQuest().getUuid());
                     video.setCreatedAt(LocalDateTime.now());
 
                     managedUser.addPostedVideo(video);
-
                     userRepository.save(managedUser);
 
                     Streak streak = streakRepository.findByUserId(managedUser.getUuid());
@@ -160,18 +159,22 @@ public class VideoService {
                     } else {
                         streakService.updateStreak(managedUser.getUuid());
                     }
-                    return fileName;
+
+                    return processedFileName;
                 });
 
             } catch (Exception e) {
-                try {
-                    Files.deleteIfExists(filePath);
-                } catch (IOException ignored) {}
                 throw new RuntimeException("Failed to process video: " + e.getMessage(), e);
+            } finally {
+                if (tempFile != null) {
+                    tempFile.delete();
+                }
+                if (processedTempFile != null) {
+                    processedTempFile.delete();
+                }
             }
         });
     }
-
 
     public CompletableFuture<List<Video>> getUnviewedVideos(UUID userId) {
         return CompletableFuture.supplyAsync(() -> videoRepository.findUnviewedVideosByUserId(userId));
@@ -203,10 +206,46 @@ public class VideoService {
                     throw new RuntimeException("Failed to write BufferedImage to JPG");
                 }
 
-                return outputStream.toByteArray();
+                byte[] thumbnailBytes = outputStream.toByteArray();
+
+                String thumbnailFileName = videoPath.replace(".mp4", "_thumb.jpg");
+                thumbnailFileName = "thumbnails/" + UUID.randomUUID().toString() + ".jpg";
+
+                minioClient.putObject(PutObjectArgs.builder()
+                        .bucket(bucket)
+                        .object(thumbnailFileName)
+                        .stream(new ByteArrayInputStream(thumbnailBytes), thumbnailBytes.length, -1)
+                        .contentType("image/jpeg")
+                        .build());
+
+                return thumbnailBytes;
             }
         } catch (IOException e) {
             throw new RuntimeException("Failed to generate thumbnail: " + e.getMessage(), e);
+        }
+    }
+
+    public byte[] getVideo(String fileName) {
+        try {
+            GetObjectResponse response = minioClient.getObject(GetObjectArgs.builder()
+                    .bucket(bucket)
+                    .object(fileName)
+                    .build());
+            return response.readAllBytes();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get video from MinIO: " + e.getMessage(), e);
+        }
+    }
+
+    public String getVideoUrl(String fileName) {
+        try {
+            return minioClient.getPresignedObjectUrl(GetPresignedObjectUrlArgs.builder()
+                    .bucket(bucket)
+                    .object(fileName)
+                    .method(Method.GET)
+                    .build());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate video URL: " + e.getMessage(), e);
         }
     }
 
@@ -217,15 +256,28 @@ public class VideoService {
             if (video.isEmpty()) {
                 return ResponseEntity.notFound().build();
             }
-            try {
-                Files.deleteIfExists(Paths.get(uploadPath, video.get().getFilePath()));
-            } catch (IOException e) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Failed to delete video file");
-            }
 
-            videoRepository.deleteById(uuid);
-            return ResponseEntity.ok("Deleted");
+            try {
+                minioClient.removeObject(RemoveObjectArgs.builder()
+                        .bucket(bucket)
+                        .object(video.get().getFilePath())
+                        .build());
+
+                String thumbnailPath = video.get().getFilePath().replace(".mp4", "_thumb.jpg");
+                try {
+                    minioClient.removeObject(RemoveObjectArgs.builder()
+                            .bucket(bucket)
+                            .object(thumbnailPath)
+                            .build());
+                } catch (Exception e) {
+                }
+
+                videoRepository.deleteById(uuid);
+                return ResponseEntity.ok("Deleted");
+            } catch (Exception e) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Failed to delete video file: " + e.getMessage());
+            }
         });
     }
 }
