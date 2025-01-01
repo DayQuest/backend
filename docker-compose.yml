@@ -31,8 +31,8 @@ services:
       context: .
       dockerfile: Dockerfile
     volumes:
-      - video-processed:/opt/dayquestcdn/videos/processed
-      - video-cache:/opt/dayquestcdn/videos/unprocessed
+      - /opt/dayquestcdn/videos/processed:/opt/dayquestcdn/videos/processed
+      - /opt/dayquestcdn/videos/unprocessed:/opt/dayquestcdn/videos/unprocessed
     container_name: dayquest-backend
     ports:
       - "${SERVER_PORT}:${SERVER_PORT}"
