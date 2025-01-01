@@ -61,3 +61,4 @@ volumes:
     mysql-data-dev:
     video-processed:
     video-cache:
+    minio_data:
