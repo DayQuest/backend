@@ -486,7 +486,7 @@ public class UserController {
             if (user == null) {
                 return ResponseEntity.notFound().build();
             }
-            return user.getLastReroll() == null ? ResponseEntity.ok(3) : ResponseEntity.ok(user.getLeftRerolls());
+            return user.getLastReroll() == null || user.getLastReroll().plusDays(1).isBefore(LocalDateTime.now()) ? ResponseEntity.ok(3) : ResponseEntity.ok(user.getLeftRerolls());
         });
     }
 
