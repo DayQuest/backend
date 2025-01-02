@@ -9,6 +9,8 @@ services:
     env_file:
       - .env
     restart: unless-stopped
+    networks:
+      - dayquest-network
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
@@ -20,20 +22,9 @@ services:
     env_file:
       - .env
     restart: unless-stopped
+    networks:
+      - dayquest-network
 
-  minio:
-    image: minio/minio
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      STORAGE_TYPE: "minio"
-      MINIO_ROOT_USER: "root"
-      MINIO_ROOT_PASSWORD: "rootpassword"
-      SERVER_PORT: "9000"
-    command: minio server --console-address ":9001" /data
-    volumes:
-      - minio_data:/data
 
   app:
     build:
@@ -55,10 +46,16 @@ services:
     environment:
       - SPRING_DEVTOOLS_RESTART_ENABLED=true
     pull_policy: build
+    networks:
+      - dayquest-network
 
 
 volumes:
     mysql-data-dev:
     video-processed:
     video-cache:
-    minio_data:
+networks:
+  dayquest-network:
+    name: dayquest-network
+    driver: bridge
+    external: false
