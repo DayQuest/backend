@@ -24,9 +24,6 @@ public class VideoCompressor {
   @Value("${video.upload.path}")
   private String unprocessedPath;
 
-  @Value("${ffmpeg.path}")
-  private String ffmpegPath;
-
   @PostConstruct
   public void init() {
     validateFFmpegInstallation();
@@ -250,10 +247,6 @@ public class VideoCompressor {
     } catch (Exception e) {
         logger.warning("Failed to parse FFmpeg progress: " + e.getMessage());
     }
-  }
-
-  private void logError(String message, String outputLog) {
-    logger.severe(message + "\nFFmpeg output log:\n" + outputLog);
   }
 
   private int extractIntFromJson(String json, String key) {

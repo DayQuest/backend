@@ -42,6 +42,9 @@ public class VideoService {
     @Value("${minio.bucket}")
     private String bucket;
 
+    @Value("${video.processed.path}")
+    private String processPath;
+
     @Autowired
     private MinioClient minioClient;
 
@@ -129,28 +132,33 @@ public class VideoService {
             try {
                 tempFile = File.createTempFile("unprocessed_", ".mp4");
                 file.transferTo(tempFile);
+                String processedFileName = fileName;
+                videoCompressor.compressVideo(tempFile.getAbsolutePath(), processedFileName);
 
-                processedTempFile = File.createTempFile("processed_", ".mp4");
-                videoCompressor.compressVideo(tempFile.getAbsolutePath(), processedTempFile.getAbsolutePath());
+                File processedFile = new File(new File(processPath), processedFileName);
+                if (!processedFile.exists()) {
+                    throw new RuntimeException("Compressed video file not found");
+                }
 
-                String processedFileName = "videos/" + fileName;
+                String processedFilePath = "videos/" + fileName;
                 minioClient.putObject(PutObjectArgs.builder()
                         .bucket(bucket)
-                        .object(processedFileName)
-                        .stream(new FileInputStream(processedTempFile), processedTempFile.length(), -1)
+                        .object(processedFilePath)
+                        .stream(new FileInputStream(processedFile), processedFile.length(), -1)
                         .contentType("video/mp4")
                         .build());
 
-                File finalProcessedTempFile = processedTempFile;
+                processedFile.delete();
+
                 return transactionTemplate.execute(status -> {
                     User managedUser = userRepository.findById(user.getUuid())
                             .orElseThrow(() -> new RuntimeException("User not found"));
 
                     Video video = new Video();
                     video.setTitle(title);
-                    video.setThumbnail(generateThumbnail(finalProcessedTempFile.getAbsolutePath()));
+                    video.setThumbnail(generateThumbnail(processedFile.getAbsolutePath()));
                     video.setDescription(description);
-                    video.setFilePath(processedFileName);
+                    video.setFilePath(processedFilePath);
                     video.setUser(managedUser);
                     video.setQuestUuid(managedUser.getDailyQuest().getUuid());
                     video.setCreatedAt(LocalDateTime.now());
@@ -165,7 +173,7 @@ public class VideoService {
                         streakService.updateStreak(managedUser.getUuid());
                     }
 
-                    return processedFileName;
+                    return processedFilePath;
                 });
 
             } catch (Exception e) {
@@ -173,9 +181,6 @@ public class VideoService {
             } finally {
                 if (tempFile != null) {
                     tempFile.delete();
-                }
-                if (processedTempFile != null) {
-                    processedTempFile.delete();
                 }
             }
         });
