@@ -14,6 +14,19 @@ public class QuestDTO {
     private boolean isLiked;
     private boolean isDisliked;
 
+    public QuestDTO() {
+    }
+
+    public QuestDTO(Quest quest) {
+        this.uuid = quest.getUuid();
+        this.creatorUuid = quest.getCreatorUuid();
+        this.title = quest.getTitle();
+        this.description = quest.getDescription();
+        this.likes = quest.getLikes();
+        this.dislikes = quest.getDislikes();
+        this.createdAt = quest.getCreatedAt();
+    }
+
     public UUID getUuid() {
         return uuid;
     }

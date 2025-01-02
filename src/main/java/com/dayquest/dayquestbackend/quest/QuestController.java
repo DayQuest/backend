@@ -104,6 +104,28 @@ public class QuestController {
         });
     }
 
+    @DeleteMapping("/like")
+    @Async
+    public CompletableFuture<ResponseEntity<?>> unlikeQuest(@RequestBody InteractionDTO interactionDTO) {
+        return CompletableFuture.supplyAsync(() -> {
+            Optional<User> user = userRepository.findById(interactionDTO.getUserUuid());
+            Optional<Quest> quest = questRepository.findById(interactionDTO.getUuid());
+            if (user.isEmpty() || quest.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            if (!user.get().getLikedQuests().contains(interactionDTO.getUuid())) {
+                return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Not liked");
+            }
+
+            user.get().getLikedQuests().remove(interactionDTO.getUuid());
+            quest.get().setLikes(quest.get().getLikes() - 1);
+            questRepository.save(quest.get());
+            userRepository.save(user.get());
+            return ResponseEntity.ok("Successfully unliked quest");
+        });
+    }
+
 
     //TODO: Refactor this code dupe
     @PostMapping("/dislike")
@@ -134,6 +156,29 @@ public class QuestController {
         });
     }
 
+    @DeleteMapping("/dislike")
+    @Async
+    public CompletableFuture<ResponseEntity<?>> undislikeQuest(@RequestBody InteractionDTO interactionDTO) {
+        return CompletableFuture.supplyAsync(() -> {
+            Optional<User> user = userRepository.findById(interactionDTO.getUserUuid());
+            Optional<Quest> quest = questRepository.findById(interactionDTO.getUuid());
+            if (user.isEmpty() || quest.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            if (!user.get().getDislikedQuests().contains(interactionDTO.getUuid())) {
+                return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Not disliked");
+            }
+
+            user.get().getDislikedQuests().remove(interactionDTO.getUuid());
+            quest.get().setDislikes(quest.get().getDislikes() - 1);
+            questRepository.save(quest.get());
+            userRepository.save(user.get());
+            return ResponseEntity.ok("Successfully undisliked quest");
+        });
+    }
+
+    //TODO: Remove after next Beta
     @PostMapping("/get-quest")
     @Async
     public CompletableFuture<ResponseEntity<String>> getQuest(@RequestBody UUID uuid) {
@@ -147,6 +192,23 @@ public class QuestController {
                 return ResponseEntity.notFound().build();
             }
             return ResponseEntity.ok(quest.getDescription());
+        });
+    }
+
+    @GetMapping("/{userid}")
+    @Async
+    public CompletableFuture<ResponseEntity<QuestDTO>> getUsersQuest(@PathVariable UUID userid){
+        return CompletableFuture.supplyAsync(() -> {
+           Optional<User> user = userRepository.findById(userid);
+            if (user.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            Quest quest = user.get().getDailyQuest();
+            if (quest == null) {
+                return ResponseEntity.notFound().build();
+            }
+            QuestDTO questDTO = new QuestDTO(quest);
+            return ResponseEntity.ok(questDTO);
         });
     }
 }
