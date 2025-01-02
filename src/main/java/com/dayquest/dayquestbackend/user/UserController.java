@@ -457,7 +457,7 @@ public class UserController {
             if (user == null) {
                 return ResponseEntity.notFound().build();
             }
-            if(user.getLastReroll() == null || user.getLastReroll().plusDays(1).isBefore(LocalDateTime.now())) {
+            if(user.getLastReroll() == null || user.getLastReroll().plusDays(1).isAfter(LocalDateTime.now())) {
                 user.setLeftRerolls(3);
             }
             if(user.getLeftRerolls() == 0) {
@@ -469,6 +469,8 @@ public class UserController {
                 newQuest = topQuests.get(new Random().nextInt(topQuests.size()));
             } while (user.getDailyQuest().equals(newQuest));
             user.setDailyQuest(newQuest);
+            user.setLastReroll(LocalDateTime.now());
+            user.setLeftRerolls(user.getLeftRerolls() - 1);
             userRepository.save(user);
             return ResponseEntity.ok("Quest rerolled");
         });
