@@ -39,7 +39,7 @@ import javax.imageio.ImageIO;
 
 @Service
 public class VideoService {
-    @Value("${minio.bucket}")
+    @Value("${minio.rawVideosBucket}")
     private String bucket;
 
     @Value("${video.processed.path}")
@@ -47,9 +47,6 @@ public class VideoService {
 
     @Autowired
     private MinioClient minioClient;
-
-    @Autowired
-    private VideoCompressor videoCompressor;
 
     @Autowired
     private UserRepository userRepository;
@@ -91,9 +88,34 @@ public class VideoService {
         });
     }
 
-    public Page<Video> getAllVideos(Pageable pageable) {
-        return videoRepository.findAll(pageable);
+    @Async
+    public CompletableFuture<ResponseEntity<String>> uploadVideo(MultipartFile file, String title, String description, User user){
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                String filePath = UUID.randomUUID().toString();
+                minioClient.putObject(PutObjectArgs.builder()
+                        .bucket(bucket)
+                        .object(filePath)
+                        .stream(file.getInputStream(), file.getSize(), -1)
+                        .build());
+
+                Video video = new Video();
+                video.setUuid(UUID.randomUUID());
+                video.setUser(user);
+                video.setCreatedAt(LocalDateTime.now());
+                video.setTitle(title);
+                video.setDescription(description);
+                video.setFilePath(filePath);
+                video.setStatus(Status.PENDING);
+                videoRepository.save(video);
+                return ResponseEntity.ok("Uploaded");
+            } catch (Exception e) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Failed to upload video file: " + e.getMessage());
+            }
+        });
     }
+
 
     @Async
     public CompletableFuture<ResponseEntity<Video>> dislikeVideo(UUID uuid) {
@@ -107,158 +129,6 @@ public class VideoService {
             videoRepository.save(video.get());
             return ResponseEntity.ok().build();
         });
-    }
-
-    @Async
-    public CompletableFuture<Video> getRandomVideo() {
-        return CompletableFuture.supplyAsync(() -> {
-            long count = videoRepository.count();
-            if (count == 0) {
-                return null;
-            }
-            return videoRepository.findRandomVideo()
-                    .orElseThrow(() -> new RuntimeException("Failed to find random video"));
-        });
-    }
-
-    @Async
-    @Transactional
-    public CompletableFuture<String> uploadVideo(MultipartFile file, String title, String description, User user) {
-        return CompletableFuture.supplyAsync(() -> {
-            String fileName = UUID.randomUUID().toString() + ".mp4";
-            File tempFile = null;
-            File processedTempFile = null;
-
-            try {
-                tempFile = File.createTempFile("unprocessed_", ".mp4");
-                file.transferTo(tempFile);
-                String processedFileName = fileName;
-                videoCompressor.compressVideo(tempFile.getAbsolutePath(), processedFileName);
-
-                File processedFile = new File(new File(processPath), processedFileName);
-                if (!processedFile.exists()) {
-                    throw new RuntimeException("Compressed video file not found");
-                }
-
-                String processedFilePath = "videos/" + fileName;
-                minioClient.putObject(PutObjectArgs.builder()
-                        .bucket(bucket)
-                        .object(processedFilePath)
-                        .stream(new FileInputStream(processedFile), processedFile.length(), -1)
-                        .contentType("video/mp4")
-                        .build());
-
-                processedFile.delete();
-
-                return transactionTemplate.execute(status -> {
-                    User managedUser = userRepository.findById(user.getUuid())
-                            .orElseThrow(() -> new RuntimeException("User not found"));
-
-                    Video video = new Video();
-                    video.setTitle(title);
-                    video.setThumbnail(generateThumbnail(processedFile.getAbsolutePath()));
-                    video.setDescription(description);
-                    video.setFilePath(processedFilePath);
-                    video.setUser(managedUser);
-                    video.setQuestUuid(managedUser.getDailyQuest().getUuid());
-                    video.setCreatedAt(LocalDateTime.now());
-
-                    managedUser.addPostedVideo(video);
-                    userRepository.save(managedUser);
-
-                    Streak streak = streakRepository.findByUserId(managedUser.getUuid());
-                    if (streak == null) {
-                        streakService.createStreak(managedUser.getUuid());
-                    } else {
-                        streakService.updateStreak(managedUser.getUuid());
-                    }
-
-                    return processedFilePath;
-                });
-
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to process video: " + e.getMessage(), e);
-            } finally {
-                if (tempFile != null) {
-                    tempFile.delete();
-                }
-            }
-        });
-    }
-
-    public CompletableFuture<List<Video>> getUnviewedVideos(UUID userId) {
-        return CompletableFuture.supplyAsync(() -> videoRepository.findUnviewedVideosByUserId(userId));
-    }
-
-    public void markVideoAsViewed(UUID userId, UUID videoId) {
-        viewedVideoRepository.save(new ViewedVideo(new ViewedVideoId(userId, videoId)));
-    }
-
-    private byte[] generateThumbnail(String videoPath) {
-        try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(videoPath)) {
-            grabber.setFormat("mp4");
-            grabber.start();
-            grabber.setTimestamp(1000000);
-            Frame frame = grabber.grabImage();
-
-            if (frame == null) {
-                throw new RuntimeException("Failed to grab video frame");
-            }
-
-            try (Java2DFrameConverter converter = new Java2DFrameConverter()) {
-                BufferedImage bufferedImage = converter.getBufferedImage(frame);
-                if (bufferedImage == null) {
-                    throw new RuntimeException("Failed to convert frame to BufferedImage");
-                }
-
-                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                if (!ImageIO.write(bufferedImage, "jpg", outputStream)) {
-                    throw new RuntimeException("Failed to write BufferedImage to JPG");
-                }
-
-                byte[] thumbnailBytes = outputStream.toByteArray();
-
-                String thumbnailFileName = videoPath.replace(".mp4", "_thumb.jpg");
-                thumbnailFileName = "thumbnails/" + UUID.randomUUID().toString() + ".jpg";
-
-                minioClient.putObject(PutObjectArgs.builder()
-                        .bucket(bucket)
-                        .object(thumbnailFileName)
-                        .stream(new ByteArrayInputStream(thumbnailBytes), thumbnailBytes.length, -1)
-                        .contentType("image/jpeg")
-                        .build());
-
-                return thumbnailBytes;
-            }
-        } catch (IOException | ErrorResponseException | InsufficientDataException | InternalException |
-                 InvalidKeyException | InvalidResponseException | NoSuchAlgorithmException | ServerException |
-                 XmlParserException e) {
-            throw new RuntimeException("Failed to generate thumbnail: " + e.getMessage(), e);
-        }
-    }
-
-    public byte[] getVideo(String fileName) {
-        try {
-            GetObjectResponse response = minioClient.getObject(GetObjectArgs.builder()
-                    .bucket(bucket)
-                    .object(fileName)
-                    .build());
-            return response.readAllBytes();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to get video from MinIO: " + e.getMessage(), e);
-        }
-    }
-
-    public String getVideoUrl(String fileName) {
-        try {
-            return minioClient.getPresignedObjectUrl(GetPresignedObjectUrlArgs.builder()
-                    .bucket(bucket)
-                    .object(fileName)
-                    .method(Method.GET)
-                    .build());
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to generate video URL: " + e.getMessage(), e);
-        }
     }
 
     @Async
