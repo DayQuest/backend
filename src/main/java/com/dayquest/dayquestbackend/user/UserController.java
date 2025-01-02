@@ -9,6 +9,7 @@ import java.util.*;
 
 import com.dayquest.dayquestbackend.JwtService;
 import com.dayquest.dayquestbackend.quest.Quest;
+import com.dayquest.dayquestbackend.quest.QuestDTO;
 import com.dayquest.dayquestbackend.quest.QuestService;
 import com.dayquest.dayquestbackend.streak.StreakService;
 import com.drew.imaging.ImageMetadataReader;
@@ -450,7 +451,7 @@ public class UserController {
 
     @PostMapping("/rerollQuest")
     @Async
-    public CompletableFuture<ResponseEntity<String>> rerollQuest(@RequestHeader("Authorization") String token) {
+    public CompletableFuture<ResponseEntity<? extends Object>> rerollQuest(@RequestHeader("Authorization") String token) {
         return CompletableFuture.supplyAsync(() -> {
             String username = jwtService.extractUsername(token.substring(7));
             User user = userRepository.findByUsername(username);
@@ -472,7 +473,7 @@ public class UserController {
             user.setLastReroll(LocalDateTime.now());
             user.setLeftRerolls(user.getLeftRerolls() - 1);
             userRepository.save(user);
-            return ResponseEntity.ok("Quest rerolled");
+            return ResponseEntity.ok(new QuestDTO(newQuest));
         });
     }
 
