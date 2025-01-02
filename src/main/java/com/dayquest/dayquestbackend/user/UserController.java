@@ -457,7 +457,7 @@ public class UserController {
             if (user == null) {
                 return ResponseEntity.notFound().build();
             }
-            if(user.getLastReroll() == null || user.getLastReroll().plusDays(1).isAfter(LocalDateTime.now())) {
+            if(user.getLastReroll() == null || user.getLastReroll().plusDays(1).isBefore(LocalDateTime.now())) {
                 user.setLeftRerolls(3);
             }
             if(user.getLeftRerolls() == 0) {
