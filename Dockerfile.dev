@@ -7,4 +7,5 @@ FROM maven:3.9.4-eclipse-temurin-17-alpine
 WORKDIR /app
 COPY --from=builder /root/.m2 /root/.m2
 RUN apk add --no-cache ffmpeg
+
 CMD ["mvn", "spring-boot:run"]

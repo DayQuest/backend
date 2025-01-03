@@ -30,6 +30,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
+    platform: linux/amd64
     volumes:
       - .:/app:delegated
       - ~/.m2:/root/.m2:cached

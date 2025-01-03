@@ -18,7 +18,7 @@ public class S3StorageService {
             @Value("${minio.endpoint}") String endpoint,
             @Value("${minio.accessKey}") String accessKey,
             @Value("${minio.secretKey}") String secretKey,
-            @Value("${minio.bucket}") String bucket) {
+            @Value("${minio.rawVideosBucket}") String bucket) {
 
         this.bucket = bucket;
         this.minioClient = MinioClient.builder()
