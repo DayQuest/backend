@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @RestController
@@ -20,7 +21,7 @@ public class BadgeController {
         this.badgeService = badgeService;
     }
 
-    @PostMapping("/create")
+    @PostMapping
     @Async
     public CompletableFuture<Object> createBadge(@RequestParam("name") String name, @RequestParam("description") String description, @RequestParam("file")MultipartFile file, @RequestHeader("Authorization") String token) {
         return CompletableFuture.supplyAsync(() -> {
@@ -43,9 +44,35 @@ public class BadgeController {
         });
     }
 
+    @DeleteMapping
+    @Async
+    public CompletableFuture<Object> deleteBadge(@RequestParam("id") UUID id, @RequestHeader("Authorization") String token) {
+        return CompletableFuture.supplyAsync(() -> {
+            if (id == null) {
+                return ResponseEntity.badRequest().body("Missing parameters");
+            }
+            if (!badgeRepository.findById(id).isPresent()) {
+                return ResponseEntity.badRequest().body("Badge not found");
+            }
+            badgeRepository.deleteById(id);
+            return ResponseEntity.ok().build();
+        });
+    }
+
     @GetMapping("/list")
     @Async
     public CompletableFuture<List<Badge>> getPagedBadges(@RequestParam("page") int page, @RequestParam("size") int size) {
         return CompletableFuture.supplyAsync(() -> badgeRepository.findAll(PageRequest.of(page, size)).getContent());
+    }
+
+    @GetMapping("/{uuid}/users")
+    @Async
+    public CompletableFuture<List<UUID>> getUsersWithBadge(@PathVariable UUID uuid) {
+        return CompletableFuture.supplyAsync(() -> badgeRepository.findById(uuid).map(Badge::getUserIds).orElse(null));
+    }
+    @GetMapping("/{uuid}")
+    @Async
+    public CompletableFuture<Object> getBadge(@PathVariable UUID uuid) {
+        return CompletableFuture.supplyAsync(() -> badgeRepository.findById(uuid).orElse(null));
     }
 }

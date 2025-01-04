@@ -25,9 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.InputStream;
-
-import javax.imageio.ImageIO;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -486,6 +483,64 @@ public class UserController {
                 return ResponseEntity.notFound().build();
             }
             return user.getLastReroll() == null || user.getLastReroll().plusDays(1).isBefore(LocalDateTime.now()) ? ResponseEntity.ok(3) : ResponseEntity.ok(user.getLeftRerolls());
+        });
+    }
+
+    @PutMapping("/{uuid}/badge")
+    @Async
+    public CompletableFuture<ResponseEntity<String>> addBadge(@PathVariable UUID uuid, @RequestBody UUID badgeId,  @RequestHeader("Authorization") String token) {
+        return CompletableFuture.supplyAsync(() -> {
+            String username = jwtService.extractUsername(token.substring(7));
+            User user = userRepository.findByUsername(username);
+            if (user.getAuthorities().stream()
+                    .noneMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"))) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User is not an admin");
+            }
+            User userToAddBadge = userRepository.findById(uuid).orElse(null);
+            if (userToAddBadge == null) {
+                return ResponseEntity.notFound().build();
+            }
+            if (userToAddBadge.getBadges().contains(badgeId)) {
+                return ResponseEntity.badRequest().body("Badge already added");
+            }
+            userToAddBadge.getBadges().add(badgeId);
+            userRepository.save(userToAddBadge);
+            return ResponseEntity.ok("Badge added");
+        });
+    }
+
+    @GetMapping("/{uuid}/badges")
+    @Async
+    public CompletableFuture<ResponseEntity<List<UUID>>> getBadges(@PathVariable UUID uuid) {
+        return CompletableFuture.supplyAsync(() -> {
+            User user = userRepository.findById(uuid).orElse(null);
+            if (user == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(user.getBadges());
+        });
+    }
+
+    @DeleteMapping("/{uuid}/badge")
+    @Async
+    public CompletableFuture<ResponseEntity<String>> removeBadge(@PathVariable UUID uuid, @RequestBody UUID badgeId,  @RequestHeader("Authorization") String token) {
+        return CompletableFuture.supplyAsync(() -> {
+            String username = jwtService.extractUsername(token.substring(7));
+            User user = userRepository.findByUsername(username);
+            if (user.getAuthorities().stream()
+                    .noneMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"))) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User is not an admin");
+            }
+            User userToRemoveBadge = userRepository.findById(uuid).orElse(null);
+            if (userToRemoveBadge == null) {
+                return ResponseEntity.notFound().build();
+            }
+            if (!userToRemoveBadge.getBadges().contains(badgeId)) {
+                return ResponseEntity.badRequest().body("Badge not found");
+            }
+            userToRemoveBadge.getBadges().remove(badgeId);
+            userRepository.save(userToRemoveBadge);
+            return ResponseEntity.ok("Badge removed");
         });
     }
 }
