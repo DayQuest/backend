@@ -31,9 +31,6 @@ public class UserService {
   private UserRepository userRepository;
 
   @Autowired
-  private QuestRepository questRepository;
-
-  @Autowired
   private JwtService jwtService;
 
   @Autowired

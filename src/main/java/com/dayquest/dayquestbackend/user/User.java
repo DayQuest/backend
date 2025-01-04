@@ -57,6 +57,9 @@ public class User implements UserDetails {
     @ElementCollection
     private List<UUID> followerList;
 
+    @ElementCollection
+    private List<UUID> badges;
+
     private int leftRerolls;
     private LocalDateTime lastReroll;
 
@@ -360,5 +363,13 @@ public class User implements UserDetails {
 
     public void setLastReroll(LocalDateTime lastReroll) {
         this.lastReroll = lastReroll;
+    }
+
+    public List<UUID> getBadges() {
+        return badges;
+    }
+
+    public void setBadges(List<UUID> badges) {
+        this.badges = badges;
     }
 }
