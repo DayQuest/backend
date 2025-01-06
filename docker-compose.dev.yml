@@ -9,6 +9,8 @@ services:
     env_file:
       - .env
     restart: unless-stopped
+    networks:
+      - dayquest-network
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
@@ -20,13 +22,17 @@ services:
     env_file:
       - .env
     restart: unless-stopped
+    networks:
+      - dayquest-network
+
 
   app:
     build:
       context: .
       dockerfile: Dockerfile.dev
+    platform: linux/amd64
     volumes:
-      - .:/app:delegated
+      - .:/app
       - ~/.m2:/root/.m2:cached
       - video-processed:/opt/dayquestcdn/videos/processed
       - video-cache:/opt/dayquestcdn/videos/unprocessed
@@ -41,9 +47,15 @@ services:
     environment:
       - SPRING_DEVTOOLS_RESTART_ENABLED=true
     pull_policy: build
+    networks:
+      - dayquest-network
 
 
 volumes:
     mysql-data-dev:
     video-processed:
     video-cache:
+networks:
+  dayquest-network:
+    name: dayquest-network
+    driver: bridge
