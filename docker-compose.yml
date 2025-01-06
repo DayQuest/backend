@@ -9,6 +9,8 @@ services:
     env_file:
       - stack.env
     restart: unless-stopped
+    networks:
+      - dayquest-network
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
@@ -25,6 +27,8 @@ services:
     env_file:
       - stack.env
     restart: unless-stopped
+    networks:
+      - dayquest-network
 
   app:
     build:
@@ -42,8 +46,15 @@ services:
       - stack.env
     restart: unless-stopped
     pull_policy: build
+    networks:
+      - dayquest-network
 
 volumes:
   mysql-data:
   video-processed:
   video-cache:
+
+networks:
+  dayquest-network:
+    name: dayquest-network
+    driver: bridge
