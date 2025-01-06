@@ -71,7 +71,9 @@ public class SecurityConfiguration {
                                 "/api/users/profilepicture/**",
                                 "/api/videos/thumbnail/**",
                                 "/api/users/profile/**",
-                                "/api/admin/stats"
+                                "/api/admin/stats",
+                                "/api/legals/agb",
+                                "/api/legals/datenschutz"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

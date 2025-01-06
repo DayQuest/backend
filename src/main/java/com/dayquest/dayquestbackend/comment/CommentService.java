@@ -33,9 +33,11 @@ public class CommentService {
                 return ResponseEntity.notFound().build();
             }
 
-            if (comment.isEmpty() || comment.length() > 500) {
+
+            if (comment.isEmpty() || comment.length() > 500 || comment.isBlank()) {
                 return ResponseEntity.badRequest().build();
             }
+
 
             Comment newComment = new Comment();
             newComment.setContent(comment);

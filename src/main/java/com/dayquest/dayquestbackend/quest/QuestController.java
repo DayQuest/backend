@@ -40,10 +40,10 @@ public class QuestController {
     @GetMapping
     @Async
     public CompletableFuture<ResponseEntity<List<QuestDTO>>> getQuests(@RequestHeader("Authorization") String token,
-                                                                    @RequestParam(defaultValue = "0") int page,
-                                                                    @RequestParam(defaultValue = "10") int size,
-                                                                    @RequestParam(defaultValue = "createdAt") String sortBy,
-                                                                    @RequestParam(defaultValue = "DESC") Sort.Direction sortDirection) {
+                                                                       @RequestParam(defaultValue = "0") int page,
+                                                                       @RequestParam(defaultValue = "10") int size,
+                                                                       @RequestParam(defaultValue = "createdAt") String sortBy,
+                                                                       @RequestParam(defaultValue = "DESC") Sort.Direction sortDirection) {
         return CompletableFuture.supplyAsync(() -> {
             Sort sort = Sort.by(sortDirection, sortBy);
             PageRequest pageRequest = PageRequest.of(page, size, sort);
@@ -73,7 +73,7 @@ public class QuestController {
         }
 
         return questService.createQuest(quest.getTitle(), quest.getDescription(), userRepository.findByUsername(jwtService.extractUsername(token.substring(7))))
-            .thenApply(newQuest -> ResponseEntity.status(HttpStatus.CREATED).body(newQuest));
+                .thenApply(newQuest -> ResponseEntity.status(HttpStatus.CREATED).body(newQuest));
     }
 
     @PostMapping("/like")
@@ -183,7 +183,7 @@ public class QuestController {
     @Async
     public CompletableFuture<ResponseEntity<String>> getQuest(@RequestBody UUID uuid) {
         return CompletableFuture.supplyAsync(() -> {
-          Optional<User> user = userRepository.findById(uuid);
+            Optional<User> user = userRepository.findById(uuid);
             if (user.isEmpty()) {
                 return ResponseEntity.notFound().build();
             }
@@ -199,7 +199,7 @@ public class QuestController {
     @Async
     public CompletableFuture<ResponseEntity<QuestDTO>> getUsersQuest(@PathVariable UUID userid){
         return CompletableFuture.supplyAsync(() -> {
-           Optional<User> user = userRepository.findById(userid);
+            Optional<User> user = userRepository.findById(userid);
             if (user.isEmpty()) {
                 return ResponseEntity.notFound().build();
             }

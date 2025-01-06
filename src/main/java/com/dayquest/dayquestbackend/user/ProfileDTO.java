@@ -7,6 +7,7 @@ import com.dayquest.dayquestbackend.video.VideoDTO;
 import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class ProfileDTO {
     private String username;
@@ -16,8 +17,9 @@ public class ProfileDTO {
     private boolean isFollowing = false;
     private int followers;
     private boolean isBanned;
+    private List<UUID> badges;
 
-    public ProfileDTO(String username, String profilePicture, List<Video> videos, Quest quest, boolean isBanned, int followers, boolean isFollowing) {
+    public ProfileDTO(String username, String profilePicture, List<Video> videos, Quest quest, boolean isBanned, int followers, boolean isFollowing, List<UUID> badges) {
         this.username = username;
         this.profilePicture = profilePicture;
         this.videos = new ArrayList<>();
@@ -25,6 +27,7 @@ public class ProfileDTO {
         this.isBanned = isBanned;
         this.followers = followers;
         this.isFollowing = isFollowing;
+        this.badges = badges;
         if (videos != null) {
             for(Video video : videos) {
                 this.videos.add(new VideoDTO(
