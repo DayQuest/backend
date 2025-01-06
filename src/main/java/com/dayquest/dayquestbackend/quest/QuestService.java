@@ -17,6 +17,9 @@ public class QuestService {
     @Async
     public CompletableFuture<Quest> createQuest(String title, String description, User user) {
         return CompletableFuture.supplyAsync(() -> {
+            if (title == null || description == null || title.isEmpty() || description.isEmpty()|| title.isBlank() || description.isBlank()) {
+                return null;
+            }
             Quest quest = new Quest();
             quest.setTitle(title);
             quest.setDescription(description);
