@@ -390,10 +390,13 @@ public class UserController {
 
 
     @PostMapping("/setprofilepicture")
-    public ResponseEntity<String> setProfilePicture(@RequestParam("file") MultipartFile file, @RequestParam("uuid") UUID uuid) {
+    public ResponseEntity<String> setProfilePicture(@RequestParam("file") MultipartFile file, @RequestParam("uuid") UUID uuid, @RequestHeader("Authorization") String token) {
 
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("File is empty");
+        }
+        if (!userService.authenticateUser(uuid, token).join()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
         }
 
         try {
