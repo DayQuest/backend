@@ -59,4 +59,3 @@ networks:
   dayquest-network:
     name: dayquest-network
     driver: bridge
-    external: false

@@ -87,34 +87,35 @@ public class VideoService {
             return ResponseEntity.ok().build();
         });
     }
+@Async
+public CompletableFuture<ResponseEntity<String>> uploadVideo(MultipartFile file, String title, String description, User user) {
+    return CompletableFuture.supplyAsync(() -> {
+        try {
+            String filePath = UUID.randomUUID().toString() + ".mp4";
 
-    @Async
-    public CompletableFuture<ResponseEntity<String>> uploadVideo(MultipartFile file, String title, String description, User user){
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                String filePath = UUID.randomUUID().toString();
-                minioClient.putObject(PutObjectArgs.builder()
-                        .bucket(bucket)
-                        .object(filePath)
-                        .stream(file.getInputStream(), file.getSize(), -1)
-                        .build());
+            minioClient.putObject(PutObjectArgs.builder()
+                    .bucket(bucket)
+                    .object(filePath)
+                    .stream(file.getInputStream(), file.getSize(), -1)
+                    .build());
 
-                Video video = new Video();
-                video.setUuid(UUID.randomUUID());
-                video.setUser(user);
-                video.setCreatedAt(LocalDateTime.now());
-                video.setTitle(title);
-                video.setDescription(description);
-                video.setFilePath(filePath);
-                video.setStatus(Status.PENDING);
-                videoRepository.save(video);
-                return ResponseEntity.ok("Uploaded");
-            } catch (Exception e) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body("Failed to upload video file: " + e.getMessage());
-            }
-        });
-    }
+            Video video = new Video();
+            video.setUuid(UUID.randomUUID());
+            video.setUser(user);
+            video.setCreatedAt(LocalDateTime.now());
+            video.setTitle(title);
+            video.setDescription(description);
+            video.setFilePath(filePath);
+            video.setStatus(Status.PENDING);
+            videoRepository.save(video);
+
+            return ResponseEntity.ok("Uploaded");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to upload video file: " + e.getMessage());
+        }
+    });
+}
 
 
     @Async
