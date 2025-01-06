@@ -91,7 +91,13 @@ public class VideoService {
 public CompletableFuture<ResponseEntity<String>> uploadVideo(MultipartFile file, String title, String description, User user) {
     return CompletableFuture.supplyAsync(() -> {
         try {
-            String filePath = UUID.randomUUID().toString() + ".mp4";
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename == null || !originalFilename.contains(".")) {
+                return ResponseEntity.badRequest().body("Invalid file format.");
+            }
+            String fileExtension = originalFilename.substring(originalFilename.lastIndexOf('.')).toLowerCase();
+
+            String filePath = UUID.randomUUID().toString() + fileExtension;
 
             minioClient.putObject(PutObjectArgs.builder()
                     .bucket(bucket)
@@ -116,6 +122,7 @@ public CompletableFuture<ResponseEntity<String>> uploadVideo(MultipartFile file,
         }
     });
 }
+
 
 
     @Async

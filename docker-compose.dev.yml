@@ -32,7 +32,7 @@ services:
       dockerfile: Dockerfile.dev
     platform: linux/amd64
     volumes:
-      - .:/app:delegated
+      - .:/app
       - ~/.m2:/root/.m2:cached
       - video-processed:/opt/dayquestcdn/videos/processed
       - video-cache:/opt/dayquestcdn/videos/unprocessed
