@@ -37,7 +37,7 @@ public class ProfileDTO {
                         video.getDownVotes(),
                         video.getUser().getUsername(),
                         video.getFilePath(),
-                        "http://77.90.21.53:8010/api/videos/thumbnail/" + video.getUuid().toString(),
+                        "https://cdn.dayquest.de/thumbnail/" + video.getFilePath().toString().substring(0, video.getFilePath().toString().length() - 4) + ".jpg",
                         quest,
                         video.getUuid(),
                         video.getCreatedAt(),
