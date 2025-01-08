@@ -69,19 +69,12 @@ public class VideoController {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body("Could not find user with that UUID");
             }
-
-            String path = videoService.uploadVideo(file, title, description, user.get()).join();
-
+            videoService.uploadVideo(file, title, description, user.get()).join();
             activityUpdater.increaseInteractions(user);
-
-            if (path == null) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body("Failed to upload video due to internal error");
-            }
-
             return ResponseEntity.ok("Uploaded");
         });
     }
+
 
     //old endpoint just for the period where the frontend is not updated
     @Async
@@ -97,16 +90,8 @@ public class VideoController {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body("Could not find user with that UUID");
             }
-
-            String path = videoService.uploadVideo(file, title, description, user.get()).join();
-
+            videoService.uploadVideo(file, title, description, user.get()).join();
             activityUpdater.increaseInteractions(user);
-
-            if (path == null) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body("Failed to upload video due to internal error");
-            }
-
             return ResponseEntity.ok("Uploaded");
         });
     }
@@ -137,7 +122,6 @@ public class VideoController {
         return userRepository.findById(userUuid)
                 .map(user -> CompletableFuture.supplyAsync(() -> {
                     List<Video> unviewedVideos = videoRepository.findUnviewedVideosByUserId(user.getUuid());
-
                     if (unviewedVideos.isEmpty()) {
                         Optional<Video> randomVideoOpt = videoRepository.findRandomVideo();
                         if (randomVideoOpt.isPresent()) {

@@ -1,13 +1,10 @@
 package com.dayquest.dayquestbackend.video;
 
-import com.dayquest.dayquestbackend.comment.Comment;
 import com.dayquest.dayquestbackend.user.User;
 import jakarta.persistence.*;
 
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -24,6 +21,7 @@ public class Video {
     private int upVotes;
     private int downVotes;
     private int views;
+    private Status status;
     private double length;
 
     private SecurityLevel securityLevel = SecurityLevel.NORMAL;
@@ -132,5 +130,21 @@ public class Video {
 
     public void setSecurityLevel(SecurityLevel securityLevel) {
         this.securityLevel = securityLevel;
+    }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public void setStatus(Status status) {
+        this.status = status;
+    }
+
+    public double getLength() {
+        return length;
+    }
+
+    public void setLength(double length) {
+        this.length = length;
     }
 }
