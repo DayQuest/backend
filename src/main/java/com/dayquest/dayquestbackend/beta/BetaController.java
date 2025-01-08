@@ -69,7 +69,23 @@ public class BetaController {
   @Async
   public CompletableFuture<ResponseEntity<Boolean>> isValid(@RequestBody KeyDTO key) {
     return CompletableFuture.supplyAsync(() -> {
-      boolean exists = keyRepository.existsByKey(key.getBetaKey());
+
+      String betaKey = key.getBetaKey();
+
+      if (!betaKey.contains("-")) {
+        StringBuilder builder = new StringBuilder();
+
+        for (int i = 0; i < betaKey.length(); i++) {
+          builder.append(betaKey.charAt(i));
+
+          if ((i + 1) % 4 == 0 && i != betaKey.length() - 1) {
+            builder.append("-");
+          }
+        }
+        betaKey = builder.toString();
+      }
+
+      boolean exists = keyRepository.existsByKey(betaKey);
       return ResponseEntity.ok(exists);
     });
   }
