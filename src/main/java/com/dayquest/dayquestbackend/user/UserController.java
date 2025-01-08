@@ -472,6 +472,7 @@ public class UserController {
             user.setLastReroll(LocalDateTime.now());
             user.setLeftRerolls(user.getLeftRerolls() - 1);
             userRepository.save(user);
+            activityUpdater.increaseInteractions(user);
             return ResponseEntity.ok(new QuestDTO(newQuest));
         });
     }
