@@ -27,6 +27,16 @@ public class Report {
 
     private ReportStatus status = ReportStatus.PENDING;
 
+    private String modMessage;
+
+    public String getModMessage() {
+        return modMessage;
+    }
+
+    public void setModMessage(String modMessage) {
+        this.modMessage = modMessage;
+    }
+
     public UUID getEntityId() {
         return entityId;
     }
