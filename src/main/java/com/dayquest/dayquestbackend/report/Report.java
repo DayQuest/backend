@@ -25,6 +25,32 @@ public class Report {
 
     private Type type;
 
+    private ReportStatus status = ReportStatus.PENDING;
+
+    public UUID getEntityId() {
+        return entityId;
+    }
+
+    public void setEntityId(UUID entityId) {
+        this.entityId = entityId;
+    }
+
+    public UUID getUserId() {
+        return userId;
+    }
+
+    public void setUserId(UUID userId) {
+        this.userId = userId;
+    }
+
+    public ReportStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(ReportStatus status) {
+        this.status = status;
+    }
+
     public UUID getUuid() {
         return uuid;
     }
