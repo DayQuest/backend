@@ -1,7 +1,10 @@
 package com.dayquest.dayquestbackend;
 
+import com.dayquest.dayquestbackend.comment.CommentRepository;
 import com.dayquest.dayquestbackend.user.User;
 import com.dayquest.dayquestbackend.user.UserRepository;
+import com.dayquest.dayquestbackend.video.Video;
+import com.dayquest.dayquestbackend.video.VideoRepository;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
@@ -24,15 +27,21 @@ public class SecurityConfiguration {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final SecurityContextRepository repository;
     private final UserRepository userRepository;
+    private final VideoRepository videoRepository;
+    private final CommentRepository commentRepository;
 
     public SecurityConfiguration(
             JwtAuthenticationFilter jwtAuthenticationFilter,
             SecurityContextRepository repository,
-            UserRepository userRepository
+            UserRepository userRepository,
+            VideoRepository videoRepository,
+            CommentRepository commentRepository
     ) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.repository = repository;
         this.userRepository = userRepository;
+        this.videoRepository = videoRepository;
+        this.commentRepository = commentRepository;
     }
 
     @Bean
@@ -113,6 +122,9 @@ public class SecurityConfiguration {
     @PostConstruct
     public void init() {
         SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
+        for (Video video : videoRepository.findAll()) {
+            video.setComments(commentRepository.countCommentsByVideoId(video.getUuid()));
+        }
     }
 }
 
