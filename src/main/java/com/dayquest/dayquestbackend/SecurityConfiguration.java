@@ -124,6 +124,7 @@ public class SecurityConfiguration {
         SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
         for (Video video : videoRepository.findAll()) {
             video.setComments(commentRepository.countCommentsByVideoId(video.getUuid()));
+            videoRepository.save(video);
         }
     }
 }
