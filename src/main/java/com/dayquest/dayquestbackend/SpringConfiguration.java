@@ -46,12 +46,7 @@ public class SpringConfiguration implements WebMvcConfigurer {
   @Autowired
 
   private QuestService questService;
-
-  @Autowired
-  private CommentRepository commentRepository;
-
-  @Autowired
-  private VideoRepository videoRepository;
+  
 
   @Autowired
   private UserRepository userRepository;
@@ -84,11 +79,4 @@ public class SpringConfiguration implements WebMvcConfigurer {
             .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
             .allowedHeaders("*");
   }
-
-  @PostConstruct
-    public void init() {
-        for (Video video : videoRepository.findAll()) {
-            video.setComments(commentRepository.countCommentsByVideoId(video.getUuid()));
-        }
-    }
 }
