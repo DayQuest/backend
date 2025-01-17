@@ -1,8 +1,11 @@
 package com.dayquest.dayquestbackend;
 
+import com.dayquest.dayquestbackend.comment.CommentRepository;
 import com.dayquest.dayquestbackend.quest.QuestService;
 import com.dayquest.dayquestbackend.user.UserRepository;
 import com.dayquest.dayquestbackend.user.UserService;
+import com.dayquest.dayquestbackend.video.Video;
+import com.dayquest.dayquestbackend.video.VideoRepository;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import jakarta.annotation.PostConstruct;
@@ -45,6 +48,12 @@ public class SpringConfiguration implements WebMvcConfigurer {
   private QuestService questService;
 
   @Autowired
+  private CommentRepository commentRepository;
+
+  @Autowired
+  private VideoRepository videoRepository;
+
+  @Autowired
   private UserRepository userRepository;
 
 
@@ -75,4 +84,11 @@ public class SpringConfiguration implements WebMvcConfigurer {
             .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
             .allowedHeaders("*");
   }
+
+  @PostConstruct
+    public void init() {
+        for (Video video : videoRepository.findAll()) {
+            video.setComments(commentRepository.countCommentsByVideoId(video.getUuid()));
+        }
+    }
 }

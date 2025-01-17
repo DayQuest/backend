@@ -8,6 +8,7 @@ import com.dayquest.dayquestbackend.user.User;
 import com.dayquest.dayquestbackend.user.UserRepository;
 
 import java.util.Optional;
+import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -135,6 +136,7 @@ public class VideoController {
 
                     Video video = unviewedVideos.get(0);
                     viewedVideoRepository.save(new ViewedVideo(new ViewedVideoId(user.getUuid(), video.getUuid())));
+                    video.setViews(video.getViews() + 1);
                     return ResponseEntity.ok(createVideoDTO(video, user));
                 }))
                 .orElseGet(() -> CompletableFuture.completedFuture(

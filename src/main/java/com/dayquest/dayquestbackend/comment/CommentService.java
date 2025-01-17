@@ -37,7 +37,8 @@ public class CommentService {
             if (comment.isEmpty() || comment.length() > 500 || comment.isBlank()) {
                 return ResponseEntity.badRequest().build();
             }
-
+            post.get().setComments(post.get().getComments() + 1);
+            videoRepository.save(post.get());
 
             Comment newComment = new Comment();
             newComment.setContent(comment);

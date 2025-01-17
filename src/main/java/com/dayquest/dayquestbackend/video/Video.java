@@ -24,6 +24,8 @@ public class Video {
     private Status status;
     private double length;
 
+    private int comments;
+
     private SecurityLevel securityLevel = SecurityLevel.NORMAL;
 
     @Lob
@@ -138,6 +140,14 @@ public class Video {
 
     public void setStatus(Status status) {
         this.status = status;
+    }
+
+    public int getComments() {
+        return comments;
+    }
+
+    public void setComments(int comments) {
+        this.comments = comments;
     }
 
     public double getLength() {
