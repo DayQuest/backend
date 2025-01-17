@@ -46,7 +46,7 @@ public class SpringConfiguration implements WebMvcConfigurer {
   @Autowired
 
   private QuestService questService;
-  
+
 
   @Autowired
   private UserRepository userRepository;
