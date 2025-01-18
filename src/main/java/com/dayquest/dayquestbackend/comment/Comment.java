@@ -19,6 +19,8 @@ public class Comment {
     @Column(nullable = false)
     private String content;
 
+
+    @Column(nullable = false)
     private UUID videoId;
 
     private String username;

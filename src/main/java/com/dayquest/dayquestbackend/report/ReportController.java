@@ -28,26 +28,31 @@ public class ReportController {
 
     @PostMapping("/create")
     @Async
-    public CompletableFuture<ResponseEntity<Report>> createReport(@RequestBody Report report) {
+    public CompletableFuture<ResponseEntity<Report>> createReport(@RequestBody ReportDTO report) {
         return CompletableFuture.supplyAsync(() -> {
-            if (reportRepository.findByUserIdAndEntityId(report.getUserUuid(), report.getEntityUuid()) != null) {
+            if (reportRepository.findByUserIdAndEntityId(report.getUserId(), report.getEntityId()) != null) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).build();
             }
             if(report.getType() == Type.VIDEO){
-                Video video = videoRepository.findById(report.getEntityUuid()).orElse(null);
+                Video video = videoRepository.findById(report.getEntityId()).orElse(null);
                 if(Objects.isNull(video)){
                     return ResponseEntity.notFound().build();
                 }
-                if(reportRepository.findByEntityId(report.getEntityUuid()).size() > 2){
+                if(reportRepository.findByEntityId(report.getEntityId()).size() > 2){
                     video.setSecurityLevel(SecurityLevel.SUS);
                     videoRepository.save(video);
                 }
-                else if(reportRepository.findByEntityId(report.getEntityUuid()).size() > 5){
+                else if(reportRepository.findByEntityId(report.getEntityId()).size() > 5){
                     video.setSecurityLevel(SecurityLevel.SUS2);
                     videoRepository.save(video);
                 }
             }
-            reportRepository.save(report);
+            Report newReport = new Report();
+            newReport.setDescription(report.getDescription());
+            newReport.setEntityId(report.getEntityId());
+            newReport.setUserId(report.getUserId());
+            newReport.setType(report.getType());
+            reportRepository.save(newReport);
             return ResponseEntity.status(HttpStatus.CREATED).build();
         });
     }
