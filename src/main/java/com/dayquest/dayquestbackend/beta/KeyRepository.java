@@ -7,4 +7,5 @@ import org.springframework.stereotype.Repository;
 public interface KeyRepository extends JpaRepository<BetaKey, Long> {
     boolean existsByKey(String betaKey);
     BetaKey findByKey(String betaKey);
+    BetaKey findByAppUsername(String username);
 }

@@ -52,6 +52,7 @@ public class User implements UserDetails {
     private List<UUID> likedVideos;
 
     @ElementCollection
+    @CollectionTable(name = "user_followed_users", joinColumns = @JoinColumn(name = "user_id"))
     private List<UUID> followedUsers;
 
     @ElementCollection

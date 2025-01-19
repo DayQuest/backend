@@ -29,12 +29,20 @@ public class Report {
 
     private String modMessage;
 
-    public String getModMessage() {
-        return modMessage;
+    public UUID getUuid() {
+        return uuid;
     }
 
-    public void setModMessage(String modMessage) {
-        this.modMessage = modMessage;
+    public void setUuid(UUID uuid) {
+        this.uuid = uuid;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public UUID getEntityId() {
@@ -53,42 +61,6 @@ public class Report {
         this.userId = userId;
     }
 
-    public ReportStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(ReportStatus status) {
-        this.status = status;
-    }
-
-    public UUID getUuid() {
-        return uuid;
-    }
-
-    public void setUuid(UUID uuid) {
-        this.uuid = uuid;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public UUID getEntityUuid() {
-        return entityId;
-    }
-
-    public void setEntityUuid(UUID videoUuid) {
-        this.entityId = videoUuid;
-    }
-
-    public UUID getUserUuid() {
-        return userId;
-    }
-
     public Type getType() {
         return type;
     }
@@ -97,7 +69,19 @@ public class Report {
         this.type = type;
     }
 
-    public void setUserUuid(UUID userUuid) {
-        this.userId = userUuid;
+    public ReportStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(ReportStatus status) {
+        this.status = status;
+    }
+
+    public String getModMessage() {
+        return modMessage;
+    }
+
+    public void setModMessage(String modMessage) {
+        this.modMessage = modMessage;
     }
 }
