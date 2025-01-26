@@ -5,6 +5,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Column;
+
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -27,7 +29,17 @@ public class Report {
 
     private ReportStatus status = ReportStatus.PENDING;
 
+    private LocalDateTime createdAt = LocalDateTime.now();
+
     private String modMessage;
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
 
     public UUID getUuid() {
         return uuid;
