@@ -3,6 +3,8 @@ package com.dayquest.dayquestbackend.report;
 import java.util.Objects;
 import java.util.UUID;
 
+import com.dayquest.dayquestbackend.JwtService;
+import com.dayquest.dayquestbackend.user.UserRepository;
 import com.dayquest.dayquestbackend.video.SecurityLevel;
 import com.dayquest.dayquestbackend.video.Video;
 import com.dayquest.dayquestbackend.video.VideoRepository;
@@ -26,11 +28,18 @@ public class ReportController {
     @Autowired
     private VideoRepository videoRepository;
 
+    @Autowired
+    private JwtService jwtService;
+
+    @Autowired
+    private UserRepository userRepository;
+
     @PostMapping("/create")
     @Async
-    public CompletableFuture<ResponseEntity<Report>> createReport(@RequestBody ReportDTO report) {
+    public CompletableFuture<ResponseEntity<Report>> createReport(@RequestBody ReportDTO report, @RequestHeader("Authorization") String token) {
         return CompletableFuture.supplyAsync(() -> {
-            if (reportRepository.findByUserIdAndEntityId(report.getUserId(), report.getEntityId()) != null) {
+            UUID userId = userRepository.findByUsername(jwtService.extractUsername(token.substring(7))).getUuid();
+            if (reportRepository.findByUserIdAndEntityId(userId, report.getEntityId()) != null) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).build();
             }
             if(report.getType() == Type.VIDEO){
@@ -50,7 +59,7 @@ public class ReportController {
             Report newReport = new Report();
             newReport.setDescription(report.getDescription());
             newReport.setEntityId(report.getEntityId());
-            newReport.setUserId(report.getUserId());
+            newReport.setUserId(userId);
             newReport.setType(report.getType());
             reportRepository.save(newReport);
             return ResponseEntity.status(HttpStatus.CREATED).build();

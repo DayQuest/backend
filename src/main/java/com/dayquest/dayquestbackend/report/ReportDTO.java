@@ -5,7 +5,6 @@ import java.util.UUID;
 public class ReportDTO {
     private String description;
     private UUID entityId;
-    private UUID userId;
     private Type type;
 
     public String getDescription() {
@@ -22,14 +21,6 @@ public class ReportDTO {
 
     public void setEntityId(UUID entityId) {
         this.entityId = entityId;
-    }
-
-    public UUID getUserId() {
-        return userId;
-    }
-
-    public void setUserId(UUID userId) {
-        this.userId = userId;
     }
 
     public Type getType() {
