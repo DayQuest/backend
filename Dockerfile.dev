@@ -1,0 +1,9 @@
+FROM eclipse-temurin:17-jdk-alpine
+WORKDIR /app
+COPY pom.xml .
+COPY src ./src
+
+WORKDIR /app
+RUN apk add --no-cache ffmpeg maven
+
+CMD ["mvn", "spring-boot:run"]

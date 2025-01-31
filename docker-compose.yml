@@ -1,0 +1,60 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: dayquest-mysql
+    volumes:
+      - mysql-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    env_file:
+      - stack.env
+    restart: unless-stopped
+    networks:
+      - dayquest-network
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: dayquest-phpmyadmin
+    ports:
+      - ${PHPMYADMIN_PORT}:80
+    depends_on:
+      - mysql
+    volumes:
+      - /opt/docker/phpmyadmin/boodark-nord:/var/www/html/themes/boodark-nord
+      - /opt/docker/phpmyadmin/config.inc.php:/etc/phpmyadmin/config.user.inc.php
+    environment:
+        - PMA_THEME=BooDark
+    env_file:
+      - stack.env
+    restart: unless-stopped
+    networks:
+      - dayquest-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - /opt/dayquestcdn/videos/processed:/opt/dayquestcdn/videos/processed
+      - /opt/dayquestcdn/videos/unprocessed:/opt/dayquestcdn/videos/unprocessed
+    container_name: dayquest-backend
+    ports:
+      - "${SERVER_PORT}:${SERVER_PORT}"
+    depends_on:
+      - mysql
+    env_file:
+      - stack.env
+    restart: unless-stopped
+    pull_policy: build
+    networks:
+      - dayquest-network
+
+volumes:
+  mysql-data:
+  video-processed:
+  video-cache:
+
+networks:
+  dayquest-network:
+    name: dayquest-network
+    driver: bridge

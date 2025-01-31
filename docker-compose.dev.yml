@@ -1,0 +1,61 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: dayquest-mysql
+    volumes:
+      - mysql-data-dev:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    env_file:
+      - .env
+    restart: unless-stopped
+    networks:
+      - dayquest-network
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: dayquest-phpmyadmin
+    ports:
+      - ${PHPMYADMIN_PORT}:80
+    depends_on:
+      - mysql
+    env_file:
+      - .env
+    restart: unless-stopped
+    networks:
+      - dayquest-network
+
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    platform: linux/amd64
+    volumes:
+      - .:/app
+      - ~/.m2:/root/.m2:cached
+      - video-processed:/opt/dayquestcdn/videos/processed
+      - video-cache:/opt/dayquestcdn/videos/unprocessed
+    container_name: dayquest-backend
+    ports:
+      - "${SERVER_PORT}:${SERVER_PORT}"
+    depends_on:
+      - mysql
+    env_file:
+      - .env
+    restart: unless-stopped
+    environment:
+      - SPRING_DEVTOOLS_RESTART_ENABLED=true
+    pull_policy: build
+    networks:
+      - dayquest-network
+
+
+volumes:
+    mysql-data-dev:
+    video-processed:
+    video-cache:
+networks:
+  dayquest-network:
+    name: dayquest-network
+    driver: bridge
