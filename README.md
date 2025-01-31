@@ -1,4 +1,23 @@
 # DayQuest Backend
+
+© 2025 DayQuest  
+All rights reserved.
+
+This software is **private**. You are **not** allowed to copy, modify, distribute, or use this code in any way except for the following cases:  
+
+### ✅ Allowed:
+- Private use (for personal, non-public and non-commercial purposes).
+- Contributing to this project.  
+
+### ❌ Not Allowed:
+- Redistributing, sharing, or publishing this code in any form.
+- Modifying and using this code in other projects without permission.
+- Using this software for commercial purposes.  
+
+
+### Spoiler:
+- Before you start this Service you need to run the CDN in a Docker Container or else you get an minio error!
+
 ```
 DayQuest-backend/
 ├── docker-compose.dev.yml   # Docker Compose configuration for development with hot reload and volume mounts
