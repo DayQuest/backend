@@ -18,6 +18,8 @@ This software is **private**. You are **not** allowed to copy, modify, distribut
 ### Spoiler:
 - Before you start this Service you need to run the CDN in a Docker Container or else you get an minio error!
 
+### Folder Structure:
+
 ```
 DayQuest-backend/
 ├── docker-compose.dev.yml   # Docker Compose configuration for development with hot reload and volume mounts
@@ -26,7 +28,7 @@ DayQuest-backend/
 └── Dockerfile               # Multi-stage Dockerfile for production deployment, optimized for smaller images
 ```
 
-### Commands
+### Commands:
 
 1. To start the development environment:
    ```bash
@@ -58,7 +60,7 @@ DayQuest-backend/
    ```
 ---
 
-## Contribution Rules for Feature Development
+## Contribution Rules for Feature Development:
 
 ### 1. **Production Branch Rules**
 
