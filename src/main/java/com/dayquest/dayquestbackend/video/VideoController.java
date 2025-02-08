@@ -20,7 +20,7 @@ import com.dayquest.dayquestbackend.video.repository.VideoRepository;
 import com.dayquest.dayquestbackend.video.repository.ViewedVideoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import org.springframework.core.io.ByteArrayResource;
+
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.http.*;
 

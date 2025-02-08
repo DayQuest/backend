@@ -37,19 +37,6 @@ public class SpringConfiguration implements WebMvcConfigurer {
 
   private QuestService questService;
 
-
-  @Autowired
-  private UserRepository userRepository;
-
-
-  @Bean
-  public Cache<Integer, String> videoCache() {
-    return Caffeine.newBuilder()
-            .expireAfterWrite(1, TimeUnit.HOURS)
-            .maximumSize(500)
-            .build();
-  }
-
   @Scheduled(cron = "0 0 0 * * ?")
   @Async
   public CompletableFuture<Void> assignDailyQuest() {
