@@ -1,6 +1,6 @@
-package com.dayquest.dayquestbackend.authentication.filter;
+package com.dayquest.dayquestbackend.auth.filter;
 
-import com.dayquest.dayquestbackend.authentication.service.JwtService;
+import com.dayquest.dayquestbackend.auth.service.JwtService;
 import com.dayquest.dayquestbackend.user.UserRepository;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;

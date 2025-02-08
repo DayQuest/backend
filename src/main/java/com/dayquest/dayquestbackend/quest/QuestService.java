@@ -17,7 +17,7 @@ public class QuestService {
     @Async
     public CompletableFuture<Quest> createQuest(String title, String description, User user) {
         return CompletableFuture.supplyAsync(() -> {
-            if (title == null || description == null || title.isEmpty() || description.isEmpty()|| title.isBlank() || description.isBlank()) {
+            if (title == null || description == null || title.isEmpty() || description.isEmpty() || title.isBlank() || description.isBlank()) {
                 return null;
             }
             Quest quest = new Quest();
@@ -35,7 +35,7 @@ public class QuestService {
         return CompletableFuture.supplyAsync(() -> {
             List<Quest> allQuests = questRepository.findAll();
             allQuests.sort((q1, q2) -> (q2.getLikes() - q2.getDislikes()) - (q1.getLikes()
-                - q1.getDislikes()));
+                    - q1.getDislikes()));
 
             if (allQuests.isEmpty()) {
                 return allQuests;

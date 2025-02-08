@@ -23,7 +23,7 @@ public class BadgeController {
 
     @PostMapping
     @Async
-    public CompletableFuture<Object> createBadge(@RequestParam("name") String name, @RequestParam("description") String description, @RequestParam("file")MultipartFile file, @RequestHeader("Authorization") String token) {
+    public CompletableFuture<Object> createBadge(@RequestParam("name") String name, @RequestParam("description") String description, @RequestParam("file") MultipartFile file, @RequestHeader("Authorization") String token) {
         return CompletableFuture.supplyAsync(() -> {
             if (name == null || description == null || file == null) {
                 return ResponseEntity.badRequest().body("Missing parameters");
@@ -34,10 +34,10 @@ public class BadgeController {
             if (description.length() < 3 || description.length() > 100) {
                 return ResponseEntity.badRequest().body("Description must be between 3 and 100 characters");
             }
-            if(!file.getContentType().equals("image/png") && !file.getContentType().equals("image/jpeg")) {
+            if (!file.getContentType().equals("image/png") && !file.getContentType().equals("image/jpeg")) {
                 return ResponseEntity.badRequest().body("File must be an image");
             }
-            if(badgeRepository.findByName(name).isPresent()) {
+            if (badgeRepository.findByName(name).isPresent()) {
                 return ResponseEntity.badRequest().body("Badge with this name already exists");
             }
             return badgeService.createBadge(name, description, file);
@@ -70,6 +70,7 @@ public class BadgeController {
     public CompletableFuture<List<UUID>> getUsersWithBadge(@PathVariable UUID uuid) {
         return CompletableFuture.supplyAsync(() -> badgeRepository.findById(uuid).map(Badge::getUserIds).orElse(null));
     }
+
     @GetMapping("/{uuid}")
     @Async
     public CompletableFuture<Object> getBadge(@PathVariable UUID uuid) {

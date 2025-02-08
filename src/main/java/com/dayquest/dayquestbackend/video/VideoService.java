@@ -48,9 +48,9 @@ public class VideoService {
     }
 
     @Async
-    public CompletableFuture<ResponseEntity<String>> uploadVideo(MultipartFile file, String title, String description, User user) {
+    public CompletableFuture<ResponseEntity<String>> uploadVideo(MultipartFile file, String title, String description, User user, List<String> hashtags) {
         return CompletableFuture.supplyAsync(() -> {
-            videoStorageService.uploadVideo(file, title, description, user);
+            videoStorageService.uploadVideo(file, title, description, user, hashtags);
             return ResponseEntity.ok("Uploaded");
         });
     }

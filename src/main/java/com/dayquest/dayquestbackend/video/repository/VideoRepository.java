@@ -6,6 +6,8 @@ import java.util.UUID;
 import com.dayquest.dayquestbackend.video.models.Video;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -31,5 +33,7 @@ public interface  VideoRepository extends JpaRepository<Video, UUID> {
             "ORDER BY RAND()" +
             "LIMIT 10;", nativeQuery = true)
     List<Video> findUnviewedVideosByUserId(@Param("userId") UUID userId);
+
+    Page<Video> findVideosByHashtagsContainsIgnoreCase(String query, Pageable pageable);
 }
 

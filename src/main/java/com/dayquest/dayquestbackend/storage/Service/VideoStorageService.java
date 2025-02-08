@@ -1,5 +1,8 @@
 package com.dayquest.dayquestbackend.storage.Service;
 
+import com.dayquest.dayquestbackend.hashtag.Hashtag;
+import com.dayquest.dayquestbackend.hashtag.HashtagRepository;
+import com.dayquest.dayquestbackend.hashtag.HashtagService;
 import com.dayquest.dayquestbackend.user.User;
 import com.dayquest.dayquestbackend.video.states.Status;
 import com.dayquest.dayquestbackend.video.models.Video;
@@ -16,6 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -30,8 +35,13 @@ public class VideoStorageService {
 
     @Autowired
     private VideoRepository videoRepository;
+    @Autowired
+    private HashtagRepository hashtagRepository;
+    @Autowired
+    private HashtagService hashtagService;
+
     @Async
-    public CompletableFuture<ResponseEntity<String>> uploadVideo(MultipartFile file, String title, String description, User user) {
+    public CompletableFuture<ResponseEntity<String>> uploadVideo(MultipartFile file, String title, String description, User user, List<String> hashtags) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 String originalFilename = file.getOriginalFilename();
@@ -41,6 +51,16 @@ public class VideoStorageService {
                 String fileExtension = originalFilename.substring(originalFilename.lastIndexOf('.')).toLowerCase();
 
                 String filePath = UUID.randomUUID().toString() + fileExtension;
+                List<Hashtag> videoHashtags = new ArrayList<>();
+                for (String hashtag : hashtags) {
+                    Hashtag foundHashtag = hashtagRepository.findByHashtag(hashtag);
+                    if (foundHashtag != null) {
+                        videoHashtags.add(foundHashtag);
+                    } else {
+                        hashtagService.createHashtag(hashtag);
+                        videoHashtags.add(hashtagRepository.findByHashtag(hashtag));
+                    }
+                }
 
                 minioClient.putObject(PutObjectArgs.builder()
                         .bucket(bucket)
@@ -56,6 +76,7 @@ public class VideoStorageService {
                 video.setDescription(description);
                 video.setFilePath(filePath);
                 video.setStatus(Status.PENDING);
+                video.setHashtags(videoHashtags);
                 videoRepository.save(video);
 
                 return ResponseEntity.ok("Uploaded");

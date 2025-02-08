@@ -2,13 +2,13 @@ package com.dayquest.dayquestbackend.common.dto;
 
 public class UuidDTO {
 
-        private String uuid;
+    private String uuid;
 
-        public String getUuid() {
-            return uuid;
-        }
+    public String getUuid() {
+        return uuid;
+    }
 
-        public void setUuid(String uuid) {
-            this.uuid = uuid;
-        }
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
+    }
 }

@@ -1,7 +1,7 @@
-package com.dayquest.dayquestbackend.authentication;
+package com.dayquest.dayquestbackend.auth;
 
 
-import com.dayquest.dayquestbackend.authentication.service.JwtService;
+import com.dayquest.dayquestbackend.auth.service.JwtService;
 import com.dayquest.dayquestbackend.user.*;
 import com.dayquest.dayquestbackend.user.dto.LoginDTO;
 import com.dayquest.dayquestbackend.user.dto.LoginResponseDTO;
@@ -56,7 +56,7 @@ public class AuthController {
                         .body(new LoginResponseDTO(null, null, "Invalid password"));
             }
 
-            if(!user.isEnabled()) {
+            if (!user.isEnabled()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(new LoginResponseDTO(null, null, "User not verified"));
             }

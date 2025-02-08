@@ -1,6 +1,6 @@
 package com.dayquest.dayquestbackend.quest;
 
-import com.dayquest.dayquestbackend.authentication.service.JwtService;
+import com.dayquest.dayquestbackend.auth.service.JwtService;
 import com.dayquest.dayquestbackend.activity.ActivityUpdater;
 import com.dayquest.dayquestbackend.quest.dto.InteractionDTO;
 import com.dayquest.dayquestbackend.quest.dto.QuestDTO;
@@ -20,7 +20,6 @@ import java.util.concurrent.CompletableFuture;
 @RestController
 @RequestMapping("/api/quests")
 public class QuestController {
-
 
 
     @Autowired
@@ -197,7 +196,7 @@ public class QuestController {
 
     @GetMapping("/{userid}")
     @Async
-    public CompletableFuture<ResponseEntity<QuestDTO>> getUsersQuest(@PathVariable UUID userid){
+    public CompletableFuture<ResponseEntity<QuestDTO>> getUsersQuest(@PathVariable UUID userid) {
         return CompletableFuture.supplyAsync(() -> {
             Optional<User> user = userRepository.findById(userid);
             if (user.isEmpty()) {

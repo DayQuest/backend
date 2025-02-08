@@ -15,7 +15,7 @@ public class BadgeService {
     private BadgeRepository badgeRepository;
 
     @Async
-    public CompletableFuture<ResponseEntity<String>> createBadge(String name, String description, MultipartFile file){
+    public CompletableFuture<ResponseEntity<String>> createBadge(String name, String description, MultipartFile file) {
         return CompletableFuture.supplyAsync(() -> {
             Badge badge = new Badge();
             badge.setName(name);

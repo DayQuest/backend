@@ -37,20 +37,20 @@ public class StreakService {
     }
 
     public void updateStreak(UUID userId) {
-            Streak streak = streakRepository.findByUserId(userId);
-            if (streak == null) {
-                throw new IllegalArgumentException("Streak not found");
-            }
-            streak.setStreak(streak.getStreak() + 1);
-            if (streak.getStreak() > streak.getLongestStreak()) {
-                streak.setLongestStreak(streak.getStreak());
-            }
-            if(!isConsecutiveDay(streak.getLastUpdated(), LocalDateTime.now())) {
-                streak.setStreak(0);
-            }
-            streak.setLastUpdated(LocalDateTime.now());
-            streakRepository.save(streak);
-            return;
+        Streak streak = streakRepository.findByUserId(userId);
+        if (streak == null) {
+            throw new IllegalArgumentException("Streak not found");
+        }
+        streak.setStreak(streak.getStreak() + 1);
+        if (streak.getStreak() > streak.getLongestStreak()) {
+            streak.setLongestStreak(streak.getStreak());
+        }
+        if (!isConsecutiveDay(streak.getLastUpdated(), LocalDateTime.now())) {
+            streak.setStreak(0);
+        }
+        streak.setLastUpdated(LocalDateTime.now());
+        streakRepository.save(streak);
+        return;
     }
 
     private boolean isConsecutiveDay(LocalDateTime lastUpdated, LocalDateTime now) {
@@ -83,7 +83,7 @@ public class StreakService {
             if (streak == null) {
                 return ResponseEntity.badRequest().body("Streak not found");
             }
-            if(!isConsecutiveDay(streak.getLastUpdated(), LocalDateTime.now())) {
+            if (!isConsecutiveDay(streak.getLastUpdated(), LocalDateTime.now())) {
                 streak.setStreak(0);
                 streakRepository.save(streak);
                 return ResponseEntity.ok("Streak reset");

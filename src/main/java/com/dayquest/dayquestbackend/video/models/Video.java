@@ -1,5 +1,6 @@
 package com.dayquest.dayquestbackend.video.models;
 
+import com.dayquest.dayquestbackend.hashtag.Hashtag;
 import com.dayquest.dayquestbackend.user.User;
 import com.dayquest.dayquestbackend.video.states.SecurityLevel;
 import com.dayquest.dayquestbackend.video.states.Status;
@@ -7,6 +8,8 @@ import jakarta.persistence.*;
 
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -37,6 +40,14 @@ public class Video {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "video_hashtags",
+            joinColumns = @JoinColumn(name = "video_id"),
+            inverseJoinColumns = @JoinColumn(name = "hashtag_id")
+    )
+    private List<Hashtag> hashtags;
 
     private LocalDateTime createdAt;
 
@@ -158,5 +169,13 @@ public class Video {
 
     public void setLength(double length) {
         this.length = length;
+    }
+
+    public List<Hashtag> getHashtags() {
+        return hashtags;
+    }
+
+    public void setHashtags(List<Hashtag> hashtags) {
+        this.hashtags = hashtags;
     }
 }
