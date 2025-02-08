@@ -1,6 +1,6 @@
-package com.dayquest.dayquestbackend.authentication.config;
+package com.dayquest.dayquestbackend.auth.config;
 
-import com.dayquest.dayquestbackend.authentication.filter.JwtAuthenticationFilter;
+import com.dayquest.dayquestbackend.auth.filter.JwtAuthenticationFilter;
 import com.dayquest.dayquestbackend.comment.CommentRepository;
 import com.dayquest.dayquestbackend.user.User;
 import com.dayquest.dayquestbackend.user.UserRepository;

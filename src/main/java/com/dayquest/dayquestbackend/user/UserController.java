@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import com.dayquest.dayquestbackend.activity.ActivityUpdater;
-import com.dayquest.dayquestbackend.authentication.service.JwtService;
+import com.dayquest.dayquestbackend.auth.service.JwtService;
 import com.dayquest.dayquestbackend.common.utils.ImageUtil;
 import com.dayquest.dayquestbackend.quest.Quest;
 import com.dayquest.dayquestbackend.quest.dto.QuestDTO;
@@ -167,7 +167,7 @@ public class UserController {
             if (user == null || userToFollow == null) {
                 return ResponseEntity.notFound().build();
             }
-            if(uuid.equals(user.getUuid())) {
+            if (uuid.equals(user.getUuid())) {
                 return ResponseEntity.badRequest().body("Cannot follow yourself");
             }
             if (user.getFollowedUsers().contains(userToFollow.getUuid())) {
@@ -313,6 +313,7 @@ public class UserController {
             return ResponseEntity.ok(user.getUuid());
         });
     }
+
     //test
     @GetMapping("/profilepicture/{username}")
     @Async
@@ -416,10 +417,10 @@ public class UserController {
             if (user == null) {
                 return ResponseEntity.notFound().build();
             }
-            if(user.getLastReroll() == null || user.getLastReroll().plusDays(1).isBefore(LocalDateTime.now())) {
+            if (user.getLastReroll() == null || user.getLastReroll().plusDays(1).isBefore(LocalDateTime.now())) {
                 user.setLeftRerolls(3);
             }
-            if(user.getLeftRerolls() == 0) {
+            if (user.getLeftRerolls() == 0) {
                 return ResponseEntity.badRequest().body("No rerolls left");
             }
             List<Quest> topQuests = questService.getTop10PercentQuests().join();
@@ -451,7 +452,7 @@ public class UserController {
 
     @PutMapping("/{uuid}/badge")
     @Async
-    public CompletableFuture<ResponseEntity<String>> addBadge(@PathVariable UUID uuid, @RequestBody UUID badgeId,  @RequestHeader("Authorization") String token) {
+    public CompletableFuture<ResponseEntity<String>> addBadge(@PathVariable UUID uuid, @RequestBody UUID badgeId, @RequestHeader("Authorization") String token) {
         return CompletableFuture.supplyAsync(() -> {
             String username = jwtService.extractUsername(token.substring(7));
             User user = userRepository.findByUsername(username);
@@ -486,7 +487,7 @@ public class UserController {
 
     @DeleteMapping("/{uuid}/badge")
     @Async
-    public CompletableFuture<ResponseEntity<String>> removeBadge(@PathVariable UUID uuid, @RequestBody UUID badgeId,  @RequestHeader("Authorization") String token) {
+    public CompletableFuture<ResponseEntity<String>> removeBadge(@PathVariable UUID uuid, @RequestBody UUID badgeId, @RequestHeader("Authorization") String token) {
         return CompletableFuture.supplyAsync(() -> {
             String username = jwtService.extractUsername(token.substring(7));
             User user = userRepository.findByUsername(username);

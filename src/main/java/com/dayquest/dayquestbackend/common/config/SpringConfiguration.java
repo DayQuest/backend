@@ -29,31 +29,31 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @EnableTransactionManagement
 public class SpringConfiguration implements WebMvcConfigurer {
 
-  @Autowired
-  @Lazy
-  private UserService userService;
+    @Autowired
+    @Lazy
+    private UserService userService;
 
-  @Autowired
+    @Autowired
 
-  private QuestService questService;
+    private QuestService questService;
 
-  @Scheduled(cron = "0 0 0 * * ?")
-  @Async
-  public CompletableFuture<Void> assignDailyQuest() {
-    return CompletableFuture.runAsync(() ->
-            userService.assignDailyQuests(questService.getTop10PercentQuests().join()).join());
-  }
+    @Scheduled(cron = "0 0 0 * * ?")
+    @Async
+    public CompletableFuture<Void> assignDailyQuest() {
+        return CompletableFuture.runAsync(() ->
+                userService.assignDailyQuests(questService.getTop10PercentQuests().join()).join());
+    }
 
-  @Bean
-  public PlatformTransactionManager transactionManager(EntityManagerFactory emf) {
-    return new JpaTransactionManager(emf);
-  }
+    @Bean
+    public PlatformTransactionManager transactionManager(EntityManagerFactory emf) {
+        return new JpaTransactionManager(emf);
+    }
 
-  @Override
-  public void addCorsMappings(CorsRegistry registry) {
-    registry.addMapping("/**")
-            .allowedOrigins("*")
-            .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-            .allowedHeaders("*");
-  }
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**")
+                .allowedOrigins("*")
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedHeaders("*");
+    }
 }

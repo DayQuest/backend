@@ -1,6 +1,6 @@
 package com.dayquest.dayquestbackend.video;
 
-import com.dayquest.dayquestbackend.authentication.service.JwtService;
+import com.dayquest.dayquestbackend.auth.service.JwtService;
 import com.dayquest.dayquestbackend.common.dto.UuidDTO;
 import com.dayquest.dayquestbackend.quest.QuestRepository;
 import com.dayquest.dayquestbackend.activity.ActivityUpdater;
@@ -67,14 +67,16 @@ public class VideoController {
             @RequestParam("file") MultipartFile file,
             @RequestParam("title") String title,
             @RequestParam("description") String description,
-            @RequestParam("userUuid") UUID userUuid) {
+            @RequestHeader("Authorization") String token,
+            @RequestParam("hashtags") List<String> hashtags) {
         return CompletableFuture.supplyAsync(() -> {
-            Optional<User> user = userRepository.findById(userUuid);
+            String username = jwtService.extractUsername(token);
+            Optional<User> user = Optional.ofNullable(userRepository.findByUsername(username));
             if (user.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body("Could not find user with that UUID");
             }
-            videoService.uploadVideo(file, title, description, user.get()).join();
+            videoService.uploadVideo(file, title, description, user.get(), hashtags).join();
             activityUpdater.increaseInteractions(user);
             return ResponseEntity.ok("Uploaded");
         });

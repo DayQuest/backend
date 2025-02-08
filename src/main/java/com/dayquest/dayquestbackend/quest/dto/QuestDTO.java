@@ -18,6 +18,7 @@ public class QuestDTO {
 
     public QuestDTO() {
     }
+
     public QuestDTO(Quest quest) {
         this.uuid = quest.getUuid();
         this.creatorUuid = quest.getCreatorUuid();

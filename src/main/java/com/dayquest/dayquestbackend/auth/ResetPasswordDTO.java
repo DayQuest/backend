@@ -1,4 +1,4 @@
-package com.dayquest.dayquestbackend.authentication;
+package com.dayquest.dayquestbackend.auth;
 
 public class ResetPasswordDTO {
     private String email;
