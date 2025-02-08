@@ -1,27 +1,32 @@
 package com.dayquest.dayquestbackend.video;
 
-import com.dayquest.dayquestbackend.JwtService;
+import com.dayquest.dayquestbackend.authentication.service.JwtService;
+import com.dayquest.dayquestbackend.common.dto.UuidDTO;
 import com.dayquest.dayquestbackend.quest.QuestRepository;
-import com.dayquest.dayquestbackend.user.ActivityUpdater;
+import com.dayquest.dayquestbackend.activity.ActivityUpdater;
+import com.dayquest.dayquestbackend.storage.Service.ThumbnailStorageService;
 import com.dayquest.dayquestbackend.user.User;
 
 import com.dayquest.dayquestbackend.user.UserRepository;
 
 import java.util.Optional;
-import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 
+import com.dayquest.dayquestbackend.video.dto.VideoDTO;
+import com.dayquest.dayquestbackend.video.models.Video;
+import com.dayquest.dayquestbackend.video.models.ViewedVideo;
+import com.dayquest.dayquestbackend.video.models.ViewedVideoId;
+import com.dayquest.dayquestbackend.video.repository.VideoRepository;
+import com.dayquest.dayquestbackend.video.repository.ViewedVideoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import org.springframework.core.io.ByteArrayResource;
+
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.http.*;
 
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import com.github.benmanes.caffeine.cache.Cache;
 
 import java.util.List;
 import java.util.UUID;
@@ -46,8 +51,6 @@ public class VideoController {
     JwtService jwtService;
 
     @Autowired
-    private Cache<Integer, String> videoCache;
-    @Autowired
     private QuestRepository questRepository;
 
     @Autowired
@@ -55,32 +58,12 @@ public class VideoController {
 
     @Autowired
     private ActivityUpdater activityUpdater;
+    @Autowired
+    private ThumbnailStorageService thumbnailStorageService;
 
-    //new endpoint
     @Async
     @PostMapping
     public CompletableFuture<ResponseEntity<String>> uploadVideo(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam("title") String title,
-            @RequestParam("description") String description,
-            @RequestParam("userUuid") UUID userUuid) {
-        return CompletableFuture.supplyAsync(() -> {
-            Optional<User> user = userRepository.findById(userUuid);
-            if (user.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body("Could not find user with that UUID");
-            }
-            videoService.uploadVideo(file, title, description, user.get()).join();
-            activityUpdater.increaseInteractions(user);
-            return ResponseEntity.ok("Uploaded");
-        });
-    }
-
-
-    //old endpoint just for the period where the frontend is not updated
-    @Async
-    @PostMapping("/upload")
-    public CompletableFuture<ResponseEntity<String>> uploadVideo1(
             @RequestParam("file") MultipartFile file,
             @RequestParam("title") String title,
             @RequestParam("description") String description,
@@ -310,27 +293,13 @@ public class VideoController {
 
     @GetMapping("/thumbnail/{uuid}")
     @Async
-    public CompletableFuture<ResponseEntity<ByteArrayResource>> getDecodedImage(@PathVariable("uuid") String uuid) {
+    public CompletableFuture<ResponseEntity<byte[]>> getDecodedImage(@PathVariable("uuid") String uuid) {
         return CompletableFuture.supplyAsync(() -> {
-            try {
-                Optional<Video> videoOptional = videoRepository.findById(UUID.fromString(uuid));
-                if (videoOptional.isEmpty() || videoOptional.get().getThumbnail() == null) {
-                    return ResponseEntity.noContent().build();
-                }
+            Optional<Video> video = videoRepository.findById(UUID.fromString(uuid));
+            return video.map(value -> ResponseEntity.ok()
+                    .contentType(MediaType.IMAGE_JPEG)
+                    .body(thumbnailStorageService.getThumbnail(uuid))).orElseGet(() -> ResponseEntity.notFound().build());
 
-                byte[] imageBytes = videoOptional.get().getThumbnail();
-                ByteArrayResource resource = new ByteArrayResource(imageBytes);
-
-                HttpHeaders headers = new HttpHeaders();
-                headers.setContentType(MediaType.IMAGE_JPEG);
-
-                return ResponseEntity.ok()
-                        .headers(headers)
-                        .contentLength(imageBytes.length)
-                        .body(resource);
-            } catch (IllegalArgumentException e) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-            }
         });
     }
 }
