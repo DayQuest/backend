@@ -25,6 +25,23 @@ services:
     networks:
       - dayquest-network
 
+  minio:
+    image: minio/minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    container_name: dayquest-minio
+    environment:
+      MINIO_ROOT_USER: "${MINIO_ACCESS_KEY}"
+      MINIO_ROOT_PASSWORD: "${MINIO_SECRET_KEY}"
+    command: minio server --console-address ":9001" /data
+    volumes:
+      - minio_data:/data
+    networks:
+      - dayquest-network
+    env_file:
+      - .env
+
 
   app:
     build:
@@ -55,6 +72,7 @@ volumes:
     mysql-data-dev:
     video-processed:
     video-cache:
+    minio_data:
 networks:
   dayquest-network:
     name: dayquest-network

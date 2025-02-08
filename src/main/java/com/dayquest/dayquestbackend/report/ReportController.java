@@ -3,13 +3,12 @@ package com.dayquest.dayquestbackend.report;
 import java.util.Objects;
 import java.util.UUID;
 
-import com.dayquest.dayquestbackend.JwtService;
+import com.dayquest.dayquestbackend.authentication.service.JwtService;
 import com.dayquest.dayquestbackend.user.UserRepository;
-import com.dayquest.dayquestbackend.video.SecurityLevel;
-import com.dayquest.dayquestbackend.video.Video;
-import com.dayquest.dayquestbackend.video.VideoRepository;
+import com.dayquest.dayquestbackend.video.states.SecurityLevel;
+import com.dayquest.dayquestbackend.video.models.Video;
+import com.dayquest.dayquestbackend.video.repository.VideoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

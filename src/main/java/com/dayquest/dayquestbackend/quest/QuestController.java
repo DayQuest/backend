@@ -1,7 +1,9 @@
 package com.dayquest.dayquestbackend.quest;
 
-import com.dayquest.dayquestbackend.JwtService;
-import com.dayquest.dayquestbackend.user.ActivityUpdater;
+import com.dayquest.dayquestbackend.authentication.service.JwtService;
+import com.dayquest.dayquestbackend.activity.ActivityUpdater;
+import com.dayquest.dayquestbackend.quest.dto.InteractionDTO;
+import com.dayquest.dayquestbackend.quest.dto.QuestDTO;
 import com.dayquest.dayquestbackend.user.UserRepository;
 import com.dayquest.dayquestbackend.user.User;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,8 +12,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;

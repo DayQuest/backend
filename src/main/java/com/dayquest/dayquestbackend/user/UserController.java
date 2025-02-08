@@ -4,12 +4,15 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
 
-import com.dayquest.dayquestbackend.JwtService;
+import com.dayquest.dayquestbackend.activity.ActivityUpdater;
+import com.dayquest.dayquestbackend.authentication.service.JwtService;
+import com.dayquest.dayquestbackend.common.utils.ImageUtil;
 import com.dayquest.dayquestbackend.quest.Quest;
-import com.dayquest.dayquestbackend.quest.QuestDTO;
+import com.dayquest.dayquestbackend.quest.dto.QuestDTO;
 import com.dayquest.dayquestbackend.quest.QuestService;
 import com.dayquest.dayquestbackend.streak.StreakService;
-import jakarta.validation.Valid;
+import com.dayquest.dayquestbackend.user.dto.ProfileDTO;
+import com.dayquest.dayquestbackend.user.dto.UpdateUserDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
@@ -54,15 +57,7 @@ public class UserController {
     private ActivityUpdater activityUpdater;
 
     @Autowired
-    private PictureService pictureService;
-
-
-    @PostMapping("/register")
-    @Async
-    public CompletableFuture<ResponseEntity<String>> registerUser(@RequestBody UserDTO userDTO) {
-        return userService.registerUser(userDTO.getUsername(), userDTO.getEmail(),
-                userDTO.getPassword(), userDTO.getBetaKey());
-    }
+    private ImageUtil imageUtil;
 
     @PostMapping("/status")
     public ResponseEntity<Object> status() {
@@ -79,42 +74,6 @@ public class UserController {
     public CompletableFuture<ResponseEntity<String>> resendVerificationCode(@RequestBody String email) {
         userService.resendVerificationCode(email);
         return CompletableFuture.completedFuture(ResponseEntity.ok("Verification code resent"));
-    }
-
-    @PostMapping("/login")
-    @Async
-    public CompletableFuture<ResponseEntity<LoginResponse>> loginUser(@Valid @RequestBody LoginDTO loginDTO) {
-        return CompletableFuture.supplyAsync(() -> {
-            User user = userRepository.findByUsername(loginDTO.getUsername());
-
-            if (user == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(new LoginResponse(null, null, "User not found"));
-            }
-
-            if (user.isBanned()) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(new LoginResponse(null, null, "User has been banned"));
-            }
-
-            if (!passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new LoginResponse(null, null, "Invalid password"));
-            }
-
-            if (!user.isEnabled()) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new LoginResponse(null, null, "User not verified"));
-            }
-
-
-            activityUpdater.increaseInteractions(user);
-            user.setLastLogin(LocalDateTime.now());
-            userRepository.save(user);
-            String token = jwtService.generateToken(user);
-
-            return ResponseEntity.ok(new LoginResponse(user.getUuid(), token, "Login successful"));
-        });
     }
 
     @PostMapping("/auth")
@@ -400,7 +359,7 @@ public class UserController {
         }
 
         try {
-            byte[] fileBytes = pictureService.compressImage(file);
+            byte[] fileBytes = imageUtil.compressImage(file);
             Optional<User> user = userRepository.findById(uuid);
             if (user.isEmpty()) {
                 return ResponseEntity.ok("User not found");

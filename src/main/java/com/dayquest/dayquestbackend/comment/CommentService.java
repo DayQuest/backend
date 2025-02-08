@@ -2,8 +2,8 @@ package com.dayquest.dayquestbackend.comment;
 
 import com.dayquest.dayquestbackend.user.User;
 import com.dayquest.dayquestbackend.user.UserRepository;
-import com.dayquest.dayquestbackend.video.Video;
-import com.dayquest.dayquestbackend.video.VideoRepository;
+import com.dayquest.dayquestbackend.video.models.Video;
+import com.dayquest.dayquestbackend.video.repository.VideoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;

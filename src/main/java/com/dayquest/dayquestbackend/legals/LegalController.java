@@ -1,8 +1,6 @@
 package com.dayquest.dayquestbackend.legals;
 
 import com.dayquest.dayquestbackend.beta.KeyRepository;
-import com.dayquest.dayquestbackend.user.User;
-import com.dayquest.dayquestbackend.user.UserDTO;
 import com.dayquest.dayquestbackend.user.UserRepository;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -10,7 +8,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.InputStream;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @RestController
@@ -19,13 +16,6 @@ public class LegalController {
 
     private static final String AGB_FILE_PATH = "AGBsDayQuest.md";
     private static final String DATENSCHUTZ_FILE_PATH = "DatenschutzDayQuest.md";
-    private final UserRepository userRepository;
-    private final KeyRepository keyRepository;
-
-    public LegalController(UserRepository userRepository, KeyRepository keyRepository) {
-        this.userRepository = userRepository;
-        this.keyRepository = keyRepository;
-    }
 
     @GetMapping(value = "/agb", produces = "text/markdown")
     @Async

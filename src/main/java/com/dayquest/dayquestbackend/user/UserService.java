@@ -1,10 +1,9 @@
 package com.dayquest.dayquestbackend.user;
 
-import com.dayquest.dayquestbackend.EmailService;
-import com.dayquest.dayquestbackend.JwtService;
+import com.dayquest.dayquestbackend.notification.service.EmailService;
+import com.dayquest.dayquestbackend.authentication.service.JwtService;
 import com.dayquest.dayquestbackend.beta.BetaKey;
 import com.dayquest.dayquestbackend.beta.KeyRepository;
-import com.dayquest.dayquestbackend.quest.QuestRepository;
 import com.dayquest.dayquestbackend.quest.Quest;
 
 import java.time.LocalDateTime;

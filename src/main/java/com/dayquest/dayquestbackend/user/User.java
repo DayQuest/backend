@@ -1,6 +1,6 @@
 package com.dayquest.dayquestbackend.user;
 import com.dayquest.dayquestbackend.quest.Quest;
-import com.dayquest.dayquestbackend.video.Video;
+import com.dayquest.dayquestbackend.video.models.Video;
 import jakarta.persistence.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
