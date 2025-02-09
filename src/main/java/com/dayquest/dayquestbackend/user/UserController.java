@@ -3,6 +3,8 @@ package com.dayquest.dayquestbackend.user;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import com.dayquest.dayquestbackend.activity.ActivityUpdater;
 import com.dayquest.dayquestbackend.auth.service.JwtService;
@@ -28,36 +30,21 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
-
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
 
-    @Autowired
-    private UserService userService;
+    private static final String DEFAULT_PROFILE_PICTURE_URL = "https://static.vecteezy.com/system/resources/thumbnails/003/337/584/small/default-avatar-photo-placeholder-profile-icon-vector.jpg";
+    private static final String PROFILE_PICTURE_BASE_URL = "http://77.90.21.53:8010/api/users/profilepicture/";
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private QuestService questService;
-
-    @Autowired
-    private BCryptPasswordEncoder passwordEncoder;
-
-    @Autowired
-    private JwtService jwtService;
-    @Autowired
-    private StreakService streakService;
-
-    @Autowired
-    private ActivityUpdater activityUpdater;
-
-    @Autowired
-    private ImageUtil imageUtil;
+    @Autowired private UserService userService;
+    @Autowired private UserRepository userRepository;
+    @Autowired private QuestService questService;
+    @Autowired private BCryptPasswordEncoder passwordEncoder;
+    @Autowired private JwtService jwtService;
+    @Autowired private StreakService streakService;
+    @Autowired private ActivityUpdater activityUpdater;
+    @Autowired private ImageUtil imageUtil;
 
     @PostMapping("/status")
     public ResponseEntity<Object> status() {
@@ -79,14 +66,10 @@ public class UserController {
     @PostMapping("/auth")
     @Async
     public CompletableFuture<ResponseEntity<String>> authUser(@RequestBody UUID uuid, @RequestHeader("Authorization") String token) {
-        return auth(uuid, token);
-    }
-
-    private CompletableFuture<ResponseEntity<String>> auth(UUID uuid, String token) {
         return CompletableFuture.supplyAsync(() -> {
             if (userService.authenticateUser(uuid, token).join()) {
                 streakService.checkStreak(uuid);
-                User user = userRepository.findById(uuid).get();
+                User user = userRepository.findById(uuid).orElseThrow(() -> new RuntimeException("User not found"));
                 if (user.isBanned()) {
                     return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User has been banned");
                 }
@@ -99,28 +82,23 @@ public class UserController {
         });
     }
 
+    private String extractUsername(String authHeader) {
+        String token = authHeader.replace("Bearer ", "");
+        return jwtService.extractUsername(token);
+    }
+
     @GetMapping("/{uuid}")
     @Async
-    public CompletableFuture<ResponseEntity<ProfileDTO>> getUserByUuid(@PathVariable UUID uuid, @RequestHeader("Authorization") String token) {
+    public CompletableFuture<ResponseEntity<ProfileDTO>> getUserByUuid(
+            @PathVariable UUID uuid, @RequestHeader("Authorization") String token) {
         return CompletableFuture.supplyAsync(() -> {
-            String username = userRepository.findById(uuid).get().getUsername();
-            User user = userRepository.findByUsername(jwtService.extractUsername(token.substring(7)));
-            User userWithVideos = userRepository.findByUsernameWithVideos(username);
+            User userWithVideos = userRepository.findByIdWithVideos(uuid);
             if (userWithVideos == null) {
                 return ResponseEntity.notFound().build();
             }
-            String profilePictureLink = "http://77.90.21.53:8010/api/users/profilepicture/" + username;
-            ProfileDTO profileDTO = new ProfileDTO(
-                    userWithVideos.getUsername(),
-                    profilePictureLink,
-                    userWithVideos.getPostedVideos(),
-                    userWithVideos.getDailyQuest(),
-                    userWithVideos.isBanned(),
-                    userWithVideos.getFollowers(),
-                    user.getFollowedUsers().contains(uuid),
-                    userWithVideos.getBadges()
-            );
-            return ResponseEntity.ok(profileDTO);
+            String requesterUsername = extractUsername(token);
+            User requester = userRepository.findByUsername(requesterUsername);
+            return ResponseEntity.ok(createProfileDTO(userWithVideos, requester));
         });
     }
 
@@ -128,10 +106,7 @@ public class UserController {
     @Async
     public CompletableFuture<ResponseEntity<List<UUID>>> getFollowers(@PathVariable UUID uuid, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
         return CompletableFuture.supplyAsync(() -> {
-            User user = userRepository.findById(uuid).get();
-            if (user == null) {
-                return ResponseEntity.notFound().build();
-            }
+            User user = userRepository.findById(uuid).orElseThrow(() -> new RuntimeException("User not found"));
             List<UUID> followers = user.getFollowerList().stream()
                     .skip((long) page * size)
                     .limit(size)
@@ -144,10 +119,7 @@ public class UserController {
     @Async
     public CompletableFuture<ResponseEntity<List<UUID>>> getFollowing(@PathVariable UUID uuid, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
         return CompletableFuture.supplyAsync(() -> {
-            User user = userRepository.findById(uuid).get();
-            if (user == null) {
-                return ResponseEntity.notFound().build();
-            }
+            User user = userRepository.findById(uuid).orElseThrow(() -> new RuntimeException("User not found"));
             List<UUID> following = user.getFollowedUsers().stream()
                     .skip((long) page * size)
                     .limit(size)
@@ -162,11 +134,8 @@ public class UserController {
         return CompletableFuture.supplyAsync(() -> {
             String username = jwtService.extractUsername(token.substring(7));
             User user = userRepository.findByUsername(username);
-            User userToFollow = userRepository.findById(uuid).orElse(null);
+            User userToFollow = userRepository.findById(uuid).orElseThrow(() -> new RuntimeException("User not found"));
 
-            if (user == null || userToFollow == null) {
-                return ResponseEntity.notFound().build();
-            }
             if (uuid.equals(user.getUuid())) {
                 return ResponseEntity.badRequest().body("Cannot follow yourself");
             }
@@ -193,11 +162,7 @@ public class UserController {
         return CompletableFuture.supplyAsync(() -> {
             String username = jwtService.extractUsername(token.substring(7));
             User user = userRepository.findByUsername(username);
-            User userToUnfollow = userRepository.findById(uuid).orElse(null);
-
-            if (user == null || userToUnfollow == null) {
-                return ResponseEntity.notFound().build();
-            }
+            User userToUnfollow = userRepository.findById(uuid).orElseThrow(() -> new RuntimeException("User not found"));
 
             if (!user.getFollowedUsers().contains(userToUnfollow.getUuid())) {
                 return ResponseEntity.badRequest().body("User not followed");
@@ -221,7 +186,6 @@ public class UserController {
         });
     }
 
-
     @GetMapping("/search")
     @Async
     public CompletableFuture<ResponseEntity<Map<String, Object>>> searchUsers(
@@ -229,22 +193,9 @@ public class UserController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         return CompletableFuture.supplyAsync(() -> {
-            Page<User> userPage = userRepository.findUsersByUsernameContainingIgnoreCase(
-                    query,
-                    PageRequest.of(page, size)
-            );
-
+            Page<User> userPage = userRepository.findUsersByUsernameContainingIgnoreCase(query, PageRequest.of(page, size));
             List<ProfileDTO> profileDTOs = userPage.getContent().stream()
-                    .map(user -> new ProfileDTO(
-                            user.getUsername(),
-                            "http://77.90.21.53:8010/api/users/profilepicture/" + user.getUsername(),
-                            user.getPostedVideos(),
-                            user.getDailyQuest(),
-                            user.isBanned(),
-                            user.getFollowers(),
-                            false,
-                            user.getBadges()
-                    ))
+                    .map(user -> createProfileDTO(user, null))
                     .collect(Collectors.toList());
 
             if (profileDTOs.isEmpty()) {
@@ -273,7 +224,6 @@ public class UserController {
         });
     }
 
-
     @GetMapping("/profile/{username}")
     @Async
     @Transactional(readOnly = true)
@@ -284,22 +234,21 @@ public class UserController {
             if (userWithVideos == null) {
                 return ResponseEntity.notFound().build();
             }
-            String profilePictureLink = "https://static.vecteezy.com/system/resources/thumbnails/003/337/584/small/default-avatar-photo-placeholder-profile-icon-vector.jpg";
-            if (userWithVideos.getProfilePicture() != null) {
-                profilePictureLink = "http://77.90.21.53:8010/api/users/profilepicture/" + username;
-            }
-            ProfileDTO profileDTO = new ProfileDTO(
-                    userWithVideos.getUsername(),
-                    profilePictureLink,
-                    userWithVideos.getPostedVideos(),
-                    userWithVideos.getDailyQuest(),
-                    userWithVideos.isBanned(),
-                    userWithVideos.getFollowers(),
-                    user.getFollowedUsers().contains(userWithVideos.getUuid()),
-                    userWithVideos.getBadges()
-            );
-            return ResponseEntity.ok(profileDTO);
+            return ResponseEntity.ok(createProfileDTO(userWithVideos, user));
         });
+    }
+
+    private ProfileDTO createProfileDTO(User userWithVideos, User requester) {
+        return new ProfileDTO(
+                userWithVideos.getUsername(),
+                PROFILE_PICTURE_BASE_URL + userWithVideos.getUsername(),
+                userWithVideos.getPostedVideos(),
+                userWithVideos.getDailyQuest(),
+                userWithVideos.isBanned(),
+                userWithVideos.getFollowers(),
+                requester != null && requester.getFollowedUsers().contains(userWithVideos.getUuid()),
+                userWithVideos.getBadges()
+        );
     }
 
     @GetMapping("/{username}/uuid")
@@ -314,7 +263,6 @@ public class UserController {
         });
     }
 
-    //test
     @GetMapping("/profilepicture/{username}")
     @Async
     public CompletableFuture<ResponseEntity<ByteArrayResource>> getDecodedImage(@PathVariable("username") String username) {
@@ -348,10 +296,8 @@ public class UserController {
         });
     }
 
-
     @PostMapping("/setprofilepicture")
     public ResponseEntity<String> setProfilePicture(@RequestParam("file") MultipartFile file, @RequestParam("uuid") UUID uuid, @RequestHeader("Authorization") String token) {
-
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("File is empty");
         }
@@ -361,14 +307,10 @@ public class UserController {
 
         try {
             byte[] fileBytes = imageUtil.compressImage(file);
-            Optional<User> user = userRepository.findById(uuid);
-            if (user.isEmpty()) {
-                return ResponseEntity.ok("User not found");
-            }
-            user.get().setProfilePicture(fileBytes);
-            userRepository.save(user.get());
+            User user = userRepository.findById(uuid).orElseThrow(() -> new RuntimeException("User not found"));
+            user.setProfilePicture(fileBytes);
+            userRepository.save(user);
             return ResponseEntity.ok("Profile picture uploaded successfully");
-
         } catch (IOException e) {
             return ResponseEntity.status(500).body("Failed to process the file");
         }
@@ -391,7 +333,6 @@ public class UserController {
             }
             userRepository.save(user);
             return ResponseEntity.ok("User profile updated");
-            //test1
         });
     }
 
@@ -423,7 +364,7 @@ public class UserController {
             if (user.getLeftRerolls() == 0) {
                 return ResponseEntity.badRequest().body("No rerolls left");
             }
-            List<Quest> topQuests = questService.getTop10PercentQuests().join();
+            List<Quest> topQuests = questService.getTop30PercentQuests().join();
             Quest newQuest;
             do {
                 newQuest = topQuests.get(new Random().nextInt(topQuests.size()));
@@ -456,14 +397,10 @@ public class UserController {
         return CompletableFuture.supplyAsync(() -> {
             String username = jwtService.extractUsername(token.substring(7));
             User user = userRepository.findByUsername(username);
-            if (user.getAuthorities().stream()
-                    .noneMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"))) {
+            if (user.getAuthorities().stream().noneMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"))) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User is not an admin");
             }
-            User userToAddBadge = userRepository.findById(uuid).orElse(null);
-            if (userToAddBadge == null) {
-                return ResponseEntity.notFound().build();
-            }
+            User userToAddBadge = userRepository.findById(uuid).orElseThrow(() -> new RuntimeException("User not found"));
             if (userToAddBadge.getBadges().contains(badgeId)) {
                 return ResponseEntity.badRequest().body("Badge already added");
             }
@@ -477,10 +414,7 @@ public class UserController {
     @Async
     public CompletableFuture<ResponseEntity<List<UUID>>> getBadges(@PathVariable UUID uuid) {
         return CompletableFuture.supplyAsync(() -> {
-            User user = userRepository.findById(uuid).orElse(null);
-            if (user == null) {
-                return ResponseEntity.notFound().build();
-            }
+            User user = userRepository.findById(uuid).orElseThrow(() -> new RuntimeException("User not found"));
             return ResponseEntity.ok(user.getBadges());
         });
     }

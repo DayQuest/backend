@@ -1,13 +1,9 @@
 package com.dayquest.dayquestbackend.common.config;
 
 import com.dayquest.dayquestbackend.quest.QuestService;
-import com.dayquest.dayquestbackend.user.UserRepository;
 import com.dayquest.dayquestbackend.user.UserService;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 import jakarta.persistence.EntityManagerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,7 +37,7 @@ public class SpringConfiguration implements WebMvcConfigurer {
     @Async
     public CompletableFuture<Void> assignDailyQuest() {
         return CompletableFuture.runAsync(() ->
-                userService.assignDailyQuests(questService.getTop10PercentQuests().join()).join());
+                userService.assignDailyQuests(questService.getTop30PercentQuests().join()).join());
     }
 
     @Bean

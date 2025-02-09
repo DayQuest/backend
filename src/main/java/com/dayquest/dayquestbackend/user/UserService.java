@@ -47,7 +47,8 @@ public class UserService {
 
 
     @Async
-    public CompletableFuture<ResponseEntity<String>> registerUser(String username, String email, String password, String betaKey) {
+    public CompletableFuture<ResponseEntity<String>> registerUser(
+            String username, String email, String password, String betaKey) {
         return CompletableFuture.supplyAsync(() -> {
             if (username == null || email == null || password == null || username.isEmpty()
                     || email.isEmpty() || password.isEmpty() || betaKey == null || betaKey.isEmpty()) {
@@ -57,22 +58,19 @@ public class UserService {
             if (userRepository.findByUsername(username) != null) {
                 return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("User with that name already exists");
             }
-
             if (userRepository.findByEmail(email) != null) {
                 return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("User with that email already exists");
             }
-
             if (!keyRepository.existsByKey(betaKey)) {
                 return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Invalid beta key");
             }
-
             if (keyRepository.findByKey(betaKey).isInUse()) {
                 return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Beta key already in use");
             }
 
             BetaKey key = keyRepository.findByKey(betaKey);
-            List<Quest> topQuests = questService.getTop10PercentQuests().join();
-            Quest randomQuest = topQuests.get(random.nextInt(topQuests.size()));
+            List<Quest> topQuests = questService.getTop30PercentQuests().join();
+            Quest randomQuest = topQuests.get(new Random().nextInt(topQuests.size()));
 
             User newUser = new User();
             newUser.setUsername(username);
@@ -83,14 +81,16 @@ public class UserService {
             newUser.setVerificationCodeExpiresAt(LocalDateTime.now().plusHours(1));
             newUser.setEnabled(false);
             newUser.setAuthorities(List.of("ROLE_USER"));
-            sendVerificationEmail(newUser);
             newUser.setDailyQuest(randomQuest);
+
+            sendVerificationEmail(newUser);
             userRepository.save(newUser);
+
             key.setInUse(true);
             key.setUsername(username);
             keyRepository.save(key);
-            return ResponseEntity.ok("Successfully registered new user");
 
+            return ResponseEntity.ok("Successfully registered new user");
         });
     }
 
