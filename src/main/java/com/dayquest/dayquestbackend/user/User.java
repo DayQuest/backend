@@ -56,6 +56,11 @@ public class User implements UserDetails {
     private List<UUID> followedUsers;
 
     @ElementCollection
+    @CollectionTable(name = "user_liked_hashtags", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "hashtag_id")
+    private List<UUID> likedHashtags;
+
+    @ElementCollection
     private List<UUID> followerList;
 
     @ElementCollection
@@ -372,5 +377,17 @@ public class User implements UserDetails {
 
     public void setBadges(List<UUID> badges) {
         this.badges = badges;
+    }
+
+    public List<UUID> getLikedHashtags() {
+        return likedHashtags;
+    }
+
+    public void setLikedHashtags(List<UUID> likedHashtags) {
+        this.likedHashtags = likedHashtags;
+    }
+
+    public void addLikedHashtag(UUID hashtagId) {
+        likedHashtags.add(hashtagId);
     }
 }

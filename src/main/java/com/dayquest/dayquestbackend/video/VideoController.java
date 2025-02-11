@@ -161,8 +161,8 @@ public class VideoController {
                 Optional<User> user = userRepository.findById(UUID.fromString(userUuid.getUuid()));
                 Optional<Video> video = videoRepository.findById(uuid);
 
-                if (user.isEmpty()) {
-                    return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                if (user.isEmpty() || video.isEmpty()) {
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
                 }
 
                 if (user.get().getLikedVideos().contains(uuid)) {
@@ -176,7 +176,9 @@ public class VideoController {
                 }
 
                 user.get().getLikedVideos().add(uuid);
-
+                for(int i = 0; i<video.get().getHashtags().size(); i++){
+                    user.get().addLikedHashtag(video.get().getHashtags().get(i).getUuid());
+                }
                 activityUpdater.increaseInteractions(user);
                 userRepository.save(user.get());
                 return videoService.likeVideo(uuid).join();
@@ -210,6 +212,9 @@ public class VideoController {
                 video.get().setUpVotes(video.get().getUpVotes() - 1);
                 videoRepository.save(video.get());
                 activityUpdater.increaseInteractions(user);
+                for(int i = 0; i<video.get().getHashtags().size(); i++){
+                    user.get().getLikedHashtags().remove(video.get().getHashtags().get(i).getUuid());
+                }
                 userRepository.save(user.get());
                 return ResponseEntity.ok().build();
             } catch (Exception e) {
@@ -238,8 +243,10 @@ public class VideoController {
             if (user.get().getLikedVideos().contains(uuid)) {
                 user.get().getLikedVideos().remove(uuid);
                 video.get().setUpVotes(video.get().getUpVotes() - 1);
+                for(int i = 0; i<video.get().getHashtags().size(); i++){
+                    user.get().getLikedHashtags().remove(video.get().getHashtags().get(i).getUuid());
+                }
                 videoRepository.save(video.get());
-
             }
 
             user.get().getDislikedVideos().add(uuid);
