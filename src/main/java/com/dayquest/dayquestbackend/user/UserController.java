@@ -137,10 +137,10 @@ public class UserController {
             User userToFollow = userRepository.findById(uuid).orElseThrow(() -> new RuntimeException("User not found"));
 
             if (uuid.equals(user.getUuid())) {
-                return ResponseEntity.badRequest().body("Cannot follow yourself");
+                return ResponseEntity.unprocessableEntity().body("Cannot follow yourself");
             }
             if (user.getFollowedUsers().contains(userToFollow.getUuid())) {
-                return ResponseEntity.badRequest().body("User already followed");
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("User already followed");
             }
 
             user.getFollowTimestamps().put(userToFollow.getUuid(), System.currentTimeMillis());
@@ -165,12 +165,12 @@ public class UserController {
             User userToUnfollow = userRepository.findById(uuid).orElseThrow(() -> new RuntimeException("User not found"));
 
             if (!user.getFollowedUsers().contains(userToUnfollow.getUuid())) {
-                return ResponseEntity.badRequest().body("User not followed");
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("User not followed");
             }
 
             Long followTimestamp = user.getFollowTimestamps().get(userToUnfollow.getUuid());
             if (followTimestamp != null && System.currentTimeMillis() - followTimestamp < 3000) {
-                return ResponseEntity.badRequest().body("Cannot unfollow so soon after following");
+                return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Cannot unfollow so soon after following");
             }
 
             userToUnfollow.getFollowerList().remove(user.getUuid());
@@ -288,10 +288,8 @@ public class UserController {
                         .contentLength(imageBytes.length)
                         .body(resource);
 
-            } catch (IOException e) {
+            } catch (IOException | IllegalArgumentException e) {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-            } catch (IllegalArgumentException e) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
             }
         });
     }
@@ -312,7 +310,7 @@ public class UserController {
             userRepository.save(user);
             return ResponseEntity.ok("Profile picture uploaded successfully");
         } catch (IOException e) {
-            return ResponseEntity.status(500).body("Failed to process the file");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to process the file");
         }
     }
 
@@ -362,7 +360,7 @@ public class UserController {
                 user.setLeftRerolls(3);
             }
             if (user.getLeftRerolls() == 0) {
-                return ResponseEntity.badRequest().body("No rerolls left");
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("No rerolls left");
             }
             List<Quest> topQuests = questService.getTop30PercentQuests().join();
             Quest newQuest;
@@ -402,7 +400,7 @@ public class UserController {
             }
             User userToAddBadge = userRepository.findById(uuid).orElseThrow(() -> new RuntimeException("User not found"));
             if (userToAddBadge.getBadges().contains(badgeId)) {
-                return ResponseEntity.badRequest().body("Badge already added");
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("Badge already added");
             }
             userToAddBadge.getBadges().add(badgeId);
             userRepository.save(userToAddBadge);
@@ -434,7 +432,7 @@ public class UserController {
                 return ResponseEntity.notFound().build();
             }
             if (!userToRemoveBadge.getBadges().contains(badgeId)) {
-                return ResponseEntity.badRequest().body("Badge not found");
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("Badge not found");
             }
             userToRemoveBadge.getBadges().remove(badgeId);
             userRepository.save(userToRemoveBadge);

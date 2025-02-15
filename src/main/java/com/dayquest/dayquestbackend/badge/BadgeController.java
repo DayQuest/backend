@@ -1,6 +1,8 @@
 package com.dayquest.dayquestbackend.badge;
 
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
@@ -29,16 +31,16 @@ public class BadgeController {
                 return ResponseEntity.badRequest().body("Missing parameters");
             }
             if (name.length() < 3 || name.length() > 20) {
-                return ResponseEntity.badRequest().body("Name must be between 3 and 20 characters");
+                return ResponseEntity.unprocessableEntity().body("Name must be between 3 and 20 characters");
             }
             if (description.length() < 3 || description.length() > 100) {
-                return ResponseEntity.badRequest().body("Description must be between 3 and 100 characters");
+                return ResponseEntity.unprocessableEntity().body("Description must be between 3 and 100 characters");
             }
             if (!file.getContentType().equals("image/png") && !file.getContentType().equals("image/jpeg")) {
-                return ResponseEntity.badRequest().body("File must be an image");
+                return ResponseEntity.unprocessableEntity().body("File must be an image");
             }
             if (badgeRepository.findByName(name).isPresent()) {
-                return ResponseEntity.badRequest().body("Badge with this name already exists");
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("Badge with this name already exists");
             }
             return badgeService.createBadge(name, description, file);
         });
@@ -51,8 +53,8 @@ public class BadgeController {
             if (id == null) {
                 return ResponseEntity.badRequest().body("Missing parameters");
             }
-            if (!badgeRepository.findById(id).isPresent()) {
-                return ResponseEntity.badRequest().body("Badge not found");
+            if (badgeRepository.findById(id).isEmpty()) {
+                return ResponseEntity.notFound();
             }
             badgeRepository.deleteById(id);
             return ResponseEntity.ok().build();

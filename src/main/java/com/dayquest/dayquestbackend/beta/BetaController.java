@@ -3,6 +3,7 @@ package com.dayquest.dayquestbackend.beta;
 import java.util.concurrent.CompletableFuture;
 
 import com.dayquest.dayquestbackend.common.dto.DiscordIdDTO;
+import org.bytedeco.opencv.presets.opencv_core;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
@@ -45,7 +46,7 @@ public class BetaController {
         return CompletableFuture.supplyAsync(() -> {
             BetaKey key = keyRepository.findById(discordIdDTO.getDiscordId()).orElse(null);
             if (key == null) {
-                return ResponseEntity.unprocessableEntity().body("This id doesn't have a beta key");
+                return ResponseEntity.notFound().build();
             }
 
             return ResponseEntity.ok(key.getKey());
@@ -58,7 +59,7 @@ public class BetaController {
         return CompletableFuture.supplyAsync(() -> {
             BetaKey key = keyRepository.findById(discordIdDTO.getDiscordId()).orElse(null);
             if (key == null) {
-                return ResponseEntity.unprocessableEntity().body("This id doesn't have a beta key");
+                return ResponseEntity.notFound().build();
             }
 
             keyRepository.delete(key);

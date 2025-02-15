@@ -1,4 +1,4 @@
-package com.dayquest.dayquestbackend.storage.Service;
+package com.dayquest.dayquestbackend.storage.service;
 
 import io.minio.GetObjectArgs;
 import io.minio.MinioClient;

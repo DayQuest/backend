@@ -83,10 +83,6 @@ public class QuestController {
             @RequestBody Quest quest,
             @RequestHeader("Authorization") String token) {
 
-        if (quest.getDescription().toLowerCase().contains("penis")) {
-            return CompletableFuture.completedFuture(
-                    ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null));
-        }
         String username = jwtService.extractUsername(token.substring(7));
         User creator = userRepository.findByUsername(username);
         if (creator == null) {
@@ -166,7 +162,7 @@ public class QuestController {
             Quest quest = questOpt.get();
 
             if (user.getDislikedQuests().contains(quest.getUuid())) {
-                return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Already disliked");
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("Already disliked");
             }
             if (user.getLikedQuests().remove(quest.getUuid())) {
                 questRepository.decrementLikes(quest.getUuid());
@@ -194,7 +190,7 @@ public class QuestController {
             Quest quest = questOpt.get();
 
             if (!user.getDislikedQuests().contains(quest.getUuid())) {
-                return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Not disliked");
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("Not disliked");
             }
             user.getDislikedQuests().remove(quest.getUuid());
             questRepository.decrementDislikes(quest.getUuid());

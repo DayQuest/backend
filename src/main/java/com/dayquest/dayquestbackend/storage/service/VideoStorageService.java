@@ -1,4 +1,4 @@
-package com.dayquest.dayquestbackend.storage.Service;
+package com.dayquest.dayquestbackend.storage.service;
 
 import com.dayquest.dayquestbackend.hashtag.Hashtag;
 import com.dayquest.dayquestbackend.hashtag.HashtagRepository;

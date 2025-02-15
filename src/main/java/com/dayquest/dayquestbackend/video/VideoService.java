@@ -3,7 +3,7 @@ package com.dayquest.dayquestbackend.video;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
-import com.dayquest.dayquestbackend.storage.Service.VideoStorageService;
+import com.dayquest.dayquestbackend.storage.service.VideoStorageService;
 import com.dayquest.dayquestbackend.user.User;
 import com.dayquest.dayquestbackend.video.models.Video;
 import com.dayquest.dayquestbackend.video.repository.VideoRepository;

@@ -4,7 +4,7 @@ import com.dayquest.dayquestbackend.auth.service.JwtService;
 import com.dayquest.dayquestbackend.common.dto.UuidDTO;
 import com.dayquest.dayquestbackend.quest.QuestRepository;
 import com.dayquest.dayquestbackend.activity.ActivityUpdater;
-import com.dayquest.dayquestbackend.storage.Service.ThumbnailStorageService;
+import com.dayquest.dayquestbackend.storage.service.ThumbnailStorageService;
 import com.dayquest.dayquestbackend.user.User;
 
 import com.dayquest.dayquestbackend.user.UserRepository;
@@ -73,8 +73,7 @@ public class VideoController {
             String username = jwtService.extractUsername(token);
             Optional<User> user = Optional.ofNullable(userRepository.findByUsername(username));
             if (user.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body("Could not find user with that UUID");
+                return ResponseEntity.notFound().build();
             }
             videoService.uploadVideo(file, title, description, user.get(), hashtags).join();
             activityUpdater.increaseInteractions(user);
@@ -115,7 +114,7 @@ public class VideoController {
                             viewedVideoRepository.save(new ViewedVideo(new ViewedVideoId(user.getUuid(), randomVideo.getUuid())));
                             return ResponseEntity.ok(createVideoDTO(randomVideo, user));
                         } else {
-                            return ResponseEntity.status(HttpStatus.NO_CONTENT).body("No videos available");
+                            return ResponseEntity.noContent().build();
                         }
                     }
 
@@ -125,7 +124,7 @@ public class VideoController {
                     return ResponseEntity.ok(createVideoDTO(video, user));
                 }))
                 .orElseGet(() -> CompletableFuture.completedFuture(
-                        ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found")
+                        ResponseEntity.notFound().build()
                 ));
     }
 
@@ -162,11 +161,11 @@ public class VideoController {
                 Optional<Video> video = videoRepository.findById(uuid);
 
                 if (user.isEmpty() || video.isEmpty()) {
-                    return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+                    return ResponseEntity.notFound().build();
                 }
 
                 if (user.get().getLikedVideos().contains(uuid)) {
-                    return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
+                    return ResponseEntity.status(HttpStatus.CONFLICT).build();
                 }
 
                 if (user.get().getDislikedVideos().contains(uuid)) {
@@ -184,7 +183,7 @@ public class VideoController {
                 return videoService.likeVideo(uuid).join();
             } catch (Exception e) {
                 System.out.println(e.getMessage());
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+                return ResponseEntity.internalServerError().build();
             }
         }, delegatingSecurityContextAsyncTaskExecutor);
     }
@@ -201,11 +200,11 @@ public class VideoController {
                 Optional<Video> video = videoRepository.findById(uuid);
 
                 if (user.isEmpty()) {
-                    return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                    return ResponseEntity.notFound().build();
                 }
 
                 if (!user.get().getLikedVideos().contains(uuid)) {
-                    return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
+                    return ResponseEntity.status(HttpStatus.CONFLICT).build();
                 }
 
                 user.get().getLikedVideos().remove(uuid);
@@ -219,7 +218,7 @@ public class VideoController {
                 return ResponseEntity.ok().build();
             } catch (Exception e) {
                 System.out.println(e.getMessage());
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+                return ResponseEntity.internalServerError().build();
             }
         }, delegatingSecurityContextAsyncTaskExecutor);
     }
@@ -237,7 +236,7 @@ public class VideoController {
             }
 
             if (user.get().getDislikedVideos().contains(uuid)) {
-                return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
+                return ResponseEntity.status(HttpStatus.CONFLICT).build();
             }
 
             if (user.get().getLikedVideos().contains(uuid)) {
@@ -267,11 +266,12 @@ public class VideoController {
                 Optional<User> user = userRepository.findById(UUID.fromString(userUuid.getUuid()));
                 Optional<Video> video = videoRepository.findById(uuid);
 
-                if (user.isEmpty()) {
+                if (user.isEmpty() || video.isEmpty()) {
+                    return ResponseEntity.notFound().build();
                 }
 
                 if (!user.get().getDislikedVideos().contains(uuid)) {
-                    return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
+                    return ResponseEntity.status(HttpStatus.CONFLICT).build();
                 }
 
                 user.get().getDislikedVideos().remove(uuid);
@@ -282,7 +282,7 @@ public class VideoController {
                 return ResponseEntity.ok().build();
             } catch (Exception e) {
                 System.out.println(e.getMessage());
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+                return ResponseEntity.internalServerError().build();
             }
         }, delegatingSecurityContextAsyncTaskExecutor);
     }

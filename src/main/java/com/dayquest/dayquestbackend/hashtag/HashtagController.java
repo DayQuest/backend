@@ -1,6 +1,7 @@
 package com.dayquest.dayquestbackend.hashtag;
 
 import com.dayquest.dayquestbackend.video.dto.VideoDTO;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,19 +23,19 @@ public class HashtagController {
     public CompletableFuture<ResponseEntity<String>> createHashtag(@RequestBody CreateHashtagDTO hashtagDTO) {
         return CompletableFuture.supplyAsync(() -> {
             if (hashtagDTO.getHashtag().length() > 20) {
-                return ResponseEntity.badRequest().body("Hashtag is too long");
+                return ResponseEntity.unprocessableEntity().body("Hashtag is too long");
             }
 
-            if (hashtagDTO.getHashtag().length() < 1) {
-                return ResponseEntity.badRequest().body("Hashtag is too short");
+            if (hashtagDTO.getHashtag().isEmpty()) {
+                return ResponseEntity.unprocessableEntity().body("Hashtag is too short");
             }
 
             if (hashtagDTO.getHashtag().contains(" ")) {
-                return ResponseEntity.badRequest().body("Hashtag cannot contain spaces");
+                return ResponseEntity.unprocessableEntity().body("Hashtag cannot contain spaces");
             }
 
             if (hashtagRepository.findByHashtag(hashtagDTO.getHashtag()) != null) {
-                return ResponseEntity.badRequest().body("Hashtag already exists");
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("Hashtag already exists");
             }
 
             Hashtag hashtag = hashtagService.createHashtag(hashtagDTO.getHashtag()).join();
