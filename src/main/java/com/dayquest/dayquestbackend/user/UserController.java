@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import com.dayquest.dayquestbackend.activity.ActivityUpdater;
 import com.dayquest.dayquestbackend.auth.service.JwtService;
+import com.dayquest.dayquestbackend.common.dto.UuidDTO;
 import com.dayquest.dayquestbackend.common.utils.ImageUtil;
 import com.dayquest.dayquestbackend.quest.Quest;
 import com.dayquest.dayquestbackend.quest.dto.QuestDTO;
@@ -15,6 +16,8 @@ import com.dayquest.dayquestbackend.quest.QuestService;
 import com.dayquest.dayquestbackend.streak.StreakService;
 import com.dayquest.dayquestbackend.user.dto.ProfileDTO;
 import com.dayquest.dayquestbackend.user.dto.UpdateUserDTO;
+import com.dayquest.dayquestbackend.video.models.Video;
+import com.dayquest.dayquestbackend.video.repository.VideoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
@@ -45,6 +48,8 @@ public class UserController {
     @Autowired private StreakService streakService;
     @Autowired private ActivityUpdater activityUpdater;
     @Autowired private ImageUtil imageUtil;
+    @Autowired
+    private VideoRepository videoRepository;
 
     @PostMapping("/status")
     public ResponseEntity<Object> status() {
@@ -130,7 +135,7 @@ public class UserController {
 
     @PostMapping("/{uuid}/follow")
     @Async
-    public CompletableFuture<ResponseEntity<String>> followUser(@PathVariable UUID uuid, @RequestHeader("Authorization") String token) {
+    public CompletableFuture<ResponseEntity<String>> followUser(@PathVariable UUID uuid, @RequestHeader("Authorization") String token, @RequestBody(required = false) UuidDTO videoUuid) {
         return CompletableFuture.supplyAsync(() -> {
             String username = jwtService.extractUsername(token.substring(7));
             User user = userRepository.findByUsername(username);
@@ -147,6 +152,13 @@ public class UserController {
             userToFollow.getFollowerList().add(user.getUuid());
             userToFollow.setFollowers(userToFollow.getFollowers() + 1);
             user.getFollowedUsers().add(userToFollow.getUuid());
+
+            if (videoUuid != null){
+                Video video = videoRepository.findById(videoUuid.getUuid()).orElseThrow(() -> new RuntimeException("Video not found"));
+                for(int i = 0; i<video.getHashtags().size(); i++){
+                    user.addLikedHashtag(video.getHashtags().get(i).getUuid());
+                }
+            }
 
             userRepository.save(user);
             activityUpdater.increaseInteractions(user);

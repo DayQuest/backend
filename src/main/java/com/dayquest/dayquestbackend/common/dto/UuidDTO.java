@@ -1,14 +1,16 @@
 package com.dayquest.dayquestbackend.common.dto;
 
+import java.util.UUID;
+
 public class UuidDTO {
 
-    private String uuid;
+    private UUID uuid;
 
-    public String getUuid() {
+    public UUID getUuid() {
         return uuid;
     }
 
-    public void setUuid(String uuid) {
+    public void setUuid(UUID uuid) {
         this.uuid = uuid;
     }
 }

@@ -157,7 +157,7 @@ public class VideoController {
 
         return CompletableFuture.supplyAsync(() -> {
             try {
-                Optional<User> user = userRepository.findById(UUID.fromString(userUuid.getUuid()));
+                Optional<User> user = userRepository.findById(userUuid.getUuid());
                 Optional<Video> video = videoRepository.findById(uuid);
 
                 if (user.isEmpty() || video.isEmpty()) {
@@ -196,7 +196,7 @@ public class VideoController {
 
         return CompletableFuture.supplyAsync(() -> {
             try {
-                Optional<User> user = userRepository.findById(UUID.fromString(userUuid.getUuid()));
+                Optional<User> user = userRepository.findById(userUuid.getUuid());
                 Optional<Video> video = videoRepository.findById(uuid);
 
                 if (user.isEmpty()) {
@@ -263,7 +263,7 @@ public class VideoController {
 
         return CompletableFuture.supplyAsync(() -> {
             try {
-                Optional<User> user = userRepository.findById(UUID.fromString(userUuid.getUuid()));
+                Optional<User> user = userRepository.findById(userUuid.getUuid());
                 Optional<Video> video = videoRepository.findById(uuid);
 
                 if (user.isEmpty() || video.isEmpty()) {
