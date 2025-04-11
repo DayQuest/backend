@@ -3,13 +3,12 @@ package com.dayquest.dayquestbackend.report;
 import java.util.Objects;
 import java.util.UUID;
 
-import com.dayquest.dayquestbackend.JwtService;
+import com.dayquest.dayquestbackend.auth.service.JwtService;
 import com.dayquest.dayquestbackend.user.UserRepository;
-import com.dayquest.dayquestbackend.video.SecurityLevel;
-import com.dayquest.dayquestbackend.video.Video;
-import com.dayquest.dayquestbackend.video.VideoRepository;
+import com.dayquest.dayquestbackend.video.states.SecurityLevel;
+import com.dayquest.dayquestbackend.video.models.Video;
+import com.dayquest.dayquestbackend.video.repository.VideoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -42,16 +41,15 @@ public class ReportController {
             if (reportRepository.findByUserIdAndEntityId(userId, report.getEntityId()) != null) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).build();
             }
-            if(report.getType() == Type.VIDEO){
+            if (report.getType() == Type.VIDEO) {
                 Video video = videoRepository.findById(report.getEntityId()).orElse(null);
-                if(Objects.isNull(video)){
+                if (Objects.isNull(video)) {
                     return ResponseEntity.notFound().build();
                 }
-                if(reportRepository.findByEntityId(report.getEntityId()).size() > 2){
+                if (reportRepository.findByEntityId(report.getEntityId()).size() > 2) {
                     video.setSecurityLevel(SecurityLevel.SUS);
                     videoRepository.save(video);
-                }
-                else if(reportRepository.findByEntityId(report.getEntityId()).size() > 5){
+                } else if (reportRepository.findByEntityId(report.getEntityId()).size() > 5) {
                     video.setSecurityLevel(SecurityLevel.SUS2);
                     videoRepository.save(video);
                 }
@@ -79,9 +77,9 @@ public class ReportController {
     @Async
     public CompletableFuture<ResponseEntity<?>> deleteReport(@PathVariable UUID uuid) {
         return CompletableFuture.supplyAsync(() -> {
-          if (reportRepository.findById(uuid).isEmpty()) {
-            return ResponseEntity.notFound().build();
-          }
+            if (reportRepository.findById(uuid).isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
 
             reportRepository.deleteById(uuid);
             return ResponseEntity.ok("Deleted report");

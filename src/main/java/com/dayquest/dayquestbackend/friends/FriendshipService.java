@@ -2,8 +2,10 @@ package com.dayquest.dayquestbackend.friends;
 
 import com.dayquest.dayquestbackend.user.User;
 import com.dayquest.dayquestbackend.user.UserRepository;
+
 import java.util.Collections;
 import java.util.UUID;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,8 +31,8 @@ public class FriendshipService {
             User friend = userRepository.findByUsername(friendUsername);
 
             if (user != null && friend != null && !user.equals(friend)
-                && friendshipRepository.findByUserAndFriend(user, friend) == null
-                && friendshipRepository.findByUserAndFriend(friend, user) == null) {
+                    && friendshipRepository.findByUserAndFriend(user, friend) == null
+                    && friendshipRepository.findByUserAndFriend(friend, user) == null) {
 
                 Friendship friendship = new Friendship();
                 friendship.setUser(user);

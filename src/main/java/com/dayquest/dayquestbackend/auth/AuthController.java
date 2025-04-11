@@ -1,8 +1,11 @@
 package com.dayquest.dayquestbackend.auth;
 
 
-import com.dayquest.dayquestbackend.JwtService;
+import com.dayquest.dayquestbackend.auth.service.JwtService;
 import com.dayquest.dayquestbackend.user.*;
+import com.dayquest.dayquestbackend.user.dto.LoginDTO;
+import com.dayquest.dayquestbackend.user.dto.LoginResponseDTO;
+import com.dayquest.dayquestbackend.user.dto.UserDTO;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -34,33 +37,33 @@ public class AuthController {
 
     @PostMapping("/login")
     @Async
-    public CompletableFuture<ResponseEntity<LoginResponse>> loginUser(@Valid @RequestBody LoginDTO loginDTO) {
+    public CompletableFuture<ResponseEntity<LoginResponseDTO>> loginUser(@Valid @RequestBody LoginDTO loginDTO) {
         return CompletableFuture.supplyAsync(() -> {
             User user = userRepository.findByUsername(loginDTO.getUsername());
 
             if (user == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(new LoginResponse(null, null, "User not found"));
+                        .body(new LoginResponseDTO(null, null, "User not found"));
             }
 
             if (user.isBanned()) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(new LoginResponse(null, null, "User has been banned"));
+                        .body(new LoginResponseDTO(null, null, "User has been banned"));
             }
 
             if (!passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new LoginResponse(null, null, "Invalid password"));
+                        .body(new LoginResponseDTO(null, null, "Invalid password"));
             }
 
-            if(!user.isEnabled()) {
+            if (!user.isEnabled()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new LoginResponse(null, null, "User not verified"));
+                        .body(new LoginResponseDTO(null, null, "User not verified"));
             }
 
             String token = jwtService.generateToken(user);
 
-            return ResponseEntity.ok(new LoginResponse(user.getUuid(), token, "Login successful"));
+            return ResponseEntity.ok(new LoginResponseDTO(user.getUuid(), token, "Login successful"));
         });
     }
 

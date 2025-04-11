@@ -10,5 +10,6 @@ import java.util.UUID;
 @Repository
 public interface CommentRepository extends JpaRepository<Comment, UUID> {
     List<Comment> findByVideoIdAndIsAnswerFalse(UUID videoId);
+
     int countCommentsByVideoId(UUID videoId);
 }

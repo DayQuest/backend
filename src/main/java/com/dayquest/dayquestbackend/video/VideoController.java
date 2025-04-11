@@ -1,27 +1,32 @@
 package com.dayquest.dayquestbackend.video;
 
-import com.dayquest.dayquestbackend.JwtService;
+import com.dayquest.dayquestbackend.auth.service.JwtService;
+import com.dayquest.dayquestbackend.common.dto.UuidDTO;
 import com.dayquest.dayquestbackend.quest.QuestRepository;
-import com.dayquest.dayquestbackend.user.ActivityUpdater;
+import com.dayquest.dayquestbackend.activity.ActivityUpdater;
+import com.dayquest.dayquestbackend.storage.service.ThumbnailStorageService;
 import com.dayquest.dayquestbackend.user.User;
 
 import com.dayquest.dayquestbackend.user.UserRepository;
 
 import java.util.Optional;
-import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 
+import com.dayquest.dayquestbackend.video.dto.VideoDTO;
+import com.dayquest.dayquestbackend.video.models.Video;
+import com.dayquest.dayquestbackend.video.models.ViewedVideo;
+import com.dayquest.dayquestbackend.video.models.ViewedVideoId;
+import com.dayquest.dayquestbackend.video.repository.VideoRepository;
+import com.dayquest.dayquestbackend.video.repository.ViewedVideoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import org.springframework.core.io.ByteArrayResource;
+
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.http.*;
 
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import com.github.benmanes.caffeine.cache.Cache;
 
 import java.util.List;
 import java.util.UUID;
@@ -46,8 +51,6 @@ public class VideoController {
     JwtService jwtService;
 
     @Autowired
-    private Cache<Integer, String> videoCache;
-    @Autowired
     private QuestRepository questRepository;
 
     @Autowired
@@ -55,43 +58,24 @@ public class VideoController {
 
     @Autowired
     private ActivityUpdater activityUpdater;
+    @Autowired
+    private ThumbnailStorageService thumbnailStorageService;
 
-    //new endpoint
     @Async
-    @PostMapping
+    @PostMapping("/upload")
     public CompletableFuture<ResponseEntity<String>> uploadVideo(
             @RequestParam("file") MultipartFile file,
             @RequestParam("title") String title,
             @RequestParam("description") String description,
-            @RequestParam("userUuid") UUID userUuid) {
+            @RequestHeader("Authorization") String token,
+            @RequestParam("hashtags") List<String> hashtags) {
         return CompletableFuture.supplyAsync(() -> {
-            Optional<User> user = userRepository.findById(userUuid);
+            String username = jwtService.extractUsername(token);
+            Optional<User> user = Optional.ofNullable(userRepository.findByUsername(username));
             if (user.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body("Could not find user with that UUID");
+                return ResponseEntity.notFound().build();
             }
-            videoService.uploadVideo(file, title, description, user.get()).join();
-            activityUpdater.increaseInteractions(user);
-            return ResponseEntity.ok("Uploaded");
-        });
-    }
-
-
-    //old endpoint just for the period where the frontend is not updated
-    @Async
-    @PostMapping("/upload")
-    public CompletableFuture<ResponseEntity<String>> uploadVideo1(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam("title") String title,
-            @RequestParam("description") String description,
-            @RequestParam("userUuid") UUID userUuid) {
-        return CompletableFuture.supplyAsync(() -> {
-            Optional<User> user = userRepository.findById(userUuid);
-            if (user.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body("Could not find user with that UUID");
-            }
-            videoService.uploadVideo(file, title, description, user.get()).join();
+            videoService.uploadVideo(file, title, description, user.get(), hashtags).join();
             activityUpdater.increaseInteractions(user);
             return ResponseEntity.ok("Uploaded");
         });
@@ -130,7 +114,7 @@ public class VideoController {
                             viewedVideoRepository.save(new ViewedVideo(new ViewedVideoId(user.getUuid(), randomVideo.getUuid())));
                             return ResponseEntity.ok(createVideoDTO(randomVideo, user));
                         } else {
-                            return ResponseEntity.status(HttpStatus.NO_CONTENT).body("No videos available");
+                            return ResponseEntity.noContent().build();
                         }
                     }
 
@@ -140,7 +124,7 @@ public class VideoController {
                     return ResponseEntity.ok(createVideoDTO(video, user));
                 }))
                 .orElseGet(() -> CompletableFuture.completedFuture(
-                        ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found")
+                        ResponseEntity.notFound().build()
                 ));
     }
 
@@ -173,15 +157,15 @@ public class VideoController {
 
         return CompletableFuture.supplyAsync(() -> {
             try {
-                Optional<User> user = userRepository.findById(UUID.fromString(userUuid.getUuid()));
+                Optional<User> user = userRepository.findById(userUuid.getUuid());
                 Optional<Video> video = videoRepository.findById(uuid);
 
-                if (user.isEmpty()) {
-                    return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                if (user.isEmpty() || video.isEmpty()) {
+                    return ResponseEntity.notFound().build();
                 }
 
                 if (user.get().getLikedVideos().contains(uuid)) {
-                    return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
+                    return ResponseEntity.status(HttpStatus.CONFLICT).build();
                 }
 
                 if (user.get().getDislikedVideos().contains(uuid)) {
@@ -191,13 +175,15 @@ public class VideoController {
                 }
 
                 user.get().getLikedVideos().add(uuid);
-
+                for(int i = 0; i<video.get().getHashtags().size(); i++){
+                    user.get().addLikedHashtag(video.get().getHashtags().get(i).getUuid());
+                }
                 activityUpdater.increaseInteractions(user);
                 userRepository.save(user.get());
                 return videoService.likeVideo(uuid).join();
             } catch (Exception e) {
                 System.out.println(e.getMessage());
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+                return ResponseEntity.internalServerError().build();
             }
         }, delegatingSecurityContextAsyncTaskExecutor);
     }
@@ -210,26 +196,29 @@ public class VideoController {
 
         return CompletableFuture.supplyAsync(() -> {
             try {
-                Optional<User> user = userRepository.findById(UUID.fromString(userUuid.getUuid()));
+                Optional<User> user = userRepository.findById(userUuid.getUuid());
                 Optional<Video> video = videoRepository.findById(uuid);
 
                 if (user.isEmpty()) {
-                    return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                    return ResponseEntity.notFound().build();
                 }
 
                 if (!user.get().getLikedVideos().contains(uuid)) {
-                    return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
+                    return ResponseEntity.status(HttpStatus.CONFLICT).build();
                 }
 
                 user.get().getLikedVideos().remove(uuid);
                 video.get().setUpVotes(video.get().getUpVotes() - 1);
                 videoRepository.save(video.get());
                 activityUpdater.increaseInteractions(user);
+                for(int i = 0; i<video.get().getHashtags().size(); i++){
+                    user.get().getLikedHashtags().remove(video.get().getHashtags().get(i).getUuid());
+                }
                 userRepository.save(user.get());
                 return ResponseEntity.ok().build();
             } catch (Exception e) {
                 System.out.println(e.getMessage());
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+                return ResponseEntity.internalServerError().build();
             }
         }, delegatingSecurityContextAsyncTaskExecutor);
     }
@@ -247,14 +236,16 @@ public class VideoController {
             }
 
             if (user.get().getDislikedVideos().contains(uuid)) {
-                return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
+                return ResponseEntity.status(HttpStatus.CONFLICT).build();
             }
 
             if (user.get().getLikedVideos().contains(uuid)) {
                 user.get().getLikedVideos().remove(uuid);
                 video.get().setUpVotes(video.get().getUpVotes() - 1);
+                for(int i = 0; i<video.get().getHashtags().size(); i++){
+                    user.get().getLikedHashtags().remove(video.get().getHashtags().get(i).getUuid());
+                }
                 videoRepository.save(video.get());
-
             }
 
             user.get().getDislikedVideos().add(uuid);
@@ -272,14 +263,15 @@ public class VideoController {
 
         return CompletableFuture.supplyAsync(() -> {
             try {
-                Optional<User> user = userRepository.findById(UUID.fromString(userUuid.getUuid()));
+                Optional<User> user = userRepository.findById(userUuid.getUuid());
                 Optional<Video> video = videoRepository.findById(uuid);
 
-                if (user.isEmpty()) {
+                if (user.isEmpty() || video.isEmpty()) {
+                    return ResponseEntity.notFound().build();
                 }
 
                 if (!user.get().getDislikedVideos().contains(uuid)) {
-                    return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
+                    return ResponseEntity.status(HttpStatus.CONFLICT).build();
                 }
 
                 user.get().getDislikedVideos().remove(uuid);
@@ -290,7 +282,7 @@ public class VideoController {
                 return ResponseEntity.ok().build();
             } catch (Exception e) {
                 System.out.println(e.getMessage());
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+                return ResponseEntity.internalServerError().build();
             }
         }, delegatingSecurityContextAsyncTaskExecutor);
     }
@@ -310,27 +302,13 @@ public class VideoController {
 
     @GetMapping("/thumbnail/{uuid}")
     @Async
-    public CompletableFuture<ResponseEntity<ByteArrayResource>> getDecodedImage(@PathVariable("uuid") String uuid) {
+    public CompletableFuture<ResponseEntity<byte[]>> getDecodedImage(@PathVariable("uuid") String uuid) {
         return CompletableFuture.supplyAsync(() -> {
-            try {
-                Optional<Video> videoOptional = videoRepository.findById(UUID.fromString(uuid));
-                if (videoOptional.isEmpty() || videoOptional.get().getThumbnail() == null) {
-                    return ResponseEntity.noContent().build();
-                }
+            Optional<Video> video = videoRepository.findById(UUID.fromString(uuid));
+            return video.map(value -> ResponseEntity.ok()
+                    .contentType(MediaType.IMAGE_JPEG)
+                    .body(thumbnailStorageService.getThumbnail(uuid))).orElseGet(() -> ResponseEntity.notFound().build());
 
-                byte[] imageBytes = videoOptional.get().getThumbnail();
-                ByteArrayResource resource = new ByteArrayResource(imageBytes);
-
-                HttpHeaders headers = new HttpHeaders();
-                headers.setContentType(MediaType.IMAGE_JPEG);
-
-                return ResponseEntity.ok()
-                        .headers(headers)
-                        .contentLength(imageBytes.length)
-                        .body(resource);
-            } catch (IllegalArgumentException e) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-            }
         });
     }
 }

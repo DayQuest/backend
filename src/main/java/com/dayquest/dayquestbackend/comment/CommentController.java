@@ -1,6 +1,8 @@
 package com.dayquest.dayquestbackend.comment;
 
-import com.dayquest.dayquestbackend.user.ActivityUpdater;
+import com.dayquest.dayquestbackend.activity.ActivityUpdater;
+import com.dayquest.dayquestbackend.comment.dto.AnswerDTO;
+import com.dayquest.dayquestbackend.comment.dto.CommentDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;

@@ -15,9 +15,6 @@ This software is **private**. You are **not** allowed to copy, modify, distribut
 - Using this software for commercial purposes.  
 
 
-### Spoiler:
-- Before you start this Service you need to run the CDN in a Docker Container or else you get an minio error!
-
 ### Folder Structure:
 
 ```

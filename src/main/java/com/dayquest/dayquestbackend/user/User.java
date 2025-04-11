@@ -1,6 +1,6 @@
 package com.dayquest.dayquestbackend.user;
 import com.dayquest.dayquestbackend.quest.Quest;
-import com.dayquest.dayquestbackend.video.Video;
+import com.dayquest.dayquestbackend.video.models.Video;
 import jakarta.persistence.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -54,6 +54,11 @@ public class User implements UserDetails {
     @ElementCollection
     @CollectionTable(name = "user_followed_users", joinColumns = @JoinColumn(name = "user_id"))
     private List<UUID> followedUsers;
+
+    @ElementCollection
+    @CollectionTable(name = "user_liked_hashtags", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "hashtag_id")
+    private List<UUID> likedHashtags;
 
     @ElementCollection
     private List<UUID> followerList;
@@ -372,5 +377,17 @@ public class User implements UserDetails {
 
     public void setBadges(List<UUID> badges) {
         this.badges = badges;
+    }
+
+    public List<UUID> getLikedHashtags() {
+        return likedHashtags;
+    }
+
+    public void setLikedHashtags(List<UUID> likedHashtags) {
+        this.likedHashtags = likedHashtags;
+    }
+
+    public void addLikedHashtag(UUID hashtagId) {
+        likedHashtags.add(hashtagId);
     }
 }
