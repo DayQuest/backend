@@ -62,7 +62,7 @@ public class VideoController {
     private ThumbnailStorageService thumbnailStorageService;
 
     @Async
-    @PostMapping
+    @PostMapping("/upload")
     public CompletableFuture<ResponseEntity<String>> uploadVideo(
             @RequestParam("file") MultipartFile file,
             @RequestParam("title") String title,

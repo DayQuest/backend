@@ -7,6 +7,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import com.dayquest.dayquestbackend.activity.ActivityUpdater;
+import com.dayquest.dayquestbackend.auth.AuthController;
+import com.dayquest.dayquestbackend.auth.service.AuthService;
 import com.dayquest.dayquestbackend.auth.service.JwtService;
 import com.dayquest.dayquestbackend.common.dto.UuidDTO;
 import com.dayquest.dayquestbackend.common.utils.ImageUtil;
@@ -14,8 +16,7 @@ import com.dayquest.dayquestbackend.quest.Quest;
 import com.dayquest.dayquestbackend.quest.dto.QuestDTO;
 import com.dayquest.dayquestbackend.quest.QuestService;
 import com.dayquest.dayquestbackend.streak.StreakService;
-import com.dayquest.dayquestbackend.user.dto.ProfileDTO;
-import com.dayquest.dayquestbackend.user.dto.UpdateUserDTO;
+import com.dayquest.dayquestbackend.user.dto.*;
 import com.dayquest.dayquestbackend.video.models.Video;
 import com.dayquest.dayquestbackend.video.repository.VideoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,14 +49,22 @@ public class UserController {
     @Autowired private StreakService streakService;
     @Autowired private ActivityUpdater activityUpdater;
     @Autowired private ImageUtil imageUtil;
-    @Autowired
-    private VideoRepository videoRepository;
-
+    @Autowired private VideoRepository videoRepository;
+    @Autowired private AuthController authController;
     @PostMapping("/status")
     public ResponseEntity<Object> status() {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/register")
+    public CompletableFuture<ResponseEntity<String>> registerUser(@RequestBody UserDTO userDTO) {
+        return authController.registerUser(userDTO);
+    }
+
+    @PostMapping("/login")
+    public CompletableFuture<ResponseEntity<LoginResponseDTO>> loginUser(@RequestBody LoginDTO loginDTO) {
+        return authController.loginUser(loginDTO);
+    }
     @PostMapping("/verify")
     public ResponseEntity<String> verifyUser(@RequestBody String token) {
         return userService.verifyAccount(token);
