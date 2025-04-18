@@ -14,7 +14,7 @@ public class EmailConfiguration {
     @Value("${spring.mail.username}")
     private String emailUsername;
 
-    @Value("${spring.mail.password}")
+    @Value("${spring.mail.password}") 
     private String emailPassword;
 
     @Value("${spring.mail.host}")
@@ -23,15 +23,17 @@ public class EmailConfiguration {
     @Bean
     public JavaMailSender javaMailSender() {
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
-        mailSender.setHost(emailHost);
+        mailSender.setHost(emailHost); 
         mailSender.setPort(587);
-        mailSender.setUsername(emailUsername);
-        mailSender.setPassword(emailPassword);
+        mailSender.setUsername(emailUsername); 
+        mailSender.setPassword(emailPassword); 
 
         Properties props = mailSender.getJavaMailProperties();
         props.put("mail.transport.protocol", "smtp");
         props.put("mail.smtp.auth", "true");
         props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.ssl.protocols", "TLSv1.2");
+        props.put("mail.smtp.from", "noreply@dayquest.de"); 
         props.put("mail.debug", "true");
 
         return mailSender;
