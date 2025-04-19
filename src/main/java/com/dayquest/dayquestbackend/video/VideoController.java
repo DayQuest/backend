@@ -20,7 +20,6 @@ import com.dayquest.dayquestbackend.video.repository.VideoRepository;
 import com.dayquest.dayquestbackend.video.repository.ViewedVideoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 
-
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.http.*;
 
@@ -30,6 +29,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @RestController
 @RequestMapping("/api/videos")
@@ -60,6 +61,8 @@ public class VideoController {
     private ActivityUpdater activityUpdater;
     @Autowired
     private ThumbnailStorageService thumbnailStorageService;
+
+    private static final Logger logger = Logger.getLogger(VideoController.class.getName());
 
     @Async
     @PostMapping("/upload")
@@ -291,12 +294,26 @@ public class VideoController {
     @GetMapping("/{uuid}")
     public CompletableFuture<ResponseEntity<VideoDTO>> getVideoById(@PathVariable UUID uuid) {
         return CompletableFuture.supplyAsync(() -> {
-            if (videoRepository.findById(uuid).isEmpty()) {
-                return ResponseEntity.notFound().build();
-            }
+            try {
+                Optional<Video> videoOpt = videoRepository.findById(uuid);
+                if (videoOpt.isEmpty()) {
+                    return ResponseEntity.notFound().build();
+                }
 
-            Video video = videoRepository.findById(uuid).get();
-            return ResponseEntity.ok(createVideoDTO(video, video.getUser()));
+                Video video = videoOpt.get();
+                
+                // Ensure user is loaded
+                if (video.getUser() == null) {
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(null);
+                }
+
+                return ResponseEntity.ok(createVideoDTO(video, video.getUser()));
+            } catch (Exception e) {
+                logger.log(Level.SEVERE, "Error getting video: " + uuid, e);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(null);
+            }
         });
     }
 

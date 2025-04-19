@@ -16,9 +16,9 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface  VideoRepository extends JpaRepository<Video, UUID> {
-    @Fetch(FetchMode.JOIN)
-    Optional<Video> findById(UUID uuid);
+public interface VideoRepository extends JpaRepository<Video, UUID> {
+    @Query("SELECT v FROM Video v LEFT JOIN FETCH v.user WHERE v.uuid = :uuid")
+    Optional<Video> findById(@Param("uuid") UUID uuid);
 
     @Query(value = "SELECT * FROM video ORDER BY RAND() LIMIT 1", nativeQuery = true)
     Optional<Video> findRandomVideo();
@@ -36,4 +36,3 @@ public interface  VideoRepository extends JpaRepository<Video, UUID> {
 
     Page<Video> findVideosByHashtagsContainsIgnoreCase(String query, Pageable pageable);
 }
-
