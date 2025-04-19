@@ -140,7 +140,7 @@ public class VideoController {
                 video.getUser().getUsername(),
                 video.getFilePath(),
                 null,
-                questRepository.findById(video.getQuestUuid()).orElse(null),
+                questRepository.findByUuid(video.getQuestUuid()),
                 video.getUuid(),
                 video.getCreatedAt(),
                 user.getFollowedUsers().contains(video.getUser().getUuid())
