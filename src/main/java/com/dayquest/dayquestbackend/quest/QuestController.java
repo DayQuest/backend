@@ -94,25 +94,25 @@ public class QuestController {
     }
 
 
+
     @PostMapping("/like")
     public CompletableFuture<ResponseEntity<?>> likeQuest(@RequestBody InteractionDTO dto) {
         return questService.likeQuest(dto);
     }
 
-
     @DeleteMapping("/like")
-    public CompletableFuture<ResponseEntity<?>> unlikeQuest(@RequestBody InteractionDTO interactionDTO) {
-        return questService.unlikeQuest(interactionDTO);
+    public CompletableFuture<ResponseEntity<?>> unlikeQuest(@RequestBody InteractionDTO dto) {
+        return questService.unlikeQuest(dto);
     }
 
     @PostMapping("/dislike")
-    public CompletableFuture<ResponseEntity<?>> dislikeQuest(@RequestBody InteractionDTO interactionDTO) {
-        return questService.dislikeQuest(interactionDTO);
+    public CompletableFuture<ResponseEntity<?>> dislikeQuest(@RequestBody InteractionDTO dto) {
+        return questService.dislikeQuest(dto);
     }
 
     @DeleteMapping("/dislike")
-    public CompletableFuture<ResponseEntity<?>> undislikeQuest(@RequestBody InteractionDTO interactionDTO) {
-        return questService.undislikeQuest(interactionDTO);
+    public CompletableFuture<ResponseEntity<?>> undislikeQuest(@RequestBody InteractionDTO dto) {
+        return questService.undislikeQuest(dto);
     }
 
     @PostMapping("/get-quest")
