@@ -48,105 +48,111 @@ public class QuestService {
     }
 
     @Async
-    @Transactional
     public CompletableFuture<ResponseEntity<?>> likeQuest(@RequestBody InteractionDTO interactionDTO) {
-        return CompletableFuture.supplyAsync(() -> {
-            Optional<User> userOpt = userRepository.findById(interactionDTO.getUserUuid());
-            Optional<Quest> questOpt = questRepository.findById(interactionDTO.getUuid());
-            if (userOpt.isEmpty() || questOpt.isEmpty()) {
-                return ResponseEntity.notFound().build();
-            }
-            User user = userOpt.get();
-            Quest quest = questOpt.get();
-
-            if (user.getLikedQuests().contains(quest.getUuid())) {
-                return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Already liked");
-            }
-            if (user.getDislikedQuests().remove(quest.getUuid())) {
-                questRepository.decrementDislikes(quest.getUuid());
-            }
-            user.getLikedQuests().add(quest.getUuid());
-            questRepository.incrementLikes(quest.getUuid());
-
-            questRepository.save(quest);
-            activityUpdater.increaseInteractions(user);
-            userRepository.save(user);
-
-            return ResponseEntity.ok("Successfully liked quest");
-        });
+        return CompletableFuture.supplyAsync(() -> processLikeInteraction(interactionDTO));
     }
 
-    @Async
     @Transactional
-    public CompletableFuture<ResponseEntity<?>> unlikeQuest(@RequestBody InteractionDTO interactionDTO) {
-        return CompletableFuture.supplyAsync(() -> {
-            Optional<User> userOpt = userRepository.findById(interactionDTO.getUserUuid());
-            Optional<Quest> questOpt = questRepository.findById(interactionDTO.getUuid());
-            if (userOpt.isEmpty() || questOpt.isEmpty()) {
-                return ResponseEntity.notFound().build();
-            }
-            User user = userOpt.get();
-            Quest quest = questOpt.get();
+    public ResponseEntity<?> processLikeInteraction(InteractionDTO interactionDTO) {
+        Optional<User> userOpt = userRepository.findById(interactionDTO.getUserUuid());
+        Optional<Quest> questOpt = questRepository.findById(interactionDTO.getUuid());
+        if (userOpt.isEmpty() || questOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        User user = userOpt.get();
+        Quest quest = questOpt.get();
 
-            if (!user.getLikedQuests().contains(quest.getUuid())) {
-                return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Not liked");
-            }
-            user.getLikedQuests().remove(quest.getUuid());
-            questRepository.decrementLikes(quest.getUuid());
-            questRepository.save(quest);
-            userRepository.save(user);
-            return ResponseEntity.ok("Successfully unliked quest");
-        });
-    }
-
-    @Async
-    @Transactional
-    public CompletableFuture<ResponseEntity<?>> dislikeQuest(@RequestBody InteractionDTO interactionDTO) {
-        return CompletableFuture.supplyAsync(() -> {
-            Optional<User> userOpt = userRepository.findById(interactionDTO.getUserUuid());
-            Optional<Quest> questOpt = questRepository.findById(interactionDTO.getUuid());
-            if (userOpt.isEmpty() || questOpt.isEmpty()) {
-                return ResponseEntity.notFound().build();
-            }
-            User user = userOpt.get();
-            Quest quest = questOpt.get();
-
-            if (user.getDislikedQuests().contains(quest.getUuid())) {
-                return ResponseEntity.status(HttpStatus.CONFLICT).body("Already disliked");
-            }
-            if (user.getLikedQuests().remove(quest.getUuid())) {
-                questRepository.decrementLikes(quest.getUuid());
-            }
-            user.getDislikedQuests().add(quest.getUuid());
-            questRepository.incrementDislikes(quest.getUuid());
-            questRepository.save(quest);
-            activityUpdater.increaseInteractions(user);
-            userRepository.save(user);
-            return ResponseEntity.ok("Successfully disliked quest");
-        });
-    }
-
-    @Async
-    @Transactional
-    public CompletableFuture<ResponseEntity<?>> undislikeQuest(@RequestBody InteractionDTO interactionDTO) {
-        return CompletableFuture.supplyAsync(() -> {
-            Optional<User> userOpt = userRepository.findById(interactionDTO.getUserUuid());
-            Optional<Quest> questOpt = questRepository.findById(interactionDTO.getUuid());
-            if (userOpt.isEmpty() || questOpt.isEmpty()) {
-                return ResponseEntity.notFound().build();
-            }
-            User user = userOpt.get();
-            Quest quest = questOpt.get();
-
-            if (!user.getDislikedQuests().contains(quest.getUuid())) {
-                return ResponseEntity.status(HttpStatus.CONFLICT).body("Not disliked");
-            }
-            user.getDislikedQuests().remove(quest.getUuid());
+        if (user.getLikedQuests().contains(quest.getUuid())) {
+            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Already liked");
+        }
+        if (user.getDislikedQuests().remove(quest.getUuid())) {
             questRepository.decrementDislikes(quest.getUuid());
-            questRepository.save(quest);
-            userRepository.save(user);
-            return ResponseEntity.ok("Successfully undisliked quest");
-        });
+        }
+        user.getLikedQuests().add(quest.getUuid());
+        questRepository.incrementLikes(quest.getUuid());
+
+        activityUpdater.increaseInteractions(user);
+        userRepository.save(user);
+        return ResponseEntity.ok("Successfully liked quest");
+    }
+
+    @Async
+    public CompletableFuture<ResponseEntity<?>> unlikeQuest(@RequestBody InteractionDTO interactionDTO) {
+        return CompletableFuture.supplyAsync(() -> processUnlikeInteraction(interactionDTO));
+    }
+
+    @Transactional
+    public ResponseEntity<?> processUnlikeInteraction(InteractionDTO interactionDTO) {
+        Optional<User> userOpt = userRepository.findById(interactionDTO.getUserUuid());
+        Optional<Quest> questOpt = questRepository.findById(interactionDTO.getUuid());
+        if (userOpt.isEmpty() || questOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        User user = userOpt.get();
+        Quest quest = questOpt.get();
+
+        if (!user.getLikedQuests().contains(quest.getUuid())) {
+            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Not liked");
+        }
+        user.getLikedQuests().remove(quest.getUuid());
+        questRepository.decrementLikes(quest.getUuid());
+
+        userRepository.save(user);
+        return ResponseEntity.ok("Successfully unliked quest");
+    }
+
+    @Async
+    public CompletableFuture<ResponseEntity<?>> dislikeQuest(@RequestBody InteractionDTO interactionDTO) {
+        return CompletableFuture.supplyAsync(() -> processDislikeInteraction(interactionDTO));
+    }
+
+    @Transactional
+    public ResponseEntity<?> processDislikeInteraction(InteractionDTO interactionDTO) {
+        Optional<User> userOpt = userRepository.findById(interactionDTO.getUserUuid());
+        Optional<Quest> questOpt = questRepository.findById(interactionDTO.getUuid());
+        if (userOpt.isEmpty() || questOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        User user = userOpt.get();
+        Quest quest = questOpt.get();
+
+        if (user.getDislikedQuests().contains(quest.getUuid())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Already disliked");
+        }
+        if (user.getLikedQuests().remove(quest.getUuid())) {
+            questRepository.decrementLikes(quest.getUuid());
+        }
+        user.getDislikedQuests().add(quest.getUuid());
+        questRepository.incrementDislikes(quest.getUuid());
+
+        activityUpdater.increaseInteractions(user);
+        userRepository.save(user);
+        return ResponseEntity.ok("Successfully disliked quest");
+    }
+
+    @Async
+    public CompletableFuture<ResponseEntity<?>> undislikeQuest(@RequestBody InteractionDTO interactionDTO) {
+        return CompletableFuture.supplyAsync(() -> processUndislikeInteraction(interactionDTO));
+    }
+
+    @Transactional
+    public ResponseEntity<?> processUndislikeInteraction(InteractionDTO interactionDTO) {
+        Optional<User> userOpt = userRepository.findById(interactionDTO.getUserUuid());
+        Optional<Quest> questOpt = questRepository.findById(interactionDTO.getUuid());
+        if (userOpt.isEmpty() || questOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        User user = userOpt.get();
+        Quest quest = questOpt.get();
+
+        if (!user.getDislikedQuests().contains(quest.getUuid())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Not disliked");
+        }
+        user.getDislikedQuests().remove(quest.getUuid());
+        questRepository.decrementDislikes(quest.getUuid());
+
+        userRepository.save(user);
+        return ResponseEntity.ok("Successfully undisliked quest");
     }
 
 }
