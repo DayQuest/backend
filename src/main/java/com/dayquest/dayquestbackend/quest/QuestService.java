@@ -1,20 +1,26 @@
 package com.dayquest.dayquestbackend.quest;
 
+import com.dayquest.dayquestbackend.activity.ActivityUpdater;
+import com.dayquest.dayquestbackend.quest.dto.InteractionDTO;
+import com.dayquest.dayquestbackend.quest.Quest;
+import com.dayquest.dayquestbackend.quest.QuestReport;
+import com.dayquest.dayquestbackend.quest.QuestReportRepository;
+import com.dayquest.dayquestbackend.quest.QuestRepository;
 import com.dayquest.dayquestbackend.user.User;
+import com.dayquest.dayquestbackend.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.Optional;
-import java.util.UUID;
-
-import org.springframework.http.HttpStatus;
 
 @Service
 public class QuestService {
@@ -28,14 +34,16 @@ public class QuestService {
     @Autowired
     private QuestReportRepository questReportRepository;
 
+    @Autowired
+    private ActivityUpdater activityUpdater;
+
     private static final Logger logger = Logger.getLogger(QuestService.class.getName());
 
     @Async
     @Transactional
     public CompletableFuture<Quest> createQuest(String title, String description, User user) {
         return CompletableFuture.supplyAsync(() -> {
-            if (title == null || description == null ||
-                    title.isBlank() || description.isBlank()) {
+            if (title == null || description == null || title.isBlank() || description.isBlank()) {
                 return null;
             }
             Quest quest = new Quest();
@@ -52,12 +60,118 @@ public class QuestService {
         return CompletableFuture.supplyAsync(() -> {
             List<Quest> allQuests = questRepository.findAll();
             allQuests.sort((q1, q2) -> (q2.getLikes() - q2.getDislikes()) - (q1.getLikes() - q1.getDislikes()));
-            if (allQuests.isEmpty()) {
-                return allQuests;
-            }
+            if (allQuests.isEmpty()) return allQuests;
             int topCount = Math.max(1, (int) Math.ceil(allQuests.size() * 0.3));
             return allQuests.subList(0, topCount);
         });
+    }
+
+    @Async
+    @Transactional
+    public CompletableFuture<ResponseEntity<?>> likeQuest(InteractionDTO dto) {
+        Optional<User> userOpt = userRepository.findById(dto.getUserUuid());
+        Optional<Quest> questOpt = questRepository.findById(dto.getUuid());
+        if (userOpt.isEmpty() || questOpt.isEmpty()) {
+            return CompletableFuture.completedFuture(ResponseEntity.notFound().build());
+        }
+        User user = userOpt.get();
+        Quest quest = questOpt.get();
+
+        if (user.getLikedQuests().contains(quest.getUuid())) {
+            return CompletableFuture.completedFuture(
+                    ResponseEntity.status(HttpStatus.CONFLICT).body("Already liked")
+            );
+        }
+        if (user.getDislikedQuests().remove(quest.getUuid())) {
+            questRepository.decrementDislikes(quest.getUuid());
+        }
+        user.getLikedQuests().add(quest.getUuid());
+        questRepository.incrementLikes(quest.getUuid());
+
+        activityUpdater.increaseInteractions(user);
+        userRepository.save(user);
+        return CompletableFuture.completedFuture(
+                ResponseEntity.ok("Successfully liked quest")
+        );
+    }
+
+    @Async
+    @Transactional
+    public CompletableFuture<ResponseEntity<?>> unlikeQuest(InteractionDTO dto) {
+        Optional<User> userOpt = userRepository.findById(dto.getUserUuid());
+        Optional<Quest> questOpt = questRepository.findById(dto.getUuid());
+        if (userOpt.isEmpty() || questOpt.isEmpty()) {
+            return CompletableFuture.completedFuture(ResponseEntity.notFound().build());
+        }
+        User user = userOpt.get();
+        Quest quest = questOpt.get();
+
+        if (!user.getLikedQuests().contains(quest.getUuid())) {
+            return CompletableFuture.completedFuture(
+                    ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Not liked")
+            );
+        }
+        user.getLikedQuests().remove(quest.getUuid());
+        questRepository.decrementLikes(quest.getUuid());
+
+        userRepository.save(user);
+        return CompletableFuture.completedFuture(
+                ResponseEntity.ok("Successfully unliked quest")
+        );
+    }
+
+    @Async
+    @Transactional
+    public CompletableFuture<ResponseEntity<?>> dislikeQuest(InteractionDTO dto) {
+        Optional<User> userOpt = userRepository.findById(dto.getUserUuid());
+        Optional<Quest> questOpt = questRepository.findById(dto.getUuid());
+        if (userOpt.isEmpty() || questOpt.isEmpty()) {
+            return CompletableFuture.completedFuture(ResponseEntity.notFound().build());
+        }
+        User user = userOpt.get();
+        Quest quest = questOpt.get();
+
+        if (user.getDislikedQuests().contains(quest.getUuid())) {
+            return CompletableFuture.completedFuture(
+                    ResponseEntity.status(HttpStatus.CONFLICT).body("Already disliked")
+            );
+        }
+        if (user.getLikedQuests().remove(quest.getUuid())) {
+            questRepository.decrementLikes(quest.getUuid());
+        }
+        user.getDislikedQuests().add(quest.getUuid());
+        questRepository.incrementDislikes(quest.getUuid());
+
+        activityUpdater.increaseInteractions(user);
+        userRepository.save(user);
+        return CompletableFuture.completedFuture(
+                ResponseEntity.ok("Successfully disliked quest")
+        );
+    }
+
+    @Async
+    @Transactional
+    public CompletableFuture<ResponseEntity<?>> undislikeQuest(InteractionDTO dto) {
+        Optional<User> userOpt = userRepository.findById(dto.getUserUuid());
+        Optional<Quest> questOpt = questRepository.findById(dto.getUuid());
+        if (userOpt.isEmpty() || questOpt.isEmpty()) {
+            return CompletableFuture.completedFuture(ResponseEntity.notFound().build());
+        }
+        User user = userOpt.get();
+        Quest quest = questOpt.get();
+
+        if (!user.getDislikedQuests().contains(quest.getUuid())) {
+            return CompletableFuture.completedFuture(
+                    ResponseEntity.status(HttpStatus.CONFLICT).body("Not disliked")
+            );
+        }
+        user.getDislikedQuests().remove(quest.getUuid());
+        questRepository.decrementDislikes(quest.getUuid());
+
+        userRepository.save(user);
+        return CompletableFuture.completedFuture(
+                ResponseEntity.ok("Successfully undisliked quest")
+        );
     }
 
     @Async
