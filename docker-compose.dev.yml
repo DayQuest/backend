@@ -82,6 +82,7 @@ services:
 volumes:
   mysql-data:
   video-processed:
+  pgadmin-data:
   video-cache:
   postgres:
 
