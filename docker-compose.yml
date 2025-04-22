@@ -12,6 +12,22 @@ services:
     networks:
       - dayquest-network
 
+
+  postgres:
+    container_name: postgres_container
+    image: postgres
+    environment:
+      POSTGRES_USER: ${SPRING_DATASOURCE_USERNAME}
+      POSTGRES_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      PGDATA: /data/postgres
+    volumes:
+      - postgres:/data/postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - postgres
+    restart: unless-stopped
+
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     container_name: dayquest-phpmyadmin
@@ -53,6 +69,7 @@ volumes:
   mysql-data:
   video-processed:
   video-cache:
+  postgres:
 
 networks:
   dayquest-network:
