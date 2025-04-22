@@ -28,6 +28,19 @@ services:
       - dayquest-network
     restart: unless-stopped
 
+
+    pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin4_container
+    restart: always
+    ports:
+      - "8888:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     container_name: dayquest-phpmyadmin-dev
