@@ -110,25 +110,4 @@ public class VideoService {
             }
         });
     }
-
-    @Async
-    public CompletableFuture<ResponseEntity<String>> reportVideo(UUID videoUuid, UUID reporterUuid, String reason) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                Optional<Video> video = videoRepository.findById(videoUuid);
-                Optional<User> reporter = userRepository.findById(reporterUuid);
-
-                if (video.isEmpty() || reporter.isEmpty()) {
-                    return ResponseEntity.notFound().build();
-                }
-
-                VideoReport report = new VideoReport(video.get(), reporter.get(), reason);
-                videoReportRepository.save(report);
-                return ResponseEntity.ok("Report submitted");
-            } catch (Exception e) {
-                logger.log(Level.SEVERE, "Error reporting video: " + videoUuid, e);
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error submitting report");
-            }
-        });
-    }
 }

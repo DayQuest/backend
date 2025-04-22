@@ -290,13 +290,6 @@ public class VideoController {
         }, delegatingSecurityContextAsyncTaskExecutor);
     }
 
-    @Async
-    @PostMapping("/{uuid}/report")
-    public CompletableFuture<ResponseEntity<String>> reportVideo(
-            @PathVariable UUID uuid,
-            @RequestBody ReportDTO reportDTO) {
-        return videoService.reportVideo(uuid, reportDTO.getReporterUuid(), reportDTO.getReason());
-    }
 
     @Async
     @GetMapping("/{uuid}")

@@ -173,25 +173,4 @@ public class QuestService {
                 ResponseEntity.ok("Successfully undisliked quest")
         );
     }
-
-    @Async
-    public CompletableFuture<ResponseEntity<String>> reportQuest(UUID questUuid, UUID reporterUuid, String reason) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                Optional<Quest> quest = questRepository.findById(questUuid);
-                Optional<User> reporter = userRepository.findById(reporterUuid);
-
-                if (quest.isEmpty() || reporter.isEmpty()) {
-                    return ResponseEntity.notFound().build();
-                }
-
-                QuestReport report = new QuestReport(quest.get(), reporter.get(), reason);
-                questReportRepository.save(report);
-                return ResponseEntity.ok("Report submitted");
-            } catch (Exception e) {
-                logger.log(Level.SEVERE, "Error reporting quest: " + questUuid, e);
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error submitting report");
-            }
-        });
-    }
 }
