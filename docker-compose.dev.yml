@@ -1,7 +1,7 @@
 services:
   mysql:
     image: mysql:8.0
-    container_name: dayquest-mysql
+    container_name: dayquest-mysql-dev
     volumes:
       - mysql-data:/var/lib/mysql
     ports:
@@ -14,7 +14,7 @@ services:
 
 
   postgres:
-    container_name: postgres_container
+    container_name: postgres_container-dev
     image: postgres
     environment:
       POSTGRES_USER: ${SPRING_DATASOURCE_USERNAME}
@@ -30,7 +30,7 @@ services:
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
-    container_name: dayquest-phpmyadmin
+    container_name: dayquest-phpmyadmin-dev
     ports:
       - ${PHPMYADMIN_PORT}:80
     depends_on:
@@ -54,7 +54,7 @@ services:
     volumes:
       - /opt/dayquestcdn/videos/processed:/opt/dayquestcdn/videos/processed
       - /opt/dayquestcdn/videos/unprocessed:/opt/dayquestcdn/videos/unprocessed
-    container_name: dayquest-backend
+    container_name: dayquest-backend-dev
     ports:
       - "${SERVER_PORT}:${SERVER_PORT}"
     depends_on:
