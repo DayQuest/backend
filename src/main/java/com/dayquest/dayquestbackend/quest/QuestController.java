@@ -4,6 +4,7 @@ import com.dayquest.dayquestbackend.auth.service.JwtService;
 import com.dayquest.dayquestbackend.activity.ActivityUpdater;
 import com.dayquest.dayquestbackend.quest.dto.InteractionDTO;
 import com.dayquest.dayquestbackend.quest.dto.QuestDTO;
+import com.dayquest.dayquestbackend.quest.dto.ReportDTO;
 import com.dayquest.dayquestbackend.user.User;
 import com.dayquest.dayquestbackend.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -145,5 +146,13 @@ public class QuestController {
             }
             return ResponseEntity.ok(new QuestDTO(quest));
         });
+    }
+
+    @Async
+    @PostMapping("/{uuid}/report")
+    public CompletableFuture<ResponseEntity<String>> reportQuest(
+            @PathVariable UUID uuid,
+            @RequestBody ReportDTO reportDTO) {
+        return questService.reportQuest(uuid, reportDTO.getReporterUuid(), reportDTO.getReason());
     }
 }

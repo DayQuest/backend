@@ -2,6 +2,10 @@ package com.dayquest.dayquestbackend.quest;
 
 import com.dayquest.dayquestbackend.activity.ActivityUpdater;
 import com.dayquest.dayquestbackend.quest.dto.InteractionDTO;
+import com.dayquest.dayquestbackend.quest.Quest;
+import com.dayquest.dayquestbackend.quest.QuestReport;
+import com.dayquest.dayquestbackend.quest.QuestReportRepository;
+import com.dayquest.dayquestbackend.quest.QuestRepository;
 import com.dayquest.dayquestbackend.user.User;
 import com.dayquest.dayquestbackend.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,10 +15,12 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @Service
 public class QuestService {
@@ -26,14 +32,18 @@ public class QuestService {
     private UserRepository userRepository;
 
     @Autowired
+    private QuestReportRepository questReportRepository;
+
+    @Autowired
     private ActivityUpdater activityUpdater;
+
+    private static final Logger logger = Logger.getLogger(QuestService.class.getName());
 
     @Async
     @Transactional
     public CompletableFuture<Quest> createQuest(String title, String description, User user) {
         return CompletableFuture.supplyAsync(() -> {
-            if (title == null || description == null ||
-                    title.isBlank() || description.isBlank()) {
+            if (title == null || description == null || title.isBlank() || description.isBlank()) {
                 return null;
             }
             Quest quest = new Quest();
@@ -50,9 +60,7 @@ public class QuestService {
         return CompletableFuture.supplyAsync(() -> {
             List<Quest> allQuests = questRepository.findAll();
             allQuests.sort((q1, q2) -> (q2.getLikes() - q2.getDislikes()) - (q1.getLikes() - q1.getDislikes()));
-            if (allQuests.isEmpty()) {
-                return allQuests;
-            }
+            if (allQuests.isEmpty()) return allQuests;
             int topCount = Math.max(1, (int) Math.ceil(allQuests.size() * 0.3));
             return allQuests.subList(0, topCount);
         });
@@ -71,7 +79,7 @@ public class QuestService {
 
         if (user.getLikedQuests().contains(quest.getUuid())) {
             return CompletableFuture.completedFuture(
-                    ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Already liked")
+                    ResponseEntity.status(HttpStatus.CONFLICT).body("Already liked")
             );
         }
         if (user.getDislikedQuests().remove(quest.getUuid())) {
@@ -166,4 +174,24 @@ public class QuestService {
         );
     }
 
+    @Async
+    public CompletableFuture<ResponseEntity<String>> reportQuest(UUID questUuid, UUID reporterUuid, String reason) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                Optional<Quest> quest = questRepository.findById(questUuid);
+                Optional<User> reporter = userRepository.findById(reporterUuid);
+
+                if (quest.isEmpty() || reporter.isEmpty()) {
+                    return ResponseEntity.notFound().build();
+                }
+
+                QuestReport report = new QuestReport(quest.get(), reporter.get(), reason);
+                questReportRepository.save(report);
+                return ResponseEntity.ok("Report submitted");
+            } catch (Exception e) {
+                logger.log(Level.SEVERE, "Error reporting quest: " + questUuid, e);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error submitting report");
+            }
+        });
+    }
 }
