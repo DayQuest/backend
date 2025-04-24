@@ -6,9 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -24,16 +22,12 @@ public class BadgeService {
     private UserRepository userRepository;
 
     @Async
-    public CompletableFuture<ResponseEntity<String>> createBadge(String name, String description, MultipartFile file) {
+    public CompletableFuture<ResponseEntity<String>> createBadge(String name, String description, String imageUrl) {
         return CompletableFuture.supplyAsync(() -> {
             Badge badge = new Badge();
             badge.setName(name);
             badge.setDescription(description);
-            try {
-                badge.setImage(file.getBytes());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            badge.setImageUrl(imageUrl);
             badgeRepository.save(badge);
             return ResponseEntity.ok("Badge created successfully");
         });
