@@ -1,31 +1,44 @@
 package com.dayquest.dayquestbackend.badge;
 
-import org.springframework.data.domain.PageRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @RestController
-@RequestMapping("/api/badge")
+@RequestMapping("/api/badges")
+@CrossOrigin(origins = "*")
 public class BadgeController {
     private final BadgeRepository badgeRepository;
     private final BadgeService badgeService;
 
+    @Autowired
     public BadgeController(BadgeRepository badgeRepository, BadgeService badgeService) {
         this.badgeRepository = badgeRepository;
         this.badgeService = badgeService;
     }
 
-    @PostMapping
+    @Value("${cdn.base.url}")
+    private String cdnBaseUrl;
+
+    @Value("${cdn.upload.path}")
+    private String cdnUploadPath;
+
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Async
-    public CompletableFuture<Object> createBadge(@RequestParam("name") String name, @RequestParam("description") String description, @RequestParam("file") MultipartFile file, @RequestHeader("Authorization") String token) {
+    public CompletableFuture<ResponseEntity<Object>> createBadge(@RequestParam("name") String name, @RequestParam("description") String description, @RequestParam("file") MultipartFile file, @RequestHeader("Authorization") String token) {
         return CompletableFuture.supplyAsync(() -> {
             if (name == null || description == null || file == null) {
                 return ResponseEntity.badRequest().body("Missing parameters");
@@ -36,14 +49,57 @@ public class BadgeController {
             if (description.length() < 3 || description.length() > 100) {
                 return ResponseEntity.unprocessableEntity().body("Description must be between 3 and 100 characters");
             }
-            if (!file.getContentType().equals("image/png") && !file.getContentType().equals("image/jpeg")) {
-                return ResponseEntity.unprocessableEntity().body("File must be an image");
-            }
             if (badgeRepository.findByName(name).isPresent()) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body("Badge with this name already exists");
             }
-            return badgeService.createBadge(name, description, file);
+            try {
+                // Generate UUID for the badge
+                UUID badgeId = UUID.randomUUID();
+                
+                // Get file extension from original filename or content type
+                String extension = getFileExtension(file);
+                
+                // Save image to CDN directory
+                String fileName = badgeId.toString() + extension;
+                Path uploadPath = Paths.get(cdnUploadPath, "badges", fileName);
+                Files.createDirectories(uploadPath.getParent());
+                Files.write(uploadPath, file.getBytes());
+
+                // Create badge with CDN URL
+                Badge badge = new Badge();
+                badge.setId(badgeId);
+                badge.setName(name);
+                badge.setDescription(description);
+                badge.setImageUrl(cdnBaseUrl + "/badges/" + fileName);
+                badge.setUserIds(List.of());
+
+                return ResponseEntity.ok(badgeService.saveBadge(badge));
+            } catch (IOException e) {
+                return ResponseEntity.internalServerError().build();
+            }
         });
+    }
+
+    private String getFileExtension(MultipartFile file) {
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename != null && originalFilename.contains(".")) {
+            return originalFilename.substring(originalFilename.lastIndexOf("."));
+        }
+        
+        // Fallback to content type
+        String contentType = file.getContentType();
+        if (contentType != null) {
+            switch (contentType) {
+                case "image/jpeg":
+                    return ".jpg";
+                case "image/png":
+                    return ".png";
+                default:
+                    return ".jpg"; // default to jpg
+            }
+        }
+        
+        return ".jpg"; // final fallback
     }
 
     @DeleteMapping

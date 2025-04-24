@@ -1,8 +1,6 @@
 package com.dayquest.dayquestbackend.badge;
 
 import jakarta.persistence.*;
-
-
 import java.util.List;
 import java.util.UUID;
 
@@ -15,10 +13,9 @@ public class Badge {
 
     private String name;
     private String description;
+    
+    private String imageUrl;  // URL to the CDN image
 
-    @Lob
-    @Column(columnDefinition = "LONGBLOB")
-    private byte[] image;
     @ElementCollection
     private List<UUID> userIds;
 
@@ -46,12 +43,12 @@ public class Badge {
         this.description = description;
     }
 
-    public byte[] getImage() {
-        return image;
+    public String getImageUrl() {
+        return imageUrl;
     }
 
-    public void setImage(byte[] image) {
-        this.image = image;
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     public List<UUID> getUserIds() {
@@ -61,5 +58,4 @@ public class Badge {
     public void setUserIds(List<UUID> userIds) {
         this.userIds = userIds;
     }
-
 }
