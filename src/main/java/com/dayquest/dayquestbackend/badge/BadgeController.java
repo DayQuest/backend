@@ -121,7 +121,9 @@ public class BadgeController {
     @GetMapping("/list")
     @Async
     public CompletableFuture<List<Badge>> getPagedBadges(@RequestParam("page") int page, @RequestParam("size") int size) {
-        return CompletableFuture.supplyAsync(() -> badgeRepository.findAll(PageRequest.of(page, size)).getContent());
+        return CompletableFuture.supplyAsync(() -> {
+            return badgeRepository.findAll(PageRequest.of(page, size)).getContent();
+        });
     }
 
     @GetMapping("/{uuid}/users")
