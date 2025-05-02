@@ -7,7 +7,7 @@ services:
     ports:
       - "3307:3306"
     env_file:
-      - .env
+      - stack.env
     restart: unless-stopped
     networks:
       - dayquest-network
@@ -54,7 +54,7 @@ services:
     environment:
         - PMA_THEME=BooDark
     env_file:
-      - .env
+      - stack.env
     restart: unless-stopped
     networks:
       - dayquest-network
@@ -73,7 +73,7 @@ services:
     depends_on:
       - mysql
     env_file:
-      - .env
+      - stack.env
     restart: unless-stopped
     pull_policy: build
     networks:
