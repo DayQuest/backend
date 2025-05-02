@@ -1,7 +1,5 @@
 package com.dayquest.dayquestbackend.legals;
 
-import com.dayquest.dayquestbackend.beta.KeyRepository;
-import com.dayquest.dayquestbackend.user.UserRepository;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;

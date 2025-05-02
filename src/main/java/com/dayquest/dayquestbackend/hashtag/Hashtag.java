@@ -11,6 +11,8 @@ public class Hashtag {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID uuid;
+
+    @Column(unique = true)
     private String hashtag;
     private int videoCount;
 
@@ -20,6 +22,7 @@ public class Hashtag {
     public UUID getUuid() {
         return uuid;
     }
+
 
     public void setUuid(UUID uuid) {
         this.uuid = uuid;

@@ -1,8 +1,9 @@
-package com.dayquest.dayquestbackend.user;
+package com.dayquest.dayquestbackend.user.repositories;
 
 import java.util.Optional;
 import java.util.UUID;
 
+import com.dayquest.dayquestbackend.user.models.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;

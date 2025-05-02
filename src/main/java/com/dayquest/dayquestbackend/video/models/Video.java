@@ -1,14 +1,13 @@
 package com.dayquest.dayquestbackend.video.models;
 
 import com.dayquest.dayquestbackend.hashtag.Hashtag;
-import com.dayquest.dayquestbackend.user.User;
+import com.dayquest.dayquestbackend.user.models.User;
 import com.dayquest.dayquestbackend.video.states.SecurityLevel;
 import com.dayquest.dayquestbackend.video.states.Status;
 import jakarta.persistence.*;
 
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 

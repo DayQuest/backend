@@ -1,7 +1,7 @@
 package com.dayquest.dayquestbackend.common.config;
 
 import com.dayquest.dayquestbackend.quest.QuestService;
-import com.dayquest.dayquestbackend.user.UserService;
+import com.dayquest.dayquestbackend.user.services.UserService;
 
 import java.util.concurrent.CompletableFuture;
 

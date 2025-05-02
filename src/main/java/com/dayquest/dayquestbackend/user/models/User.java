@@ -1,7 +1,9 @@
-package com.dayquest.dayquestbackend.user;
+package com.dayquest.dayquestbackend.user.models;
 import com.dayquest.dayquestbackend.quest.Quest;
+import com.dayquest.dayquestbackend.user.Punishments;
 import com.dayquest.dayquestbackend.video.models.Video;
 import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,6 +21,9 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID uuid;
 
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+
     @Column(nullable = false, unique = true)
     private String username;
 
@@ -32,49 +37,19 @@ public class User implements UserDetails {
     private String password;
 
 
-    private boolean banned = false;
+    private Punishments punishment;
 
     @ElementCollection
-    @CollectionTable(name = "disliked_quests", joinColumns = @JoinColumn(name = "user_id"))
-    private List<UUID> dislikedQuests;
-
-    @ElementCollection
-    @CollectionTable(name = "disliked_videos", joinColumns = @JoinColumn(name = "user_id"))
-    private List<UUID> dislikedVideos;
-
-    @ElementCollection
-    @CollectionTable(name = "liked_quests", joinColumns = @JoinColumn(name = "user_id"))
-    private List<UUID> likedQuests;
-
-    @ElementCollection
-    @CollectionTable(name = "liked_videos", joinColumns = @JoinColumn(name = "user_id"))
-    @Column(name = "video_id")
-    private List<UUID> likedVideos;
-
-    @ElementCollection
-    @CollectionTable(name = "user_followed_users", joinColumns = @JoinColumn(name = "user_id"))
-    private List<UUID> followedUsers;
-
-    @ElementCollection
-    @CollectionTable(name = "user_liked_hashtags", joinColumns = @JoinColumn(name = "user_id"))
-    @Column(name = "hashtag_id")
-    private List<UUID> likedHashtags;
-
-    @ElementCollection
-    private List<UUID> followerList;
-
-    @ElementCollection
+    @CollectionTable(name = "user_badge", joinColumns = @JoinColumn(name = "user_id"))
     private List<UUID> badges;
 
     private int leftRerolls;
     private LocalDateTime lastReroll;
 
-    @ElementCollection
-    private Map<UUID, Long> followTimestamps = new HashMap<>();
-
     private String passwordResetToken;
 
     @ElementCollection
+    @CollectionTable(name = "user_done_quest", joinColumns = @JoinColumn(name = "user_id"))
     private List<UUID> doneQuests;
 
     private LocalDateTime lastLogin;
@@ -117,10 +92,6 @@ public class User implements UserDetails {
 
     public User() {
         this.postedVideos = new ArrayList<>();
-        this.dislikedQuests = new ArrayList<>();
-        this.dislikedVideos = new ArrayList<>();
-        this.likedQuests = new ArrayList<>();
-        this.likedVideos = new ArrayList<>();
     }
 
 
@@ -182,36 +153,12 @@ public class User implements UserDetails {
         this.password = password;
     }
 
-    public boolean isBanned() {
-        return banned;
+    public Punishments getPunishment() {
+        return punishment;
     }
 
-    public void setBanned(boolean banned) {
-        this.banned = banned;
-    }
-
-    public List<UUID> getDislikedQuests() {
-        return dislikedQuests;
-    }
-
-    public void setDislikedQuests(List<UUID> dislikedQuests) {
-        this.dislikedQuests = dislikedQuests;
-    }
-
-    public List<UUID> getDislikedVideos() {
-        return dislikedVideos;
-    }
-
-    public void setDislikedVideos(List<UUID> dislikedVideos) {
-        this.dislikedVideos = dislikedVideos;
-    }
-
-    public List<UUID> getFollowedUsers() {
-        return followedUsers;
-    }
-
-    public void setFollowedUsers(List<UUID> followedUsers) {
-        this.followedUsers = followedUsers;
+    public void setPunishment(Punishments punishment) {
+        this.punishment = punishment;
     }
 
     public int getFollowers() {
@@ -220,22 +167,6 @@ public class User implements UserDetails {
 
     public void setFollowers(int followers) {
         this.followers = followers;
-    }
-
-    public List<UUID> getLikedQuests() {
-        return likedQuests;
-    }
-
-    public void setLikedQuests(List<UUID> likedQuests) {
-        this.likedQuests = likedQuests;
-    }
-
-    public List<UUID> getLikedVideos() {
-        return likedVideos;
-    }
-
-    public void setLikedVideos(List<UUID> likedVideos) {
-        this.likedVideos = likedVideos;
     }
 
     public String getAdminComment() {
@@ -323,14 +254,6 @@ public class User implements UserDetails {
         doneQuests.add(questId);
     }
 
-    public List<UUID> getFollowerList() {
-        return followerList;
-    }
-
-    public void setFollowerList(List<UUID> followerList) {
-        this.followerList = followerList;
-    }
-
     public void setAuthorities(List<String> authorities) {
         this.authorities = authorities;
     }
@@ -339,13 +262,6 @@ public class User implements UserDetails {
         return authorities;
     }
 
-    public Map<UUID, Long> getFollowTimestamps() {
-        return followTimestamps;
-    }
-
-    public void setFollowTimestamps(Map<UUID, Long> followTimestamps) {
-        this.followTimestamps = followTimestamps;
-    }
 
     public LocalDateTime getLastLogin() {
         return lastLogin;
@@ -377,17 +293,5 @@ public class User implements UserDetails {
 
     public void setBadges(List<UUID> badges) {
         this.badges = badges;
-    }
-
-    public List<UUID> getLikedHashtags() {
-        return likedHashtags;
-    }
-
-    public void setLikedHashtags(List<UUID> likedHashtags) {
-        this.likedHashtags = likedHashtags;
-    }
-
-    public void addLikedHashtag(UUID hashtagId) {
-        likedHashtags.add(hashtagId);
     }
 }

@@ -9,6 +9,7 @@ import org.hibernate.annotations.FetchMode;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -33,6 +34,22 @@ public interface VideoRepository extends JpaRepository<Video, UUID> {
             "ORDER BY RAND()" +
             "LIMIT 10;", nativeQuery = true)
     List<Video> findUnviewedVideosByUserId(@Param("userId") UUID userId);
+
+    @Modifying
+    @Query("UPDATE Video v SET v.upVotes = v.upVotes + 1 WHERE v.uuid = :uuid")
+    int incrementUpVotes(UUID uuid);
+
+    @Modifying
+    @Query("UPDATE Video v SET v.downVotes = v.downVotes + 1 WHERE v.uuid = :uuid")
+    int incrementDownVotes(UUID uuid);
+
+    @Modifying
+    @Query("UPDATE Video v SET v.upVotes = v.upVotes - 1 WHERE v.uuid = :uuid")
+    int decrementUpVotes(UUID uuid);
+
+    @Modifying
+    @Query("UPDATE Video v SET v.downVotes = v.downVotes - 1 WHERE v.uuid = :uuid")
+    int decrementDownVotes(UUID uuid);
 
     Page<Video> findVideosByHashtagsContainsIgnoreCase(String query, Pageable pageable);
 }

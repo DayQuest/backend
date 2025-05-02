@@ -6,15 +6,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.dayquest.dayquestbackend.storage.service.VideoStorageService;
-import com.dayquest.dayquestbackend.user.User;
-import com.dayquest.dayquestbackend.user.UserRepository;
+import com.dayquest.dayquestbackend.user.models.User;
+import com.dayquest.dayquestbackend.user.repositories.UserRepository;
 import com.dayquest.dayquestbackend.video.models.Video;
-import com.dayquest.dayquestbackend.video.models.VideoReport;
 import com.dayquest.dayquestbackend.video.repository.VideoReportRepository;
 import com.dayquest.dayquestbackend.video.repository.VideoRepository;
 import com.dayquest.dayquestbackend.video.repository.ViewedVideoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;

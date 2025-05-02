@@ -3,7 +3,7 @@ package com.dayquest.dayquestbackend.storage.service;
 import com.dayquest.dayquestbackend.hashtag.Hashtag;
 import com.dayquest.dayquestbackend.hashtag.HashtagRepository;
 import com.dayquest.dayquestbackend.hashtag.HashtagService;
-import com.dayquest.dayquestbackend.user.User;
+import com.dayquest.dayquestbackend.user.models.User;
 import com.dayquest.dayquestbackend.video.states.Status;
 import com.dayquest.dayquestbackend.video.models.Video;
 import com.dayquest.dayquestbackend.video.repository.VideoRepository;

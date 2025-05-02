@@ -1,5 +1,6 @@
 package com.dayquest.dayquestbackend.auth.service;
 
+import com.dayquest.dayquestbackend.user.repositories.UserRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -11,21 +12,23 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.security.Key;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
 public class JwtService {
 
+    private final UserRepository userRepository;
     @Value("${jwt.secret}")
     private String secretKey;
 
     @Value("${jwt.expiration}")
     private long jwtExpiration;
+
+    public JwtService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     public String extractUsername(String token) {
         try {
@@ -35,6 +38,14 @@ public class JwtService {
             System.out.println("Username extraction error: " + e.getMessage());
             throw e;
         }
+    }
+
+    public UUID extractUserId(String token) {
+        String username = extractUsername(token);
+        if (username == null) {
+            return null;
+        }
+        return userRepository.findByUsername(username).getUuid();
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {

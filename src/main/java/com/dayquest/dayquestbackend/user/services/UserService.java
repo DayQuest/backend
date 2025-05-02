@@ -1,4 +1,4 @@
-package com.dayquest.dayquestbackend.user;
+package com.dayquest.dayquestbackend.user.services;
 
 import com.dayquest.dayquestbackend.notification.service.EmailService;
 import com.dayquest.dayquestbackend.auth.service.JwtService;
@@ -10,6 +10,9 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 import com.dayquest.dayquestbackend.quest.QuestService;
+import com.dayquest.dayquestbackend.user.Punishments;
+import com.dayquest.dayquestbackend.user.repositories.UserRepository;
+import com.dayquest.dayquestbackend.user.models.User;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -98,7 +101,7 @@ public class UserService {
     public CompletableFuture<Boolean> authenticateUser(UUID uuid, String token) {
         return CompletableFuture.supplyAsync(() -> {
             Optional<User> user = userRepository.findById(uuid);
-            if (user.isEmpty() || user.get().isBanned()) {
+            if (user.isEmpty() || user.get().getPunishment() == Punishments.BANNED || user.get().getPunishment() == Punishments.TEMP_BANNED) {
                 return false;
             }
             return jwtService.isTokenValid(token, user.get());
@@ -131,7 +134,7 @@ public class UserService {
         });
     }
 
-    @Async
+ /*   @Async
     public CompletableFuture<ResponseEntity<String>> changeBanStatus(UUID uuid, boolean banned) {
         return CompletableFuture.supplyAsync(() -> {
             Optional<User> user = userRepository.findById(uuid);
@@ -151,7 +154,7 @@ public class UserService {
             userRepository.save(user.get());
             return ResponseEntity.ok("Ban status changed successfully");
         });
-    }
+    }*/
 
 
     @Async

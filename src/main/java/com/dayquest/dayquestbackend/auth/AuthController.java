@@ -2,10 +2,13 @@ package com.dayquest.dayquestbackend.auth;
 
 
 import com.dayquest.dayquestbackend.auth.service.JwtService;
-import com.dayquest.dayquestbackend.user.*;
+import com.dayquest.dayquestbackend.user.Punishments;
 import com.dayquest.dayquestbackend.user.dto.LoginDTO;
 import com.dayquest.dayquestbackend.user.dto.LoginResponseDTO;
 import com.dayquest.dayquestbackend.user.dto.UserDTO;
+import com.dayquest.dayquestbackend.user.repositories.UserRepository;
+import com.dayquest.dayquestbackend.user.models.User;
+import com.dayquest.dayquestbackend.user.services.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -46,7 +49,7 @@ public class AuthController {
                         .body(new LoginResponseDTO(null, null, "User not found"));
             }
 
-            if (user.isBanned()) {
+            if (user.getPunishment() == Punishments.BANNED || user.getPunishment() == Punishments.TEMP_BANNED) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body(new LoginResponseDTO(null, null, "User has been banned"));
             }

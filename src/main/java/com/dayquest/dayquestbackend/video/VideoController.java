@@ -5,13 +5,16 @@ import com.dayquest.dayquestbackend.common.dto.UuidDTO;
 import com.dayquest.dayquestbackend.quest.QuestRepository;
 import com.dayquest.dayquestbackend.activity.ActivityUpdater;
 import com.dayquest.dayquestbackend.storage.service.ThumbnailStorageService;
-import com.dayquest.dayquestbackend.user.User;
+import com.dayquest.dayquestbackend.user.models.User;
 
-import com.dayquest.dayquestbackend.user.UserRepository;
+import com.dayquest.dayquestbackend.user.repositories.UserRepository;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+import com.dayquest.dayquestbackend.user.services.FollowService;
+import com.dayquest.dayquestbackend.user.services.RatingService;
 import com.dayquest.dayquestbackend.video.dto.VideoDTO;
 import com.dayquest.dayquestbackend.video.models.Video;
 import com.dayquest.dayquestbackend.video.models.ViewedVideo;
@@ -63,6 +66,10 @@ public class VideoController {
     private ThumbnailStorageService thumbnailStorageService;
 
     private static final Logger logger = Logger.getLogger(VideoController.class.getName());
+    @Autowired
+    private FollowService followService;
+    @Autowired
+    private RatingService ratingService;
 
     @Async
     @PostMapping("/upload")
@@ -143,151 +150,99 @@ public class VideoController {
                 questRepository.findByUuid(video.getQuestUuid()),
                 video.getUuid(),
                 video.getCreatedAt(),
-                user.getFollowedUsers().contains(video.getUser().getUuid())
+                followService.isFollowing(user.getUuid(), video.getUser().getUuid()).join()
         );
 
-        videoDTO.setLiked(user.getLikedVideos().contains(video.getUuid()));
-        videoDTO.setDisliked(user.getDislikedVideos().contains(video.getUuid()));
+        videoDTO.setLiked(ratingService.getLikedVideos(user).contains(video.getUuid()));
+        videoDTO.setDisliked(ratingService.getDislikedQuests(user).contains(video.getUuid()));
         return videoDTO;
     }
 
 
     @PostMapping("/{uuid}/like")
     @Async
-    public CompletableFuture<ResponseEntity<Video>> likeVideo(
+    public CompletableFuture<Object> likeVideo(
             @PathVariable UUID uuid,
-            @RequestBody UuidDTO userUuid) {
+            @RequestBody UuidDTO userUuid,
+            @RequestHeader("Authorization") String token) {
 
         return CompletableFuture.supplyAsync(() -> {
             try {
                 Optional<User> user = userRepository.findById(userUuid.getUuid());
-                Optional<Video> video = videoRepository.findById(uuid);
 
-                if (user.isEmpty() || video.isEmpty()) {
+                if (user.isEmpty() || !Objects.equals(user.get().getUsername(), jwtService.extractUsername(token))) {
                     return ResponseEntity.notFound().build();
                 }
 
-                if (user.get().getLikedVideos().contains(uuid)) {
-                    return ResponseEntity.status(HttpStatus.CONFLICT).build();
-                }
-
-                if (user.get().getDislikedVideos().contains(uuid)) {
-                    user.get().getDislikedVideos().remove(uuid);
-                    video.get().setDownVotes(video.get().getDownVotes() - 1);
-                    videoRepository.save(video.get());
-                }
-
-                user.get().getLikedVideos().add(uuid);
-                for(int i = 0; i<video.get().getHashtags().size(); i++){
-                    user.get().addLikedHashtag(video.get().getHashtags().get(i).getUuid());
-                }
                 activityUpdater.increaseInteractions(user);
                 userRepository.save(user.get());
-                return videoService.likeVideo(uuid).join();
+                return ratingService.rateVideo(token, uuid, true);
             } catch (Exception e) {
                 System.out.println(e.getMessage());
                 return ResponseEntity.internalServerError().build();
             }
-        }, delegatingSecurityContextAsyncTaskExecutor);
+        });
     }
 
     @DeleteMapping("/{uuid}/like")
     @Async
-    public CompletableFuture<ResponseEntity<Video>> unlikeVideo(
+    public CompletableFuture<Object> unlikeVideo(
             @PathVariable UUID uuid,
-            @RequestBody UuidDTO userUuid) {
+            @RequestBody UuidDTO userUuid,
+            @RequestHeader("Authorization") String token) {
 
         return CompletableFuture.supplyAsync(() -> {
             try {
                 Optional<User> user = userRepository.findById(userUuid.getUuid());
-                Optional<Video> video = videoRepository.findById(uuid);
 
-                if (user.isEmpty()) {
+                if (user.isEmpty() || !Objects.equals(user.get().getUsername(), jwtService.extractUsername(token))) {
                     return ResponseEntity.notFound().build();
                 }
-
-                if (!user.get().getLikedVideos().contains(uuid)) {
-                    return ResponseEntity.status(HttpStatus.CONFLICT).build();
-                }
-
-                user.get().getLikedVideos().remove(uuid);
-                video.get().setUpVotes(video.get().getUpVotes() - 1);
-                videoRepository.save(video.get());
                 activityUpdater.increaseInteractions(user);
-                for(int i = 0; i<video.get().getHashtags().size(); i++){
-                    user.get().getLikedHashtags().remove(video.get().getHashtags().get(i).getUuid());
-                }
                 userRepository.save(user.get());
-                return ResponseEntity.ok().build();
+                return ratingService.removeVideoRating(token, uuid);
             } catch (Exception e) {
                 System.out.println(e.getMessage());
                 return ResponseEntity.internalServerError().build();
             }
-        }, delegatingSecurityContextAsyncTaskExecutor);
+        });
     }
 
 
     @Async
     @PostMapping("/{uuid}/dislike")
-    public CompletableFuture<ResponseEntity<Video>> dislikeVideo(@PathVariable UUID uuid,
-                                                                 @RequestBody UUID userUuid) {
+    public CompletableFuture<Object> dislikeVideo(@PathVariable UUID uuid,
+                                                  @RequestBody UUID userUuid,
+                                                  @RequestHeader("Authorization") String token) {
         return CompletableFuture.supplyAsync(() -> {
             Optional<User> user = userRepository.findById(userUuid);
-            Optional<Video> video = videoRepository.findById(uuid);
-            if (user.isEmpty() || video.isEmpty()) {
+
+            if (user.isEmpty() || !Objects.equals(user.get().getUsername(), jwtService.extractUsername(token))) {
                 return ResponseEntity.notFound().build();
             }
 
-            if (user.get().getDislikedVideos().contains(uuid)) {
-                return ResponseEntity.status(HttpStatus.CONFLICT).build();
-            }
-
-            if (user.get().getLikedVideos().contains(uuid)) {
-                user.get().getLikedVideos().remove(uuid);
-                video.get().setUpVotes(video.get().getUpVotes() - 1);
-                for(int i = 0; i<video.get().getHashtags().size(); i++){
-                    user.get().getLikedHashtags().remove(video.get().getHashtags().get(i).getUuid());
-                }
-                videoRepository.save(video.get());
-            }
-
-            user.get().getDislikedVideos().add(uuid);
-            userRepository.save(user.get());
             activityUpdater.increaseInteractions(user);
-            return videoService.dislikeVideo(uuid).join();
+            userRepository.save(user.get());
+            return ratingService.rateVideo(token, uuid, false);
         });
     }
 
     @DeleteMapping("/{uuid}/dislike")
     @Async
-    public CompletableFuture<ResponseEntity<Video>> undislikeVideo(
+    public CompletableFuture<Object> undislikeVideo(
             @PathVariable UUID uuid,
-            @RequestBody UuidDTO userUuid) {
+            @RequestBody UuidDTO userUuid,
+            @RequestHeader("Authorization") String token) {
 
         return CompletableFuture.supplyAsync(() -> {
-            try {
-                Optional<User> user = userRepository.findById(userUuid.getUuid());
-                Optional<Video> video = videoRepository.findById(uuid);
-
-                if (user.isEmpty() || video.isEmpty()) {
-                    return ResponseEntity.notFound().build();
-                }
-
-                if (!user.get().getDislikedVideos().contains(uuid)) {
-                    return ResponseEntity.status(HttpStatus.CONFLICT).build();
-                }
-
-                user.get().getDislikedVideos().remove(uuid);
-                video.get().setDownVotes(video.get().getDownVotes() - 1);
-                videoRepository.save(video.get());
-                userRepository.save(user.get());
-                activityUpdater.increaseInteractions(user);
-                return ResponseEntity.ok().build();
-            } catch (Exception e) {
-                System.out.println(e.getMessage());
-                return ResponseEntity.internalServerError().build();
+            Optional<User> user = userRepository.findById(userUuid.getUuid());
+            if (user.isEmpty() || !Objects.equals(user.get().getUsername(), jwtService.extractUsername(token))) {
+                return ResponseEntity.notFound().build();
             }
-        }, delegatingSecurityContextAsyncTaskExecutor);
+            activityUpdater.increaseInteractions(user);
+            userRepository.save(user.get());
+            return ratingService.removeVideoRating(token, uuid);
+        });
     }
 
 

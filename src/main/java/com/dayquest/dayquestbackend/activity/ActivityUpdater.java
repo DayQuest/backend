@@ -1,7 +1,7 @@
 package com.dayquest.dayquestbackend.activity;
 
-import com.dayquest.dayquestbackend.user.User;
-import com.dayquest.dayquestbackend.user.UserRepository;
+import com.dayquest.dayquestbackend.user.models.User;
+import com.dayquest.dayquestbackend.user.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

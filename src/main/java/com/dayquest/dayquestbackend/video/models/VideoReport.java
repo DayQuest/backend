@@ -1,6 +1,6 @@
 package com.dayquest.dayquestbackend.video.models;
 
-import com.dayquest.dayquestbackend.user.User;
+import com.dayquest.dayquestbackend.user.models.User;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;

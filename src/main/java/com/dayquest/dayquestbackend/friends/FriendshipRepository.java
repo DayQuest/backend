@@ -1,6 +1,6 @@
 package com.dayquest.dayquestbackend.friends;
 
-import com.dayquest.dayquestbackend.user.User;
+import com.dayquest.dayquestbackend.user.models.User;
 
 import java.util.UUID;
 

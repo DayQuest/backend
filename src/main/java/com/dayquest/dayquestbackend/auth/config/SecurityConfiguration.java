@@ -2,8 +2,8 @@ package com.dayquest.dayquestbackend.auth.config;
 
 import com.dayquest.dayquestbackend.auth.filter.JwtAuthenticationFilter;
 import com.dayquest.dayquestbackend.comment.CommentRepository;
-import com.dayquest.dayquestbackend.user.User;
-import com.dayquest.dayquestbackend.user.UserRepository;
+import com.dayquest.dayquestbackend.user.models.User;
+import com.dayquest.dayquestbackend.user.repositories.UserRepository;
 import com.dayquest.dayquestbackend.video.repository.VideoRepository;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletResponse;

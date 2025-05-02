@@ -1,7 +1,7 @@
 package com.dayquest.dayquestbackend.friends;
 
-import com.dayquest.dayquestbackend.user.User;
-import com.dayquest.dayquestbackend.user.UserRepository;
+import com.dayquest.dayquestbackend.user.models.User;
+import com.dayquest.dayquestbackend.user.repositories.UserRepository;
 
 import java.util.UUID;
 
@@ -12,7 +12,6 @@ import org.springframework.scheduling.annotation.Async;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/friends")
