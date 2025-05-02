@@ -10,13 +10,13 @@ import jakarta.persistence.Embeddable;
 public class UserLikedHashtagId implements Serializable {
 
     private UUID userId;
-    private UUID HashtagId;
+    private UUID hashtagId;
 
     public UserLikedHashtagId() {}
 
     public UserLikedHashtagId(UUID user, UUID quest) {
         this.userId = user;
-        this.HashtagId = quest;
+        this.hashtagId = quest;
     }
 
     public UUID getUserId() {
@@ -28,23 +28,23 @@ public class UserLikedHashtagId implements Serializable {
     }
 
     public UUID getHashtagId() {
-        return HashtagId;
+        return hashtagId;
     }
 
     public void setHashtagId(UUID hashtagId) {
-        this.HashtagId = hashtagId;
+        this.hashtagId = hashtagId;
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof UserLikedHashtagId that)) return false;
-        return Objects.equals(userId, that.userId) && Objects.equals(HashtagId, that.HashtagId);
+        return Objects.equals(userId, that.userId) && Objects.equals(hashtagId, that.hashtagId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(userId, HashtagId);
+        return Objects.hash(userId, hashtagId);
     }
 }
 
