@@ -14,7 +14,6 @@ import java.util.stream.Collectors;
 
 
 @Entity
-
 public class User implements UserDetails {
 
     @Id
@@ -77,7 +76,7 @@ public class User implements UserDetails {
     private List<Video> postedVideos = new ArrayList<>();
 
     @Lob
-    @Column(columnDefinition = "LONGBLOB")
+    @Column
     private byte[] profilePicture;
 
     private String adminComment;
