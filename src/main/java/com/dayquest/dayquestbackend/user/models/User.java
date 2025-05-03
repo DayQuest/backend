@@ -14,11 +14,7 @@ import java.util.stream.Collectors;
 
 
 @Entity
-@Table(name = "user",
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"username"}),
-                @UniqueConstraint(columnNames = {"email"})
-        })
+
 public class User implements UserDetails {
 
     @Id
