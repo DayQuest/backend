@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import com.dayquest.dayquestbackend.activity.ActivityUpdater;
 import com.dayquest.dayquestbackend.auth.AuthController;
+import com.dayquest.dayquestbackend.auth.service.AuthService;
 import com.dayquest.dayquestbackend.auth.service.JwtService;
 import com.dayquest.dayquestbackend.common.dto.UuidDTO;
 import com.dayquest.dayquestbackend.common.utils.ImageUtil;
@@ -16,10 +17,6 @@ import com.dayquest.dayquestbackend.quest.dto.QuestDTO;
 import com.dayquest.dayquestbackend.quest.QuestService;
 import com.dayquest.dayquestbackend.streak.StreakService;
 import com.dayquest.dayquestbackend.user.dto.*;
-import com.dayquest.dayquestbackend.user.repositories.UserRepository;
-import com.dayquest.dayquestbackend.user.models.User;
-import com.dayquest.dayquestbackend.user.services.FollowService;
-import com.dayquest.dayquestbackend.user.services.UserService;
 import com.dayquest.dayquestbackend.video.models.Video;
 import com.dayquest.dayquestbackend.video.repository.VideoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,9 +51,6 @@ public class UserController {
     @Autowired private ImageUtil imageUtil;
     @Autowired private VideoRepository videoRepository;
     @Autowired private AuthController authController;
-    @Autowired
-    private FollowService followService;
-
     @PostMapping("/status")
     public ResponseEntity<Object> status() {
         return ResponseEntity.ok().build();
@@ -90,15 +84,31 @@ public class UserController {
             if (userService.authenticateUser(uuid, token).join()) {
                 streakService.checkStreak(uuid);
                 User user = userRepository.findById(uuid).orElseThrow(() -> new RuntimeException("User not found"));
-                if (user.getPunishment() == Punishments.BANNED || user.getPunishment() == Punishments.TEMP_BANNED) {
-                    return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User has been banned");
+                if (user.isBanned()) {
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User is banned");
                 }
-                user.setLastLogin(LocalDateTime.now());
-                userRepository.save(user);
                 return ResponseEntity.ok("User authenticated");
-            } else {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
             }
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
+        });
+    }
+
+    @PostMapping("/auth2fa")
+    @Async
+    public CompletableFuture<ResponseEntity<String>> authUserWith2FA(
+            @RequestBody UUID uuid, 
+            @RequestHeader("Authorization") String token,
+            @RequestParam(required = false) String twoFactorCode) {
+        return CompletableFuture.supplyAsync(() -> {
+            if (userService.authenticateUserWith2FA(uuid, token, twoFactorCode).join()) {
+                streakService.checkStreak(uuid);
+                User user = userRepository.findById(uuid).orElseThrow(() -> new RuntimeException("User not found"));
+                if (user.isBanned()) {
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User is banned");
+                }
+                return ResponseEntity.ok("User authenticated");
+            }
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
         });
     }
 
@@ -124,20 +134,26 @@ public class UserController {
 
     @GetMapping("/{uuid}/followers")
     @Async
-    public CompletableFuture<ResponseEntity<List<UUID>>> getFollowers(@PathVariable UUID uuid, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size, @RequestHeader("Authorization") String token) {
+    public CompletableFuture<ResponseEntity<List<UUID>>> getFollowers(@PathVariable UUID uuid, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
         return CompletableFuture.supplyAsync(() -> {
-            CompletableFuture<List<UUID>> followersFuture = followService.getFollowerPage(token, page, size);
-            List<UUID> followers = followersFuture.join();
+            User user = userRepository.findById(uuid).orElseThrow(() -> new RuntimeException("User not found"));
+            List<UUID> followers = user.getFollowerList().stream()
+                    .skip((long) page * size)
+                    .limit(size)
+                    .toList();
             return ResponseEntity.ok(followers);
         });
     }
 
     @GetMapping("/{uuid}/following")
     @Async
-    public CompletableFuture<ResponseEntity<List<UUID>>> getFollowing(@PathVariable UUID uuid, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size, @RequestHeader("Authorization") String token) {
+    public CompletableFuture<ResponseEntity<List<UUID>>> getFollowing(@PathVariable UUID uuid, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
         return CompletableFuture.supplyAsync(() -> {
-            CompletableFuture<List<UUID>> followingFuture = followService.getFollowedPage(token, page, size);
-            List<UUID> following = followingFuture.join();
+            User user = userRepository.findById(uuid).orElseThrow(() -> new RuntimeException("User not found"));
+            List<UUID> following = user.getFollowedUsers().stream()
+                    .skip((long) page * size)
+                    .limit(size)
+                    .toList();
             return ResponseEntity.ok(following);
         });
     }
@@ -153,13 +169,23 @@ public class UserController {
             if (uuid.equals(user.getUuid())) {
                 return ResponseEntity.unprocessableEntity().body("Cannot follow yourself");
             }
-            if (followService.isFollowing(user.getUuid(), uuid).join()) {
+            if (user.getFollowedUsers().contains(userToFollow.getUuid())) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body("User already followed");
             }
 
+            user.getFollowTimestamps().put(userToFollow.getUuid(), System.currentTimeMillis());
+            userToFollow.getFollowerList().add(user.getUuid());
             userToFollow.setFollowers(userToFollow.getFollowers() + 1);
-            followService.followUser(token, uuid).join();
+            user.getFollowedUsers().add(userToFollow.getUuid());
 
+            if (videoUuid != null){
+                Video video = videoRepository.findById(videoUuid.getUuid()).orElseThrow(() -> new RuntimeException("Video not found"));
+                for(int i = 0; i<video.getHashtags().size(); i++){
+                    user.addLikedHashtag(video.getHashtags().get(i).getUuid());
+                }
+            }
+
+            userRepository.save(user);
             activityUpdater.increaseInteractions(user);
             userRepository.save(userToFollow);
 
@@ -170,15 +196,31 @@ public class UserController {
     @DeleteMapping("/{uuid}/follow")
     @Async
     public CompletableFuture<ResponseEntity<String>> unfollowUser(@PathVariable UUID uuid, @RequestHeader("Authorization") String token) {
-        return followService.unfollowUser(token, uuid)
-                .thenApply(response -> {
-                    if (response.getStatusCode() == HttpStatus.OK) {
-                        User userToUnfollow = userRepository.findById(uuid).orElseThrow(() -> new RuntimeException("User not found"));
-                        userToUnfollow.setFollowers(userToUnfollow.getFollowers() - 1);
-                        userRepository.save(userToUnfollow);
-                    }
-                    return response;
-                });
+        return CompletableFuture.supplyAsync(() -> {
+            String username = jwtService.extractUsername(token.substring(7));
+            User user = userRepository.findByUsername(username);
+            User userToUnfollow = userRepository.findById(uuid).orElseThrow(() -> new RuntimeException("User not found"));
+
+            if (!user.getFollowedUsers().contains(userToUnfollow.getUuid())) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("User not followed");
+            }
+
+            Long followTimestamp = user.getFollowTimestamps().get(userToUnfollow.getUuid());
+            if (followTimestamp != null && System.currentTimeMillis() - followTimestamp < 3000) {
+                return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Cannot unfollow so soon after following");
+            }
+
+            userToUnfollow.getFollowerList().remove(user.getUuid());
+            userToUnfollow.setFollowers(userToUnfollow.getFollowers() - 1);
+            user.getFollowedUsers().remove(userToUnfollow.getUuid());
+            user.getFollowTimestamps().remove(userToUnfollow.getUuid());
+
+            userRepository.save(user);
+            activityUpdater.increaseInteractions(user);
+            userRepository.save(userToUnfollow);
+
+            return ResponseEntity.ok("User unfollowed");
+        });
     }
 
     @GetMapping("/search")
@@ -239,9 +281,9 @@ public class UserController {
                 PROFILE_PICTURE_BASE_URL + userWithVideos.getUsername(),
                 userWithVideos.getPostedVideos(),
                 userWithVideos.getDailyQuest(),
-                userWithVideos.getPunishment() == Punishments.BANNED,
+                userWithVideos.isBanned(),
                 userWithVideos.getFollowers(),
-                requester != null && followService.isFollowing(requester.getUuid(), userWithVideos.getUuid()).join(),
+                requester != null && requester.getFollowedUsers().contains(userWithVideos.getUuid()),
                 userWithVideos.getBadges()
         );
     }
@@ -294,7 +336,7 @@ public class UserController {
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("File is empty");
         }
-        if (!userService.authenticateUser(uuid, token).join()) {
+        if (!userService.authenticateUserWith2FA(uuid, token, null).join()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
         }
 
@@ -332,14 +374,14 @@ public class UserController {
     @GetMapping("{uuid}/isFollowed")
     @Async
     public CompletableFuture<ResponseEntity<Boolean>> isFollowed(@PathVariable UUID uuid, @RequestHeader("Authorization") String token) {
-        if (uuid == null) {
-            return CompletableFuture.completedFuture(ResponseEntity.badRequest().body(false));
-        }
-        String username = jwtService.extractUsername(token.substring(7));
-        User user = userRepository.findByUsername(username);
-        return followService.isFollowing(user.getUuid(), uuid).join()
-                ? CompletableFuture.completedFuture(ResponseEntity.ok(true))
-                : CompletableFuture.completedFuture(ResponseEntity.ok(false));
+        return CompletableFuture.supplyAsync(() -> {
+            String username = jwtService.extractUsername(token.substring(7));
+            User user = userRepository.findByUsername(username);
+            if (user == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(user.getFollowedUsers().contains(uuid));
+        });
     }
 
     @PostMapping("/rerollQuest")
