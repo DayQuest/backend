@@ -1,5 +1,6 @@
 package com.dayquest.dayquestbackend.user;
 
+import com.dayquest.dayquestbackend.user.models.User;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 

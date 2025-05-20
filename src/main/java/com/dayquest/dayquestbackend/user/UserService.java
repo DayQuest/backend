@@ -15,6 +15,8 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import com.dayquest.dayquestbackend.quest.QuestService;
+import com.dayquest.dayquestbackend.user.models.User;
+import com.dayquest.dayquestbackend.user.repositories.UserRepository;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -125,7 +127,7 @@ public class UserService {
     public CompletableFuture<Boolean> authenticateUser(UUID uuid, String token) {
         return CompletableFuture.supplyAsync(() -> {
             Optional<User> userOptional = userRepository.findById(uuid);
-            if (userOptional.isEmpty() || userOptional.get().isBanned()) {
+            if (userOptional.isEmpty() || userOptional.get().getPunishment() == Punishments.TEMP_BANNED || userOptional.get().getPunishment() == Punishments.BANNED) {
                 return false;
             }
             User user = userOptional.get();
@@ -145,7 +147,11 @@ public class UserService {
     public CompletableFuture<Boolean> authenticateUserWith2FA(UUID uuid, String token, String twoFactorCode) {
         return CompletableFuture.supplyAsync(() -> {
             Optional<User> userOptional = userRepository.findById(uuid);
-            if (userOptional.isEmpty() || userOptional.get().isBanned()) {
+            if (userOptional.isEmpty()) {
+                return false;
+            }
+
+            if (userOptional.get().getPunishment() == Punishments.TEMP_BANNED || userOptional.get().getPunishment() == Punishments.BANNED){
                 return false;
             }
             User user = userOptional.get();
@@ -193,10 +199,10 @@ public class UserService {
                 return ResponseEntity.notFound().build();
             }
 
-            if (user.get().isBanned() == banned) {
+            if (user.get().getPunishment() == Punishments.TEMP_BANNED || user.get().getPunishment() == Punishments.BANNED) {
                 return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("User already has ban status: " + banned);
             }
-            user.get().setBanned(banned);
+            user.get().setPunishment(Punishments.BANNED);
 
             if (banned) {
                 user.get().setUsername(user.get().getUsername() + "_banned");

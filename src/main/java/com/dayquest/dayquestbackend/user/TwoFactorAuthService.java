@@ -3,6 +3,8 @@ package com.dayquest.dayquestbackend.user;
 import com.dayquest.dayquestbackend.auth.service.JwtService;
 import com.dayquest.dayquestbackend.user.dto.TwoFactorAuthDTO;
 import com.dayquest.dayquestbackend.user.dto.TwoFactorAuthResponseDTO;
+import com.dayquest.dayquestbackend.user.models.User;
+import com.dayquest.dayquestbackend.user.repositories.UserRepository;
 import dev.samstevens.totp.code.*;
 import dev.samstevens.totp.exceptions.QrGenerationException;
 import dev.samstevens.totp.qr.QrData;
