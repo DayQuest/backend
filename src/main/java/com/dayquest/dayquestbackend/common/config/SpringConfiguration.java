@@ -1,10 +1,10 @@
 package com.dayquest.dayquestbackend.common.config;
 
 import com.dayquest.dayquestbackend.quest.QuestService;
-import com.dayquest.dayquestbackend.user.services.UserService;
 
 import java.util.concurrent.CompletableFuture;
 
+import com.dayquest.dayquestbackend.user.services.UserService;
 import jakarta.persistence.EntityManagerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;

@@ -4,6 +4,7 @@ import com.dayquest.dayquestbackend.user.dto.TwoFactorAuthDTO;
 import com.dayquest.dayquestbackend.user.dto.TwoFactorAuthResponseDTO;
 import com.dayquest.dayquestbackend.user.dto.TwoFactorAuthVerifyDTO;
 import com.dayquest.dayquestbackend.user.models.User;
+import com.dayquest.dayquestbackend.user.services.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

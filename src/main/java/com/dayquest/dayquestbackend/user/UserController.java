@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 
 import com.dayquest.dayquestbackend.activity.ActivityUpdater;
 import com.dayquest.dayquestbackend.auth.AuthController;
-import com.dayquest.dayquestbackend.auth.service.AuthService;
 import com.dayquest.dayquestbackend.auth.service.JwtService;
 import com.dayquest.dayquestbackend.common.dto.UuidDTO;
 import com.dayquest.dayquestbackend.common.utils.ImageUtil;
@@ -21,7 +20,7 @@ import com.dayquest.dayquestbackend.user.models.User;
 import com.dayquest.dayquestbackend.user.repositories.FollowRepository;
 import com.dayquest.dayquestbackend.user.repositories.UserRepository;
 import com.dayquest.dayquestbackend.user.services.FollowService;
-import com.dayquest.dayquestbackend.video.models.Video;
+import com.dayquest.dayquestbackend.user.services.UserService;
 import com.dayquest.dayquestbackend.video.repository.VideoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
