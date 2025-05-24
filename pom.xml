@@ -84,12 +84,7 @@
 			<artifactId>totp</artifactId>
 			<version>1.7.1</version>
 		</dependency>
-		
-		<!-- Flyway for database migrations -->
-		<dependency>
-			<groupId>org.flywaydb</groupId>
-			<artifactId>flyway-core</artifactId>
-		</dependency>
+
 
       <!-- Spring Security -->
       <dependency>

@@ -3,6 +3,7 @@ package com.dayquest.dayquestbackend.user;
 import com.dayquest.dayquestbackend.user.models.User;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 /**
  * Entity for storing a user's 2FA information.
@@ -12,8 +13,8 @@ import java.time.LocalDateTime;
 public class TwoFactorAuth {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
@@ -44,11 +45,11 @@ public class TwoFactorAuth {
     }
 
     // Getters and Setters
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 

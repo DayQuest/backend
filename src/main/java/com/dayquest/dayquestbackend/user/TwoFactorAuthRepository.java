@@ -10,7 +10,7 @@ import java.util.UUID;
  * Repository for accessing TwoFactorAuth entities in the database.
  */
 @Repository
-public interface TwoFactorAuthRepository extends JpaRepository<TwoFactorAuth, Long> {
+public interface TwoFactorAuthRepository extends JpaRepository<TwoFactorAuth, UUID> {
     
     /**
      * Finds the 2FA configuration for a specific user.
@@ -26,7 +26,7 @@ public interface TwoFactorAuthRepository extends JpaRepository<TwoFactorAuth, Lo
      * @param userId The ID of the user
      * @return Optional with the 2FA configuration, if available
      */
-    Optional<TwoFactorAuth> findByUserId(Long userId);
+    Optional<TwoFactorAuth> findByUserUuid(UUID userId);
     
     /**
      * Finds the 2FA configuration for a user by their username.
