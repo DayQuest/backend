@@ -81,7 +81,8 @@ public class SecurityConfiguration {
                                 "/api/users/profile/**",
                                 "/api/admin/stats",
                                 "/api/legals/agb",
-                                "/api/legals/datenschutz"
+                                "/api/legals/datenschutz",
+                                "/api/users/reset-password"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

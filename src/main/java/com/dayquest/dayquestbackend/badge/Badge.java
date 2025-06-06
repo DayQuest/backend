@@ -1,6 +1,7 @@
 package com.dayquest.dayquestbackend.badge;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.GenericGenerator;
 
 
 import java.util.List;
@@ -10,14 +11,15 @@ import java.util.UUID;
 public class Badge {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue
+    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
     private UUID id;
 
     private String name;
     private String description;
 
     @Lob
-    @Column(columnDefinition = "LONGBLOB")
+    @Column(columnDefinition = "bytea")
     private byte[] image;
     @ElementCollection
     private List<UUID> userIds;

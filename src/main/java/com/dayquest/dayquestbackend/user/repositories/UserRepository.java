@@ -19,6 +19,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     @Query("SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.postedVideos WHERE u.uuid = :uuid")
     User findByIdWithVideos(@Param("uuid") UUID uuid);
 
+    Optional<User> findByPasswordResetToken(String passwordResetToken);
+
     User findByEmail(String email);
 
     Page<User> findUsersByUsernameContainingIgnoreCase(String query, Pageable pageable);

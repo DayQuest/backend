@@ -2,6 +2,7 @@ package com.dayquest.dayquestbackend.friends;
 
 import com.dayquest.dayquestbackend.user.models.User;
 import jakarta.persistence.*;
+import org.hibernate.annotations.GenericGenerator;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -11,7 +12,8 @@ import java.util.UUID;
 public class Friendship {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue
+    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
     private UUID uuid;
 
     @ManyToOne

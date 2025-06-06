@@ -4,6 +4,7 @@ import com.dayquest.dayquestbackend.user.Punishments;
 import com.dayquest.dayquestbackend.video.models.Video;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.GenericGenerator;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,7 +19,8 @@ import java.util.stream.Collectors;
 public class User implements UserDetails {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue
+    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
     private UUID uuid;
 
     @CreationTimestamp
@@ -53,6 +55,8 @@ public class User implements UserDetails {
     private List<UUID> doneQuests;
 
     private LocalDateTime lastLogin;
+
+    private LocalDateTime passwordResetTokenExpiry;
 
     @Column(name = "verification_code")
     private String verificationCode;
@@ -293,5 +297,21 @@ public class User implements UserDetails {
 
     public void setBadges(List<UUID> badges) {
         this.badges = badges;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getPasswordResetTokenExpiry() {
+        return passwordResetTokenExpiry;
+    }
+
+    public void setPasswordResetTokenExpiry(LocalDateTime passwordResetTokenExpiry) {
+        this.passwordResetTokenExpiry = passwordResetTokenExpiry;
     }
 }

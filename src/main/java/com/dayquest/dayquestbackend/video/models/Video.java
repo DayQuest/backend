@@ -5,6 +5,7 @@ import com.dayquest.dayquestbackend.user.models.User;
 import com.dayquest.dayquestbackend.video.states.SecurityLevel;
 import com.dayquest.dayquestbackend.video.states.Status;
 import jakarta.persistence.*;
+import org.hibernate.annotations.GenericGenerator;
 
 
 import java.time.LocalDateTime;
@@ -14,7 +15,8 @@ import java.util.UUID;
 @Entity
 public class Video {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue
+    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
     private UUID uuid;
     private String title;
 
@@ -33,7 +35,7 @@ public class Video {
     private SecurityLevel securityLevel = SecurityLevel.NORMAL;
 
     @Lob
-    @Column(columnDefinition = "LONGBLOB")
+    @Column(columnDefinition = "bytea")
     private byte[] thumbnail;
 
     @ManyToOne(fetch = FetchType.LAZY)

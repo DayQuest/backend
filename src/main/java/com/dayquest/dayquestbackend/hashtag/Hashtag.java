@@ -2,6 +2,7 @@ package com.dayquest.dayquestbackend.hashtag;
 
 import com.dayquest.dayquestbackend.video.models.Video;
 import jakarta.persistence.*;
+import org.hibernate.annotations.GenericGenerator;
 
 import java.util.List;
 import java.util.UUID;
@@ -9,7 +10,8 @@ import java.util.UUID;
 @Entity
 public class Hashtag {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue
+    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
     private UUID uuid;
 
     @Column(unique = true)

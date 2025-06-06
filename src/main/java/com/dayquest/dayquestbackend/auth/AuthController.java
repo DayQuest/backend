@@ -76,33 +76,4 @@ public class AuthController {
         return userService.registerUser(userDTO.getUsername(), userDTO.getEmail(),
                 userDTO.getPassword(), userDTO.getBetaKey());
     }
-
-    @PostMapping("/forgotPassword")
-    @Async
-    public CompletableFuture<ResponseEntity<String>> forgotPassword(@RequestBody String email) {
-        return CompletableFuture.supplyAsync(() -> {
-            User user = userRepository.findByEmail(email);
-            if (user == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
-            }
-            userService.sendResetPasswordEmail(user.getEmail());
-            return ResponseEntity.ok("Password reset email sent");
-        });
-    }
-
-    @PostMapping("/resetPassword")
-    @Async
-    public CompletableFuture<ResponseEntity<String>> resetPassword(@RequestBody ResetPasswordDTO resetPasswordDTO) {
-        return CompletableFuture.supplyAsync(() -> {
-            User user = userRepository.findByEmail(resetPasswordDTO.getEmail());
-            if (user == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
-            }
-            if (!resetPasswordDTO.getToken().equals(user.getVerificationCode())) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid verification code");
-            }
-            user.setPassword(passwordEncoder.encode(resetPasswordDTO.getPassword()));
-            return ResponseEntity.ok("Password reset");
-        });
-    }
 }

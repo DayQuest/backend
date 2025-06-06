@@ -1,9 +1,9 @@
 package com.dayquest.dayquestbackend.badge;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,6 +18,9 @@ public class BadgeController {
     private final BadgeRepository badgeRepository;
     private final BadgeService badgeService;
 
+    @Value("${api.secret}")
+    private String apiSecret;
+
     public BadgeController(BadgeRepository badgeRepository, BadgeService badgeService) {
         this.badgeRepository = badgeRepository;
         this.badgeService = badgeService;
@@ -25,10 +28,13 @@ public class BadgeController {
 
     @PostMapping
     @Async
-    public CompletableFuture<Object> createBadge(@RequestParam("name") String name, @RequestParam("description") String description, @RequestParam("file") MultipartFile file, @RequestHeader("Authorization") String token) {
+    public CompletableFuture<Object> createBadge(@RequestParam("name") String name, @RequestParam("description") String description, @RequestParam("file") MultipartFile file, @RequestHeader("Authorization") String secret) {
         return CompletableFuture.supplyAsync(() -> {
             if (name == null || description == null || file == null) {
                 return ResponseEntity.badRequest().body("Missing parameters");
+            }
+            if (secret == null || !secret.equals(apiSecret)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
             }
             if (name.length() < 3 || name.length() > 20) {
                 return ResponseEntity.unprocessableEntity().body("Name must be between 3 and 20 characters");
@@ -48,8 +54,11 @@ public class BadgeController {
 
     @DeleteMapping
     @Async
-    public CompletableFuture<Object> deleteBadge(@RequestParam("id") UUID id, @RequestHeader("Authorization") String token) {
+    public CompletableFuture<Object> deleteBadge(@RequestParam("id") UUID id, @RequestHeader("Authorization") String secret) {
         return CompletableFuture.supplyAsync(() -> {
+            if (secret == null || !secret.equals(apiSecret)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
+            }
             if (id == null) {
                 return ResponseEntity.badRequest().body("Missing parameters");
             }
@@ -75,7 +84,28 @@ public class BadgeController {
 
     @GetMapping("/{uuid}")
     @Async
-    public CompletableFuture<Object> getBadge(@PathVariable UUID uuid) {
-        return CompletableFuture.supplyAsync(() -> badgeRepository.findById(uuid).orElse(null));
+    public CompletableFuture<ResponseEntity<ByteArrayResource>> getBadge(@PathVariable UUID uuid) {
+        return CompletableFuture.supplyAsync(() -> {
+            Badge badge = badgeRepository.findById(uuid).orElse(null);
+            if (badge == null) {
+                return ResponseEntity.notFound().build();
+            }
+            byte[] imageData = badge.getImage();
+            if (imageData == null || imageData.length == 0) {
+                return ResponseEntity.notFound().build();
+            }
+            ByteArrayResource resource = new ByteArrayResource(imageData) {
+                @Override
+                public String getFilename() {
+                    return badge.getName() + ".png";
+                }
+            };
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.IMAGE_PNG);
+            headers.setContentDispositionFormData("inline", resource.getFilename());
+
+
+            return new ResponseEntity<>(resource, headers, HttpStatus.OK);
+        });
     }
 }
