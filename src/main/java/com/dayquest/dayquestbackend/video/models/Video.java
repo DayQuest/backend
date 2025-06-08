@@ -27,11 +27,13 @@ public class Video {
     private int upVotes;
     private int downVotes;
     private int views;
+    @Enumerated(EnumType.STRING)
     private Status status;
     private double length;
 
     private int comments;
 
+    @Enumerated(EnumType.STRING)
     private SecurityLevel securityLevel = SecurityLevel.NORMAL;
 
     @Lob

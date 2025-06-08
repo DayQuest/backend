@@ -1,10 +1,6 @@
 package com.dayquest.dayquestbackend.report;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Column;
+import jakarta.persistence.*;
 import org.hibernate.annotations.GenericGenerator;
 
 import java.time.LocalDateTime;
@@ -27,8 +23,10 @@ public class Report {
     @Column(nullable = false)
     private UUID userId;
 
+    @Enumerated(EnumType.STRING)
     private Type type;
 
+    @Enumerated(EnumType.STRING)
     private ReportStatus status = ReportStatus.OPEN;
 
     private LocalDateTime createdAt = LocalDateTime.now();
