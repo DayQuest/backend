@@ -1,7 +1,7 @@
 package com.dayquest.dayquestbackend.report;
 
 public enum ReportStatus {
+    OPEN,
     PENDING,
-    ACCEPTED,
-    REJECTED
+    DONE
 }

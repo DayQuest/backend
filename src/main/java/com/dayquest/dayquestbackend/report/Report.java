@@ -29,7 +29,7 @@ public class Report {
 
     private Type type;
 
-    private ReportStatus status = ReportStatus.PENDING;
+    private ReportStatus status = ReportStatus.OPEN;
 
     private LocalDateTime createdAt = LocalDateTime.now();
 
