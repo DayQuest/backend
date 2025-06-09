@@ -232,7 +232,7 @@ public class VideoController {
     public CompletableFuture<ResponseEntity<Video>> dislikeVideo(@PathVariable UUID uuid,
                                                                  @RequestBody UuidDTO userUuid) {
         return CompletableFuture.supplyAsync(() -> {
-            Optional<User> user = userRepository.findById(userUuid);
+            Optional<User> user = userRepository.findById(userUuid.getUuid());
             Optional<Video> video = videoRepository.findById(uuid);
             if (user.isEmpty() || video.isEmpty()) {
                 return ResponseEntity.notFound().build();
