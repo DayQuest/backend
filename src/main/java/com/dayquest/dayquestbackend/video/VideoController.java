@@ -212,10 +212,10 @@ public class VideoController {
     @Async
     @PostMapping("/{uuid}/dislike")
     public CompletableFuture<Object> dislikeVideo(@PathVariable UUID uuid,
-                                                  @RequestBody UUID userUuid,
+                                                  @RequestBody UuidDTO userUuid,
                                                   @RequestHeader("Authorization") String token) {
         return CompletableFuture.supplyAsync(() -> {
-            Optional<User> user = userRepository.findById(userUuid);
+            Optional<User> user = userRepository.findById(userUuid.getUuid());
 
             if (user.isEmpty() || !Objects.equals(user.get().getUsername(), jwtService.extractUsername(token))) {
                 return ResponseEntity.notFound().build();
