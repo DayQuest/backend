@@ -230,7 +230,7 @@ public class VideoController {
     @Async
     @PostMapping("/{uuid}/dislike")
     public CompletableFuture<ResponseEntity<Video>> dislikeVideo(@PathVariable UUID uuid,
-                                                                 @RequestBody UUID userUuid) {
+                                                                 @RequestBody UuidDTO userUuid) {
         return CompletableFuture.supplyAsync(() -> {
             Optional<User> user = userRepository.findById(userUuid);
             Optional<Video> video = videoRepository.findById(uuid);
