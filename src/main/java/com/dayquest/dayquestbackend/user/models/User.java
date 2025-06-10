@@ -2,7 +2,6 @@ package com.dayquest.dayquestbackend.user.models;
 import com.dayquest.dayquestbackend.quest.Quest;
 import com.dayquest.dayquestbackend.user.Punishments;
 import com.dayquest.dayquestbackend.video.models.Video;
-import com.vladmihalcea.hibernate.type.basic.PostgreSQLEnumType;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.GenericGenerator;

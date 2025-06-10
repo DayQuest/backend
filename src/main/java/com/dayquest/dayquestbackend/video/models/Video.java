@@ -4,7 +4,6 @@ import com.dayquest.dayquestbackend.hashtag.Hashtag;
 import com.dayquest.dayquestbackend.user.models.User;
 import com.dayquest.dayquestbackend.video.states.SecurityLevel;
 import com.dayquest.dayquestbackend.video.states.Status;
-import com.vladmihalcea.hibernate.type.basic.PostgreSQLEnumType;
 import jakarta.persistence.*;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
