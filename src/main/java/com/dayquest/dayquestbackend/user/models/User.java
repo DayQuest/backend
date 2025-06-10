@@ -42,7 +42,7 @@ public class User implements UserDetails {
 
 
     @Enumerated(EnumType.STRING)
-    @Type(PostgreSQLEnumType.class)
+    @Column(columnDefinition = "VARCHAR(255)")
     private Punishments punishment;
 
     @ElementCollection

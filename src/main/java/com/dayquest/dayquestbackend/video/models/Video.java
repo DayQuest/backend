@@ -30,14 +30,14 @@ public class Video {
     private int downVotes;
     private int views;
     @Enumerated(EnumType.STRING)
-    @Type(PostgreSQLEnumType.class)
+    @Column(columnDefinition = "VARCHAR(255)")
     private Status status;
     private double length;
 
     private int comments;
 
     @Enumerated(EnumType.STRING)
-    @Type(PostgreSQLEnumType.class)
+    @Column(columnDefinition = "VARCHAR(255)")
     private SecurityLevel securityLevel = SecurityLevel.NORMAL;
 
     @Lob
