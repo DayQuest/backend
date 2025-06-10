@@ -4,8 +4,10 @@ import com.dayquest.dayquestbackend.hashtag.Hashtag;
 import com.dayquest.dayquestbackend.user.models.User;
 import com.dayquest.dayquestbackend.video.states.SecurityLevel;
 import com.dayquest.dayquestbackend.video.states.Status;
+import com.vladmihalcea.hibernate.type.basic.PostgreSQLEnumType;
 import jakarta.persistence.*;
 import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.Type;
 
 
 import java.time.LocalDateTime;
@@ -28,12 +30,14 @@ public class Video {
     private int downVotes;
     private int views;
     @Enumerated(EnumType.STRING)
+    @Type(PostgreSQLEnumType.class)
     private Status status;
     private double length;
 
     private int comments;
 
     @Enumerated(EnumType.STRING)
+    @Type(PostgreSQLEnumType.class)
     private SecurityLevel securityLevel = SecurityLevel.NORMAL;
 
     @Lob
