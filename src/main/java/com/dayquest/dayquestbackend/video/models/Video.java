@@ -28,8 +28,7 @@ public class Video {
     private int upVotes;
     private int downVotes;
     private int views;
-    @Enumerated(EnumType.STRING)
-    @Column(columnDefinition = "VARCHAR(255)")
+    @Enumerated(EnumType.ORDINAL)
     private Status status;
     private double length;
 
