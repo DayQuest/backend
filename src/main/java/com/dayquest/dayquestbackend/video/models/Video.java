@@ -39,10 +39,6 @@ public class Video {
     @Column(columnDefinition = "VARCHAR(255)")
     private SecurityLevel securityLevel = SecurityLevel.NORMAL;
 
-    @Lob
-    @Column(columnDefinition = "bytea")
-    private byte[] thumbnail;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -63,14 +59,6 @@ public class Video {
 
     public User getUser() {
         return user;
-    }
-
-    public byte[] getThumbnail() {
-        return thumbnail;
-    }
-
-    public void setThumbnail(byte[] thumbnail) {
-        this.thumbnail = thumbnail;
     }
 
     public UUID getUuid() {
