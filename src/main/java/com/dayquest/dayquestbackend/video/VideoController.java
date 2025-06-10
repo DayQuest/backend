@@ -80,7 +80,7 @@ public class VideoController {
             @RequestHeader("Authorization") String token,
             @RequestParam("hashtags") List<String> hashtags) {
         return CompletableFuture.supplyAsync(() -> {
-            String username = jwtService.extractUsername(token);
+            String username = jwtService.extractUsername(token.substring(7));
             Optional<User> user = Optional.ofNullable(userRepository.findByUsername(username));
             if (user.isEmpty()) {
                 return ResponseEntity.notFound().build();
