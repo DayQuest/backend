@@ -5,6 +5,7 @@ import com.dayquest.dayquestbackend.auth.service.JwtService;
 import com.dayquest.dayquestbackend.beta.BetaKey;
 import com.dayquest.dayquestbackend.beta.KeyRepository;
 import com.dayquest.dayquestbackend.quest.Quest;
+import com.dayquest.dayquestbackend.streak.StreakService;
 import com.dayquest.dayquestbackend.user.Punishments;
 import com.dayquest.dayquestbackend.user.TwoFactorAuthService;
 
@@ -59,6 +60,8 @@ public class UserService {
 
 
     private final Random random = new Random();
+    @Autowired
+    private StreakService streakService;
 
     /**
      * Findet einen Benutzer anhand seines Benutzernamens.
@@ -127,6 +130,8 @@ public class UserService {
             key.setInUse(true);
             key.setUsername(username);
             keyRepository.save(key);
+
+            streakService.createStreak(newUser.getUuid());
 
             return ResponseEntity.ok("Successfully registered new user");
         });

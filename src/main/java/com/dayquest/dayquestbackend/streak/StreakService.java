@@ -80,9 +80,15 @@ public class StreakService {
     public CompletableFuture<ResponseEntity<String>> checkStreak(UUID userId) {
         return CompletableFuture.supplyAsync(() -> {
             Streak streak = streakRepository.findByUserId(userId);
-            if (streak == null) {
-                return ResponseEntity.badRequest().body("Streak not found");
+            User user = userRepository.findById(userId).orElse(null);
+            if (user == null) {
+                return ResponseEntity.badRequest().body("User not found");
             }
+
+            if (streak == null) {
+                createStreak(userId);
+            }
+            streak = streakRepository.findByUserId(userId);
             if (!isConsecutiveDay(streak.getLastUpdated(), LocalDateTime.now())) {
                 streak.setStreak(0);
                 streakRepository.save(streak);
