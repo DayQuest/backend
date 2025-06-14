@@ -27,7 +27,7 @@ public class Video {
     private int downVotes;
     private int views;
     private Status status;
-    private double length;
+    private float length;
 
     private int comments;
 
@@ -167,7 +167,7 @@ public class Video {
         return length;
     }
 
-    public void setLength(double length) {
+    public void setLength(float length) {
         this.length = length;
     }
 
