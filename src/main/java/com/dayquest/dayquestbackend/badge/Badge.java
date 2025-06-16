@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.GenericGenerator;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -13,7 +14,7 @@ public class Badge {
     @Id
     @GeneratedValue
     @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
-    private UUID id;
+    private UUID uuid;
 
     private String name;
     private String description;
@@ -22,14 +23,16 @@ public class Badge {
     @Column()
     private byte[] image;
     @ElementCollection
-    private List<UUID> userIds;
+    @CollectionTable(name = "badge_user_ids", joinColumns = @JoinColumn(name = "badge_id"))
+    @Column(name = "user_id")
+    private List<UUID> userIds = new ArrayList<>();
 
     public UUID getId() {
-        return id;
+        return uuid;
     }
 
-    public void setId(UUID id) {
-        this.id = id;
+    public void setId(UUID uuid) {
+        this.uuid = uuid;
     }
 
     public String getName() {

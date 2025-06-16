@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -17,16 +18,19 @@ public class BadgeService {
     @Async
     public CompletableFuture<ResponseEntity<String>> createBadge(String name, String description, MultipartFile file) {
         return CompletableFuture.supplyAsync(() -> {
-            Badge badge = new Badge();
-            badge.setName(name);
-            badge.setDescription(description);
             try {
+                Badge badge = new Badge();
+                badge.setName(name);
+                badge.setDescription(description);
                 badge.setImage(file.getBytes());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+                if (badge.getUserIds() == null) {
+                    badge.setUserIds(new ArrayList<>());
+                }
+                badgeRepository.save(badge);
+                return ResponseEntity.ok("Badge created successfully");
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to create badge", e);
             }
-            badgeRepository.save(badge);
-            return ResponseEntity.ok("Badge created successfully");
         });
     }
 }
