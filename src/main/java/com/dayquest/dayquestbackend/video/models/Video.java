@@ -30,7 +30,7 @@ public class Video {
     private int views;
     @Enumerated(EnumType.ORDINAL)
     private Status status;
-    private double length;
+    private float length;
 
     private int comments;
 
@@ -156,11 +156,11 @@ public class Video {
         this.comments = comments;
     }
 
-    public double getLength() {
+    public float getLength() {
         return length;
     }
 
-    public void setLength(double length) {
+    public void setLength(float length) {
         this.length = length;
     }
 
