@@ -28,7 +28,7 @@ public class BadgeController {
 
     @PostMapping
     @Async
-    public CompletableFuture<Object> createBadge(@RequestParam("name") String name, @RequestParam("description") String description, @RequestParam("file") MultipartFile file, @RequestHeader("Authorization") String secret) {
+    public CompletableFuture<Object> createBadge(@RequestParam("name") String name, @RequestParam("description") String description, @RequestParam("file") MultipartFile file, @RequestHeader("Secret") String secret) {
         return CompletableFuture.supplyAsync(() -> {
             if (name == null || description == null || file == null) {
                 return ResponseEntity.badRequest().body("Missing parameters");
