@@ -19,7 +19,7 @@ public class Badge {
     private String description;
 
     @Lob
-    @Column(columnDefinition = "bytea")
+    @Column()
     private byte[] image;
     @ElementCollection
     private List<UUID> userIds;
