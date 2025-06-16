@@ -78,4 +78,36 @@ public class ProfileDTO {
     public void setQuest(Quest quest) {
         this.quest = quest;
     }
+
+    public boolean isFollowing() {
+        return isFollowing;
+    }
+
+    public void setFollowing(boolean following) {
+        isFollowing = following;
+    }
+
+    public int getFollowers() {
+        return followers;
+    }
+
+    public void setFollowers(int followers) {
+        this.followers = followers;
+    }
+
+    public boolean isBanned() {
+        return isBanned;
+    }
+
+    public void setBanned(boolean banned) {
+        isBanned = banned;
+    }
+
+    public List<UUID> getBadges() {
+        return badges;
+    }
+
+    public void setBadges(List<UUID> badges) {
+        this.badges = badges;
+    }
 }

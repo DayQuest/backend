@@ -76,6 +76,7 @@ public class SecurityConfiguration {
                                 "/api/beta/new-key",
                                 "/api/beta/get-key",
                                 "/api/beta/remove-key",
+                                "/api/badge/{uuid}",
                                 "/api/users/profilepicture/**",
                                 "/api/videos/thumbnail/**",
                                 "/api/users/profile/**",
