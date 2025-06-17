@@ -20,8 +20,10 @@ public class Badge {
     private String description;
 
     @Lob
-    @Column()
+    @Basic(fetch = FetchType.LAZY)
+    @Column(name = "image", columnDefinition = "bytea")
     private byte[] image;
+
     @ElementCollection
     @CollectionTable(name = "badge_user_ids", joinColumns = @JoinColumn(name = "badge_id"))
     @Column(name = "user_id")
