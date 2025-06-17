@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 
@@ -22,7 +23,12 @@ public class BadgeService {
                 Badge badge = new Badge();
                 badge.setName(name);
                 badge.setDescription(description);
-                badge.setImage(file.getBytes());
+                try (InputStream inputStream = file.getInputStream()) {
+                    byte[] imageBytes = inputStream.readAllBytes();
+                    badge.setImage(imageBytes);
+                } catch (IOException e) {
+                    throw new RuntimeException("Failed to read file", e);
+                }
                 if (badge.getUserIds() == null) {
                     badge.setUserIds(new ArrayList<>());
                 }

@@ -48,7 +48,9 @@ public class BadgeController {
             if (badgeRepository.findByName(name).isPresent()) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body("Badge with this name already exists");
             }
-            return badgeService.createBadge(name, description, file);
+            return badgeService.createBadge(name, description, file)
+                    .thenApply(result -> (Object) result)
+                    .exceptionally(ex -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to create badge"));
         });
     }
 
