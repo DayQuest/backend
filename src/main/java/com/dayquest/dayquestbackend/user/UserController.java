@@ -356,17 +356,20 @@ public class UserController {
     }
 
     @PostMapping("/setprofilepicture")
-    public ResponseEntity<String> setProfilePicture(@RequestParam("file") MultipartFile file, @RequestParam("uuid") UUID uuid, @RequestHeader("Authorization") String token) {
+    public ResponseEntity<String> setProfilePicture(@RequestParam("file") MultipartFile file, @RequestHeader("Authorization") String token) {
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("File is empty");
         }
-        if (!userService.authenticateUserWith2FA(uuid, token, null).join()) {
+        /*if (!userService.authenticateUserWith2FA(uuid, token, null).join()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
-        }
+        }*/
 
         try {
+            User user = userRepository.findByUsername(jwtService.extractUsername(token.substring(7)));
+            if(user == null){
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+            }
             byte[] fileBytes = imageUtil.compressImage(file);
-            User user = userRepository.findById(uuid).orElseThrow(() -> new RuntimeException("User not found"));
             user.setProfilePicture(fileBytes);
             userRepository.save(user);
             return ResponseEntity.ok("Profile picture uploaded successfully");
