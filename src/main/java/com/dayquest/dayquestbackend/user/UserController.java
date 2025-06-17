@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import com.dayquest.dayquestbackend.activity.ActivityUpdater;
 import com.dayquest.dayquestbackend.auth.AuthController;
 import com.dayquest.dayquestbackend.auth.service.JwtService;
+import com.dayquest.dayquestbackend.badge.BadgeRepository;
 import com.dayquest.dayquestbackend.common.dto.UuidDTO;
 import com.dayquest.dayquestbackend.common.utils.ImageUtil;
 import com.dayquest.dayquestbackend.quest.Quest;
@@ -57,6 +58,9 @@ public class UserController {
     @Autowired private AuthController authController;
     @Autowired private FollowRepository followRepository;
     @Autowired private FollowService followService;
+    @Autowired
+    private BadgeRepository badgeRepository;
+
     @PostMapping("/status")
     public ResponseEntity<Object> status() {
         return ResponseEntity.ok().build();
@@ -475,10 +479,7 @@ public class UserController {
     @GetMapping("/{uuid}/badges")
     @Async
     public CompletableFuture<ResponseEntity<List<UUID>>> getBadges(@PathVariable UUID uuid) {
-        return CompletableFuture.supplyAsync(() -> {
-            User user = userRepository.findById(uuid).orElseThrow(() -> new RuntimeException("User not found"));
-            return ResponseEntity.ok(user.getBadges());
-        });
+        return CompletableFuture.supplyAsync(() -> ResponseEntity.ok(badgeRepository.findBadgeIdsByUserId(uuid)));
     }
 
     @PostMapping("/forgot-password")
