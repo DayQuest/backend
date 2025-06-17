@@ -279,7 +279,7 @@ public class UserController {
                 userWithVideos.getPunishment() == Punishments.BANNED,
                 userWithVideos.getFollowers(),
                 requester != null && followService.isFollowing(requester.getUuid(), userWithVideos.getUuid()).join(),
-                userWithVideos.getBadges()
+                badgeRepository.findBadgeIdsByUserId(userWithVideos.getUuid())
         );
     }
 
