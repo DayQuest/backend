@@ -337,7 +337,7 @@ public class UserService {
     private void sendPasswordResetEmailInternal(User user, String token) throws MessagingException {
         String subject = "DayQuest Password Reset Request";
 
-        String frontendResetUrl = "https://api.dayquest.de/api/user/reset-password?token=" + token;
+        String frontendResetUrl = "https://apiv2.dayquest.de/api/users/reset-password?token=" + token;
 
         String htmlMessage = String.format(
                 "<html><body style=\"font-family: Arial, sans-serif;\">" +
