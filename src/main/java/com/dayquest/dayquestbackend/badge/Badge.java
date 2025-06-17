@@ -14,7 +14,7 @@ public class Badge {
     @Id
     @GeneratedValue
     @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
-    private UUID uuid;
+    private UUID id;
 
     private String name;
     private String description;
@@ -28,11 +28,11 @@ public class Badge {
     private List<UUID> userIds = new ArrayList<>();
 
     public UUID getId() {
-        return uuid;
+        return id;
     }
 
     public void setId(UUID uuid) {
-        this.uuid = uuid;
+        this.id = uuid;
     }
 
     public String getName() {
