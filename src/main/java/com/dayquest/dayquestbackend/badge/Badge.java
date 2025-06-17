@@ -2,7 +2,8 @@ package com.dayquest.dayquestbackend.badge;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.GenericGenerator;
-
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,9 +20,9 @@ public class Badge {
     private String name;
     private String description;
 
-    @Lob
     @Basic(fetch = FetchType.LAZY)
     @Column(name = "image", columnDefinition = "bytea")
+    @JdbcTypeCode(SqlTypes.VARBINARY)
     private byte[] image;
 
     @ElementCollection
@@ -68,5 +69,4 @@ public class Badge {
     public void setUserIds(List<UUID> userIds) {
         this.userIds = userIds;
     }
-
 }
