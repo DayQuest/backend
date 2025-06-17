@@ -44,7 +44,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class UserController {
 
     private static final String DEFAULT_PROFILE_PICTURE_URL = "https://static.vecteezy.com/system/resources/thumbnails/003/337/584/small/default-avatar-photo-placeholder-profile-icon-vector.jpg";
-    private static final String PROFILE_PICTURE_BASE_URL = "https://api.dayquest.de/api/users/profilepicture/";
+    private static final String PROFILE_PICTURE_BASE_URL = "https://apiv2.dayquest.de/api/users/profilepicture/";
 
     @Autowired private UserService userService;
     @Autowired private UserRepository userRepository;
@@ -273,7 +273,7 @@ public class UserController {
     private ProfileDTO createProfileDTO(User userWithVideos, User requester) {
         return new ProfileDTO(
                 userWithVideos.getUsername(),
-                PROFILE_PICTURE_BASE_URL + userWithVideos.getUsername(),
+                userWithVideos.getProfilePicture() != null ? PROFILE_PICTURE_BASE_URL + userWithVideos.getUsername() : DEFAULT_PROFILE_PICTURE_URL,
                 userWithVideos.getPostedVideos(),
                 userWithVideos.getDailyQuest(),
                 userWithVideos.getPunishment() == Punishments.BANNED,
