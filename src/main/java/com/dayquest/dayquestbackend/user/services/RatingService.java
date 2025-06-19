@@ -47,7 +47,7 @@ public class RatingService {
     @Transactional
     public CompletableFuture<ResponseEntity<String>> rateQuest(String token, UUID questId, boolean isLike) {
         return CompletableFuture.supplyAsync(() -> {
-            UUID userId = jwtService.extractUserId(token);
+            UUID userId = jwtService.extractUserId(token.substring(7));
             User user = userRepository.findById(userId).orElse(null);
             Quest quest = questRepository.findById(questId).orElse(null);
             if (quest == null) {
@@ -87,7 +87,7 @@ public class RatingService {
     @Transactional
     public CompletableFuture<ResponseEntity<String>> removeQuestRating(String token, UUID questId) {
         return CompletableFuture.supplyAsync(() -> {
-            UUID userId = jwtService.extractUserId(token);
+            UUID userId = jwtService.extractUserId(token.substring(7));
             User user = userRepository.findById(userId).orElse(null);
             Quest quest = questRepository.findById(questId).orElse(null);
             if (quest == null) {
@@ -114,7 +114,7 @@ public class RatingService {
     @Transactional
     public CompletableFuture<ResponseEntity<String>> rateVideo(String token, UUID videoId, boolean isLike) {
         return CompletableFuture.supplyAsync(() -> {
-            UUID userId = jwtService.extractUserId(token);
+            UUID userId = jwtService.extractUserId(token.substring(7));
             User user = userRepository.findById(userId).orElse(null);
             VideoRatingId ratingId = new VideoRatingId(user.getUuid(), videoId);
             Optional<VideoRating> videoRatingOpt = videoRatingRepository.findById(ratingId);
@@ -156,7 +156,7 @@ public class RatingService {
     @Transactional
     public CompletableFuture<ResponseEntity<String>> removeVideoRating(String token, UUID videoId){
         return CompletableFuture.supplyAsync(() -> {
-            UUID userId = jwtService.extractUserId(token);
+            UUID userId = jwtService.extractUserId(token.substring(7));
             User user = userRepository.findById(userId).orElse(null);
             VideoRatingId ratingId = new VideoRatingId(user.getUuid(), videoId);
             Optional<VideoRating> videoRatingOpt = videoRatingRepository.findById(ratingId);
