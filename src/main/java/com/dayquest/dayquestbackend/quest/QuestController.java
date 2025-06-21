@@ -101,25 +101,25 @@ public class QuestController {
     @PostMapping("/like")
     public CompletableFuture<ResponseEntity<String>> likeQuest(@RequestBody InteractionDTO dto,
                                                           @RequestHeader("Authorization") String token) {
-        return ratingService.rateQuest(token, dto.getUuid(), true);
+        return ratingService.rateQuestAsync(token, dto.getUuid(), true);
     }
 
     @DeleteMapping("/like")
     public CompletableFuture<ResponseEntity<String>> unlikeQuest(@RequestBody InteractionDTO dto,
                                                             @RequestHeader("Authorization") String token) {
-        return ratingService.removeQuestRating(token, dto.getUuid());
+        return ratingService.removeQuestRatingAsync(token, dto.getUuid());
     }
 
     @PostMapping("/dislike")
     public CompletableFuture<ResponseEntity<String>> dislikeQuest(@RequestBody InteractionDTO dto,
                                                              @RequestHeader("Authorization") String token) {
-        return ratingService.rateQuest(token, dto.getUuid(), false);
+        return ratingService.rateQuestAsync(token, dto.getUuid(), false);
     }
 
     @DeleteMapping("/dislike")
     public CompletableFuture<ResponseEntity<String>> undislikeQuest(@RequestBody InteractionDTO dto,
                                                                @RequestHeader("Authorization") String token) {
-        return ratingService.removeQuestRating(token, dto.getUuid());
+        return ratingService.removeQuestRatingAsync(token, dto.getUuid());
     }
 
     @PostMapping("/get-quest")
