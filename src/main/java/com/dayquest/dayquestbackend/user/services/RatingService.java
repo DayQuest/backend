@@ -43,7 +43,6 @@ public class RatingService {
     @Autowired
     private HashtagService hashtagService;
 
-    @Async
     @Transactional
     public CompletableFuture<ResponseEntity<String>> rateQuest(String token, UUID questId, boolean isLike) {
         return CompletableFuture.supplyAsync(() -> {
@@ -83,7 +82,6 @@ public class RatingService {
         });
     }
 
-    @Async
     @Transactional
     public CompletableFuture<ResponseEntity<String>> removeQuestRating(String token, UUID questId) {
         return CompletableFuture.supplyAsync(() -> {
@@ -110,7 +108,6 @@ public class RatingService {
         });
     }
 
-    @Async
     @Transactional
     public CompletableFuture<ResponseEntity<String>> rateVideo(String token, UUID videoId, boolean isLike) {
         return CompletableFuture.supplyAsync(() -> {
@@ -152,7 +149,6 @@ public class RatingService {
         });
     }
 
-    @Async
     @Transactional
     public CompletableFuture<ResponseEntity<String>> removeVideoRating(String token, UUID videoId){
         return CompletableFuture.supplyAsync(() -> {
