@@ -170,7 +170,7 @@ public class VideoController {
             try {
                 Optional<User> user = userRepository.findById(userUuid.getUuid());
 
-                if (user.isEmpty() || !Objects.equals(user.get().getUsername(), jwtService.extractUsername(token))) {
+                if (user.isEmpty() || !Objects.equals(user.get().getUsername(), jwtService.extractUsername(token.substring(7)))) {
                     return ResponseEntity.notFound().build();
                 }
 
@@ -195,7 +195,7 @@ public class VideoController {
             try {
                 Optional<User> user = userRepository.findById(userUuid.getUuid());
 
-                if (user.isEmpty() || !Objects.equals(user.get().getUsername(), jwtService.extractUsername(token))) {
+                if (user.isEmpty() || !Objects.equals(user.get().getUsername(), jwtService.extractUsername(token.substring(7)))) {
                     return ResponseEntity.notFound().build();
                 }
                 activityUpdater.increaseInteractions(user);
