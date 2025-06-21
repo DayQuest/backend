@@ -14,12 +14,13 @@ import com.dayquest.dayquestbackend.user.repositories.UserRepository;
 import com.dayquest.dayquestbackend.user.repositories.VideoRatingRepository;
 import com.dayquest.dayquestbackend.video.models.Video;
 import com.dayquest.dayquestbackend.video.repository.VideoRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
+
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
 import java.util.Optional;
@@ -27,7 +28,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @Service
-@RequiredArgsConstructor
 public class RatingService {
 
     private final JwtService jwtService;
@@ -37,29 +37,84 @@ public class RatingService {
     private final VideoRatingRepository videoRatingRepository;
     private final VideoRepository videoRepository;
     private final HashtagService hashtagService;
+    private final TransactionTemplate transactionTemplate;
+
+    @Autowired
+    public RatingService(JwtService jwtService,
+                         UserRepository userRepository,
+                         QuestRepository questRepository,
+                         QuestRatingRepository questRatingRepository,
+                         VideoRatingRepository videoRatingRepository,
+                         VideoRepository videoRepository,
+                         HashtagService hashtagService,
+                         TransactionTemplate transactionTemplate) {
+        this.jwtService = jwtService;
+        this.userRepository = userRepository;
+        this.questRepository = questRepository;
+        this.questRatingRepository = questRatingRepository;
+        this.videoRatingRepository = videoRatingRepository;
+        this.videoRepository = videoRepository;
+        this.hashtagService = hashtagService;
+        this.transactionTemplate = transactionTemplate;
+    }
 
     @Async
     public CompletableFuture<ResponseEntity<String>> rateQuestAsync(String token, UUID questId, boolean isLike) {
-        return CompletableFuture.completedFuture(rateQuest(token, questId, isLike));
+        return CompletableFuture.supplyAsync(() -> {
+            return transactionTemplate.execute(status -> {
+                return executeRateQuest(token, questId, isLike);
+            });
+        });
     }
 
     @Async
     public CompletableFuture<ResponseEntity<String>> removeQuestRatingAsync(String token, UUID questId) {
-        return CompletableFuture.completedFuture(removeQuestRating(token, questId));
+        return CompletableFuture.supplyAsync(() -> {
+            return transactionTemplate.execute(status -> {
+                return executeRemoveQuestRating(token, questId);
+            });
+        });
     }
 
     @Async
     public CompletableFuture<ResponseEntity<String>> rateVideoAsync(String token, UUID videoId, boolean isLike) {
-        return CompletableFuture.completedFuture(rateVideo(token, videoId, isLike));
+        return CompletableFuture.supplyAsync(() -> {
+            return transactionTemplate.execute(status -> {
+                return executeRateVideo(token, videoId, isLike);
+            });
+        });
     }
 
     @Async
     public CompletableFuture<ResponseEntity<String>> removeVideoRatingAsync(String token, UUID videoId) {
-        return CompletableFuture.completedFuture(removeVideoRating(token, videoId));
+        return CompletableFuture.supplyAsync(() -> {
+            return transactionTemplate.execute(status -> {
+                return executeRemoveVideoRating(token, videoId);
+            });
+        });
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public ResponseEntity<String> rateQuest(String token, UUID questId, boolean isLike) {
+        return executeRateQuest(token, questId, isLike);
+    }
+
+    @Transactional
+    public ResponseEntity<String> removeQuestRating(String token, UUID questId) {
+        return executeRemoveQuestRating(token, questId);
+    }
+
+    @Transactional
+    public ResponseEntity<String> rateVideo(String token, UUID videoId, boolean isLike) {
+        return executeRateVideo(token, videoId, isLike);
+    }
+
+    @Transactional
+    public ResponseEntity<String> removeVideoRating(String token, UUID videoId) {
+        return executeRemoveVideoRating(token, videoId);
+    }
+
+    private ResponseEntity<String> executeRateQuest(String token, UUID questId, boolean isLike) {
         UUID userId = jwtService.extractUserId(token.substring(7));
 
         User user = userRepository.findById(userId).orElse(null);
@@ -107,8 +162,7 @@ public class RatingService {
         return ResponseEntity.ok("Rating added successfully");
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public ResponseEntity<String> removeQuestRating(String token, UUID questId) {
+    private ResponseEntity<String> executeRemoveQuestRating(String token, UUID questId) {
         UUID userId = jwtService.extractUserId(token.substring(7));
 
         User user = userRepository.findById(userId).orElse(null);
@@ -140,8 +194,7 @@ public class RatingService {
         return ResponseEntity.badRequest().body("No rating found for this quest");
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public ResponseEntity<String> rateVideo(String token, UUID videoId, boolean isLike) {
+    private ResponseEntity<String> executeRateVideo(String token, UUID videoId, boolean isLike) {
         UUID userId = jwtService.extractUserId(token.substring(7));
 
         User user = userRepository.findById(userId).orElse(null);
@@ -191,8 +244,7 @@ public class RatingService {
         return ResponseEntity.ok("Rating added successfully");
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public ResponseEntity<String> removeVideoRating(String token, UUID videoId) {
+    private ResponseEntity<String> executeRemoveVideoRating(String token, UUID videoId) {
         UUID userId = jwtService.extractUserId(token.substring(7));
 
         User user = userRepository.findById(userId).orElse(null);
@@ -221,25 +273,45 @@ public class RatingService {
 
     @Transactional(readOnly = true)
     public List<UUID> getLikedQuests(User user) {
-        if (user == null) return List.of();
-        return questRatingRepository.findQuestIdsByUserAndLiked(user.getUuid(), true);
+        if (user == null) {
+            return List.of();
+        }
+        return questRatingRepository.findByUserAndLikedTrue(user).stream()
+                .map(QuestRating::getQuest)
+                .map(Quest::getUuid)
+                .toList();
     }
 
     @Transactional(readOnly = true)
     public List<UUID> getDislikedQuests(User user) {
-        if (user == null) return List.of();
-        return questRatingRepository.findQuestIdsByUserAndLiked(user.getUuid(), false);
+        if (user == null) {
+            return List.of();
+        }
+        return questRatingRepository.findByUserAndLikedFalse(user).stream()
+                .map(QuestRating::getQuest)
+                .map(Quest::getUuid)
+                .toList();
     }
 
     @Transactional(readOnly = true)
     public List<UUID> getLikedVideos(User user) {
-        if (user == null) return List.of();
-        return videoRatingRepository.findVideoIdsByUserAndLiked(user.getUuid(), true);
+        if (user == null) {
+            return List.of();
+        }
+        return videoRatingRepository.findByUserAndLikedTrue(user).stream()
+                .map(VideoRating::getVideo)
+                .map(Video::getUuid)
+                .toList();
     }
 
     @Transactional(readOnly = true)
     public List<UUID> getDislikedVideos(User user) {
-        if (user == null) return List.of();
-        return videoRatingRepository.findVideoIdsByUserAndLiked(user.getUuid(), false);
+        if (user == null) {
+            return List.of();
+        }
+        return videoRatingRepository.findByUserAndLikedFalse(user).stream()
+                .map(VideoRating::getVideo)
+                .map(Video::getUuid)
+                .toList();
     }
 }

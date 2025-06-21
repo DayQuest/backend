@@ -13,7 +13,9 @@ import java.util.UUID;
 
 @Repository
 public interface QuestRatingRepository extends JpaRepository<QuestRating, QuestRatingId> {
+    List<QuestRating> findByUserAndLikedTrue(User user);
 
+    List<QuestRating> findByUserAndLikedFalse(User user);
 
     @Query("SELECT qr.quest.uuid FROM QuestRating qr WHERE qr.user.uuid = :userId AND qr.liked = :liked")
     List<UUID> findQuestIdsByUserAndLiked(@Param("userId") UUID userId, @Param("liked") boolean liked);
