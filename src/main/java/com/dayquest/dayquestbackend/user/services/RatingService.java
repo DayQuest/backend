@@ -19,6 +19,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
@@ -48,6 +50,7 @@ public class RatingService {
     /* ================================= QUESTS ================================= */
 
     @Async
+    @CacheEvict(value = {"quests", "userProfiles"}, allEntries = true)
     public CompletableFuture<ResponseEntity<String>> rateQuest(String bearerToken, UUID questId, boolean like) {
         return CompletableFuture.completedFuture(
                 doRate(
@@ -65,6 +68,7 @@ public class RatingService {
     }
 
     @Async
+    @CacheEvict(value = {"quests", "userProfiles"}, allEntries = true)
     public CompletableFuture<ResponseEntity<String>> removeQuestRating(String bearerToken, UUID questId) {
         return CompletableFuture.completedFuture(
                 doRemoveRating(
@@ -115,18 +119,22 @@ public class RatingService {
 
     /* ============================= Public Helper Methods ============================= */
 
+    @Cacheable(value = "userProfiles", key = "#user.uuid + '_liked_quests'")
     public List<UUID> getLikedQuests(User user) {
         return findQuestIds(user, true);
     }
 
+    @Cacheable(value = "userProfiles", key = "#user.uuid + '_disliked_quests'")
     public List<UUID> getDislikedQuests(User user) {
         return findQuestIds(user, false);
     }
 
+    @Cacheable(value = "userProfiles", key = "#user.uuid + '_liked_videos'")
     public List<UUID> getLikedVideos(User user) {
         return findVideoIds(user, true);
     }
 
+    @Cacheable(value = "userProfiles", key = "#user.uuid + '_disliked_videos'")
     public List<UUID> getDislikedVideos(User user) {
         return findVideoIds(user, false);
     }

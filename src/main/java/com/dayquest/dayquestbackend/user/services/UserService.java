@@ -24,6 +24,8 @@ import jakarta.mail.MessagingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -69,10 +71,10 @@ public class UserService {
      * @param username Der Benutzername
      * @return Der Benutzer oder null, wenn nicht gefunden
      */
+    @Cacheable(value = "userAuth", key = "#username", unless = "#result == null")
     public User getUserByUsername(String username) {
         return userRepository.findByUsername(username);
     }
-
     /**
      * Prüft, ob für einen Benutzer 2FA aktiviert ist.
      *
@@ -88,6 +90,7 @@ public class UserService {
     }
 
     @Async
+    @CacheEvict(value = {"userAuth", "userProfiles"}, allEntries = true)
     public CompletableFuture<ResponseEntity<String>> registerUser(
             String username, String email, String password, String betaKey) {
         return CompletableFuture.supplyAsync(() -> {

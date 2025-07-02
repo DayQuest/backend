@@ -25,6 +25,8 @@ import com.dayquest.dayquestbackend.user.services.UserService;
 import com.dayquest.dayquestbackend.video.repository.VideoRepository;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.domain.Page;
@@ -146,6 +148,7 @@ public class UserController {
 
     @GetMapping("/{uuid}")
     @Async
+    @Cacheable(value = "userProfiles", key = "#uuid.toString() + '_' + #token", unless = "#result.statusCode != 200")
     public CompletableFuture<ResponseEntity<ProfileDTO>> getUserByUuid(
             @PathVariable UUID uuid, @RequestHeader("Authorization") String token) {
         return CompletableFuture.supplyAsync(() -> {
@@ -158,6 +161,7 @@ public class UserController {
             return ResponseEntity.ok(createProfileDTO(userWithVideos, requester));
         });
     }
+
 
     @GetMapping("/{uuid}/followers")
     @Async
@@ -181,7 +185,11 @@ public class UserController {
 
     @PostMapping("/{uuid}/follow")
     @Async
-    public CompletableFuture<ResponseEntity<String>> followUser(@PathVariable UUID uuid, @RequestHeader("Authorization") String token, @RequestBody(required = false) UuidDTO videoUuid) {
+    @CacheEvict(value = "userProfiles", key = "#uuid.toString()", allEntries = true)
+    public CompletableFuture<ResponseEntity<String>> followUser(
+            @PathVariable UUID uuid,
+            @RequestHeader("Authorization") String token,
+            @RequestBody(required = false) UuidDTO videoUuid) {
         return CompletableFuture.supplyAsync(() -> {
             String username = jwtService.extractUsername(token.substring(7));
             User user = userRepository.findByUsername(username);
@@ -196,7 +204,6 @@ public class UserController {
 
             userToFollow.setFollowers(userToFollow.getFollowers() + 1);
             followService.followUser(token, uuid).join();
-
             activityUpdater.increaseInteractions(user);
             userRepository.save(userToFollow);
 
@@ -206,7 +213,10 @@ public class UserController {
 
     @DeleteMapping("/{uuid}/follow")
     @Async
-    public CompletableFuture<ResponseEntity<String>> unfollowUser(@PathVariable UUID uuid, @RequestHeader("Authorization") String token) {
+    @CacheEvict(value = "userProfiles", key = "#uuid.toString()", allEntries = true)
+    public CompletableFuture<ResponseEntity<String>> unfollowUser(
+            @PathVariable UUID uuid,
+            @RequestHeader("Authorization") String token) {
         return followService.unfollowUser(token, uuid)
                 .thenApply(response -> {
                     if (response.getStatusCode() == HttpStatus.OK) {
@@ -220,6 +230,7 @@ public class UserController {
 
     @GetMapping("/search")
     @Async
+    @Cacheable(value = "userSearch", key = "#query + '_' + #page + '_' + #size", unless = "#result.statusCode != 200")
     public CompletableFuture<ResponseEntity<Map<String, Object>>> searchUsers(
             @RequestParam String query,
             @RequestParam(defaultValue = "0") int page,
@@ -259,7 +270,9 @@ public class UserController {
     @GetMapping("/profile/{username}")
     @Async
     @Transactional(readOnly = true)
-    public CompletableFuture<ResponseEntity<ProfileDTO>> getUserByUsername(@PathVariable String username, @RequestHeader("Authorization") String token) {
+    @Cacheable(value = "userProfiles", key = "#username + '_profile_' + #token", unless = "#result.statusCode != 200")
+    public CompletableFuture<ResponseEntity<ProfileDTO>> getUserByUsername(
+            @PathVariable String username, @RequestHeader("Authorization") String token) {
         return CompletableFuture.supplyAsync(() -> {
             User userWithVideos = userRepository.findByUsernameWithVideos(username);
             User user = userRepository.findByUsername(jwtService.extractUsername(token.substring(7)));
@@ -297,6 +310,7 @@ public class UserController {
 
     @GetMapping("/profilepicture/{username}")
     @Async
+    @Cacheable(value = "profilePictures", key = "#username", unless = "#result.statusCode != 200")
     public CompletableFuture<ResponseEntity<ByteArrayResource>> getDecodedImage(@PathVariable("username") String username) {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -311,7 +325,6 @@ public class UserController {
                 }
 
                 ByteArrayResource resource = new ByteArrayResource(imageBytes);
-
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.IMAGE_JPEG);
 
