@@ -35,10 +35,11 @@ public class SpringConfiguration implements WebMvcConfigurer {
 
     @Scheduled(cron = "0 0 0 * * ?")
     @Async
-    public CompletableFuture<Void> assignDailyQuest() {
-        return CompletableFuture.runAsync(() ->
+    public void assignDailyQuest() {
+        CompletableFuture.runAsync(() ->
                 userService.assignDailyQuests(questService.getTop30PercentQuests().join()).join());
     }
+
 
     @Bean
     public PlatformTransactionManager transactionManager(EntityManagerFactory emf) {
