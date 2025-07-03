@@ -50,21 +50,26 @@ public class RatingService {
     /* ================================= QUESTS ================================= */
 
     @Async
-    @CacheEvict(value = {"quests", "userProfiles"}, allEntries = true)
+    @CacheEvict(value = {"quests", "userProfiles"}, allEntries = true) // Consider more specific eviction
     public CompletableFuture<ResponseEntity<String>> rateQuest(String bearerToken, UUID questId, boolean like) {
-        return CompletableFuture.completedFuture(
-                doRate(
-                        bearerToken,
-                        questId,
-                        like,
-                        questRepository::findById,
-                        (userId, targetId) -> new QuestRatingId(userId, targetId),
-                        questRatingRepository::findById,
-                        (user, quest) -> new QuestRating(user, quest, like),
-                        questRatingRepository::save,
-                        (oldLike, newLike) -> updateQuestCounters(questId, oldLike, newLike)
-                )
-        );
+        return CompletableFuture.supplyAsync(() -> {
+            User user = resolveUser(bearerToken);
+            if (user != null) {
+                evictUserSpecificCaches(user.getUuid());
+            }
+
+            return doRate(
+                    bearerToken,
+                    questId,
+                    like,
+                    questRepository::findById,
+                    (userId, targetId) -> new QuestRatingId(userId, targetId),
+                    questRatingRepository::findById,
+                    (userEntity, quest) -> new QuestRating(userEntity, quest, like),
+                    questRatingRepository::save,
+                    (oldLike, newLike) -> updateQuestCounters(questId, oldLike, newLike)
+            );
+        });
     }
 
     @Async
@@ -119,14 +124,18 @@ public class RatingService {
 
     /* ============================= Public Helper Methods ============================= */
 
-    @Cacheable(value = "userProfiles", key = "#user.uuid + '_liked_quests'")
+    @Cacheable(value = "userLikedQuests", key = "#user.uuid", unless = "#result.isEmpty()")
     public List<UUID> getLikedQuests(User user) {
         return findQuestIds(user, true);
     }
 
-    @Cacheable(value = "userProfiles", key = "#user.uuid + '_disliked_quests'")
+    @Cacheable(value = "userDislikedQuests", key = "#user.uuid", unless = "#result.isEmpty()")
     public List<UUID> getDislikedQuests(User user) {
         return findQuestIds(user, false);
+    }
+
+    @CacheEvict(value = {"userLikedQuests", "userDislikedQuests", "userLikedVideos", "userDislikedVideos"}, key = "#userId")
+    public void evictUserSpecificCaches(UUID userId) {
     }
 
     @Cacheable(value = "userProfiles", key = "#user.uuid + '_liked_videos'")

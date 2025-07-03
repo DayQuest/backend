@@ -8,6 +8,8 @@ import com.dayquest.dayquestbackend.user.models.User;
 import com.dayquest.dayquestbackend.user.repositories.UserRepository;
 import com.dayquest.dayquestbackend.user.services.RatingService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -41,27 +43,30 @@ public class QuestController {
     @Autowired
     private RatingService ratingService;
 
-
     @GetMapping
     @Async
+    @Cacheable(value = "quests", key = "#token + ':' + #page + ':' + #size + ':' + #sortBy + ':' + #sortDirection")
     public CompletableFuture<ResponseEntity<List<QuestDTO>>> getQuests(
             @RequestHeader("Authorization") String token,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "DESC") Sort.Direction sortDirection) {
+
         return CompletableFuture.supplyAsync(() -> {
             String username = jwtService.extractUsername(token.substring(7));
             User currentUser = userRepository.findByUsername(username);
             if (currentUser == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
+
             List<UUID> likedQuestIds = ratingService.getLikedQuests(currentUser);
             List<UUID> dislikedQuestIds = ratingService.getDislikedQuests(currentUser);
 
             Sort sort = Sort.by(sortDirection, sortBy);
             PageRequest pageRequest = PageRequest.of(page, size, sort);
             List<Quest> quests = questRepository.findAll(pageRequest).getContent();
+
             List<QuestDTO> questDTOS = quests.stream().map(quest -> {
                 QuestDTO dto = new QuestDTO();
                 dto.setUuid(quest.getUuid());
@@ -75,13 +80,14 @@ public class QuestController {
                 dto.setDisliked(dislikedQuestIds.contains(quest.getUuid()));
                 return dto;
             }).collect(Collectors.toList());
+
             return ResponseEntity.ok(questDTOS);
         });
     }
 
-
     @PostMapping("/create")
     @Async
+    @CacheEvict(value = "quests", allEntries = true)
     public CompletableFuture<ResponseEntity<Quest>> createQuest(
             @RequestBody Quest quest,
             @RequestHeader("Authorization") String token) {
@@ -96,50 +102,37 @@ public class QuestController {
                 .thenApply(newQuest -> ResponseEntity.status(HttpStatus.CREATED).body(newQuest));
     }
 
-
-
     @PostMapping("/like")
+    @CacheEvict(value = {"quests", "userLikedQuests"}, allEntries = true)
     public CompletableFuture<ResponseEntity<String>> likeQuest(@RequestBody InteractionDTO dto,
-                                                          @RequestHeader("Authorization") String token) {
+                                                               @RequestHeader("Authorization") String token) {
         return ratingService.rateQuest(token, dto.getUuid(), true);
     }
 
     @DeleteMapping("/like")
+    @CacheEvict(value = {"quests", "userLikedQuests"}, allEntries = true)
     public CompletableFuture<ResponseEntity<String>> unlikeQuest(@RequestBody InteractionDTO dto,
-                                                            @RequestHeader("Authorization") String token) {
+                                                                 @RequestHeader("Authorization") String token) {
         return ratingService.removeQuestRating(token, dto.getUuid());
     }
 
     @PostMapping("/dislike")
+    @CacheEvict(value = {"quests", "userDislikedQuests"}, allEntries = true)
     public CompletableFuture<ResponseEntity<String>> dislikeQuest(@RequestBody InteractionDTO dto,
-                                                             @RequestHeader("Authorization") String token) {
+                                                                  @RequestHeader("Authorization") String token) {
         return ratingService.rateQuest(token, dto.getUuid(), false);
     }
 
     @DeleteMapping("/dislike")
+    @CacheEvict(value = {"quests", "userDislikedQuests"}, allEntries = true)
     public CompletableFuture<ResponseEntity<String>> undislikeQuest(@RequestBody InteractionDTO dto,
-                                                               @RequestHeader("Authorization") String token) {
+                                                                    @RequestHeader("Authorization") String token) {
         return ratingService.removeQuestRating(token, dto.getUuid());
-    }
-
-    @PostMapping("/get-quest")
-    @Async
-    public CompletableFuture<ResponseEntity<String>> getQuest(@RequestBody UUID uuid) {
-        return CompletableFuture.supplyAsync(() -> {
-            Optional<User> userOpt = userRepository.findById(uuid);
-            if (userOpt.isEmpty()) {
-                return ResponseEntity.notFound().build();
-            }
-            Quest dailyQuest = userOpt.get().getDailyQuest();
-            if (dailyQuest == null) {
-                return ResponseEntity.notFound().build();
-            }
-            return ResponseEntity.ok(dailyQuest.getDescription());
-        });
     }
 
     @GetMapping("/{userid}")
     @Async
+    @Cacheable(value = "quests", key = "'user:' + #userid")
     public CompletableFuture<ResponseEntity<QuestDTO>> getUsersQuest(@PathVariable UUID userid) {
         return CompletableFuture.supplyAsync(() -> {
             Optional<User> userOpt = userRepository.findById(userid);

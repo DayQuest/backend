@@ -23,6 +23,8 @@ import com.dayquest.dayquestbackend.video.repository.VideoRepository;
 import com.dayquest.dayquestbackend.video.repository.ViewedVideoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.http.*;
 
@@ -73,12 +75,14 @@ public class VideoController {
 
     @Async
     @PostMapping("/upload")
+    @CacheEvict(value = "videos", allEntries = true)
     public CompletableFuture<ResponseEntity<String>> uploadVideo(
             @RequestParam("file") MultipartFile file,
             @RequestParam("title") String title,
             @RequestParam("description") String description,
             @RequestHeader("Authorization") String token,
             @RequestParam("hashtags") List<String> hashtags) {
+
         return CompletableFuture.supplyAsync(() -> {
             String username = jwtService.extractUsername(token.substring(7));
             Optional<User> user = Optional.ofNullable(userRepository.findByUsername(username));
@@ -93,6 +97,7 @@ public class VideoController {
 
     @Async
     @DeleteMapping("/{uuid}")
+    @CacheEvict(value = "videos", allEntries = true)
     public CompletableFuture<ResponseEntity<String>> deleteVideo(@PathVariable UUID uuid, @RequestHeader("Authorization") String token) {
         return CompletableFuture.supplyAsync(() -> {
             Optional<Video> video = videoRepository.findById(uuid);
@@ -161,6 +166,7 @@ public class VideoController {
 
     @PostMapping("/{uuid}/like")
     @Async
+    @CacheEvict(value = {"videos", "userLikedVideos"}, allEntries = true)
     public CompletableFuture<Object> likeVideo(
             @PathVariable UUID uuid,
             @RequestBody UuidDTO userUuid,
@@ -186,6 +192,7 @@ public class VideoController {
 
     @DeleteMapping("/{uuid}/like")
     @Async
+    @CacheEvict(value = {"videos", "userLikedVideos"}, allEntries = true)
     public CompletableFuture<Object> unlikeVideo(
             @PathVariable UUID uuid,
             @RequestBody UuidDTO userUuid,
@@ -211,6 +218,7 @@ public class VideoController {
 
     @Async
     @PostMapping("/{uuid}/dislike")
+    @CacheEvict(value = {"videos", "userDislikedVideos"}, allEntries = true)
     public CompletableFuture<Object> dislikeVideo(@PathVariable UUID uuid,
                                                   @RequestBody UuidDTO userUuid,
                                                   @RequestHeader("Authorization") String token) {
@@ -229,6 +237,7 @@ public class VideoController {
 
     @DeleteMapping("/{uuid}/dislike")
     @Async
+    @CacheEvict(value = {"videos", "userDislikedVideos"}, allEntries = true)
     public CompletableFuture<Object> undislikeVideo(
             @PathVariable UUID uuid,
             @RequestBody UuidDTO userUuid,
@@ -248,6 +257,7 @@ public class VideoController {
 
     @Async
     @GetMapping("/{uuid}")
+    @Cacheable(value = "videos", key = "#uuid")
     public CompletableFuture<ResponseEntity<VideoDTO>> getVideoById(@PathVariable UUID uuid) {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -257,18 +267,17 @@ public class VideoController {
                 }
 
                 Video video = videoOpt.get();
-                
-                // Ensure user is loaded
+
                 if (video.getUser() == null) {
                     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body(null);
+                            .body(null);
                 }
 
                 return ResponseEntity.ok(createVideoDTO(video, video.getUser()));
             } catch (Exception e) {
                 logger.log(Level.SEVERE, "Error getting video: " + uuid, e);
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(null);
+                        .body(null);
             }
         });
     }
