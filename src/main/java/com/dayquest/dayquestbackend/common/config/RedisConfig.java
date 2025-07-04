@@ -1,5 +1,6 @@
 package com.dayquest.dayquestbackend.common.config;
 
+import com.dayquest.dayquestbackend.common.mixin.ResponseEntityMixin;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -23,6 +24,7 @@ import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSeriali
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -57,6 +59,8 @@ public class RedisConfig {
         BasicPolymorphicTypeValidator ptv = BasicPolymorphicTypeValidator.builder()
                 .allowIfSubType(Object.class)
                 .build();
+
+        objectMapper.addMixIn(Object.class, ResponseEntityMixin.class);
 
         objectMapper.activateDefaultTyping(ptv, ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
         objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
