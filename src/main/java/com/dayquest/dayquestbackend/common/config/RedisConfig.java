@@ -83,7 +83,7 @@ public class RedisConfig {
         objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
 
         SimpleModule module = new SimpleModule();
-        module.addSerializer(new ResponseEntityBodySerializer());
+        module.addSerializer(ResponseEntity.class, new ResponseEntityBodySerializer());
         module.addDeserializer(ResponseEntity.class, new ResponseEntityBodyDeserializer());
         objectMapper.registerModule(module);
 
