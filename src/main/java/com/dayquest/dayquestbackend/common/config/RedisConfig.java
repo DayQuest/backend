@@ -1,5 +1,6 @@
 package com.dayquest.dayquestbackend.common.config;
 
+import com.dayquest.dayquestbackend.common.mixin.ResponseEntityBodyOnlyMixin;
 import com.dayquest.dayquestbackend.common.mixin.ResponseEntityMixin;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
@@ -27,7 +28,6 @@ import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.http.ResponseEntity;
-
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -79,6 +79,8 @@ public class RedisConfig {
 
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+
+        objectMapper.addMixIn(ResponseEntity.class, ResponseEntityBodyOnlyMixin.class);
 
         GenericJackson2JsonRedisSerializer serializer = new GenericJackson2JsonRedisSerializer(objectMapper);
 
