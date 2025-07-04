@@ -50,27 +50,31 @@ public class RatingService {
     /* ================================= QUESTS ================================= */
 
     @Async
-    @CacheEvict(value = {"quests", "userProfiles"}, allEntries = true) // Consider more specific eviction
-    public CompletableFuture<ResponseEntity<String>> rateQuest(String bearerToken, UUID questId, boolean like) {
-        return CompletableFuture.supplyAsync(() -> {
-            User user = resolveUser(bearerToken);
-            if (user != null) {
-                evictUserSpecificCaches(user.getUuid());
-            }
+    @Transactional
+    @CacheEvict(value = {"quests", "userProfiles"}, allEntries = true)
+    public CompletableFuture<ResponseEntity<String>> rateQuest(
+            String bearerToken, UUID questId, boolean like) {
 
-            return doRate(
-                    bearerToken,
-                    questId,
-                    like,
-                    questRepository::findById,
-                    (userId, targetId) -> new QuestRatingId(userId, targetId),
-                    questRatingRepository::findById,
-                    (userEntity, quest) -> new QuestRating(userEntity, quest, like),
-                    questRatingRepository::save,
-                    (oldLike, newLike) -> updateQuestCounters(questId, oldLike, newLike)
-            );
-        });
+        User user = resolveUser(bearerToken);
+        if (user != null) {
+            evictUserSpecificCaches(user.getUuid());
+        }
+
+        return CompletableFuture.completedFuture(
+                doRate(
+                        bearerToken,
+                        questId,
+                        like,
+                        questRepository::findById,
+                        (userId, targetId) -> new QuestRatingId(userId, targetId),
+                        questRatingRepository::findById,
+                        (userEntity, quest) -> new QuestRating(userEntity, quest, like),
+                        questRatingRepository::save,
+                        (oldLike, newLike) -> updateQuestCounters(questId, oldLike, newLike)
+                )
+        );
     }
+
 
     @Async
     @CacheEvict(value = {"quests", "userProfiles"}, allEntries = true)

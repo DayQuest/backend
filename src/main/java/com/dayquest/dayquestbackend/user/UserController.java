@@ -148,7 +148,7 @@ public class UserController {
 
     @GetMapping("/{uuid}")
     @Async
-    @Cacheable(value = "userProfiles", key = "#uuid.toString() + '_' + T(com.dayquest.dayquestbackend.auth.service.JwtService).extractUserId(#token.substring(7))", unless = "#result.statusCode != 200")
+    @Cacheable(value = "userProfiles", key = "#uuid + '_' + @jwtService.extractUserId(#token.substring(7))", unless = "#result.statusCode != 200")
     public CompletableFuture<ResponseEntity<ProfileDTO>> getUserByUuid(
             @PathVariable UUID uuid, @RequestHeader("Authorization") String token) {
         return CompletableFuture.supplyAsync(() -> {
