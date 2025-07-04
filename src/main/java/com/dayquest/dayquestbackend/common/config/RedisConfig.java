@@ -1,14 +1,12 @@
 package com.dayquest.dayquestbackend.common.config;
 
-import com.dayquest.dayquestbackend.common.mixin.ResponseEntityBodyOnlyMixin;
-import com.dayquest.dayquestbackend.common.mixin.ResponseEntityMixin;
+
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -24,11 +22,11 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
-import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.http.ResponseEntity;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -80,7 +78,10 @@ public class RedisConfig {
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
 
-        objectMapper.addMixIn(ResponseEntity.class, ResponseEntityBodyOnlyMixin.class);
+        SimpleModule module = new SimpleModule();
+        module.addSerializer(ResponseEntity.class, new ResponseEntityBodySerializer());
+        module.addDeserializer(ResponseEntity.class, new ResponseEntityBodyDeserializer());
+        objectMapper.registerModule(module);
 
         GenericJackson2JsonRedisSerializer serializer = new GenericJackson2JsonRedisSerializer(objectMapper);
 
@@ -122,5 +123,24 @@ public class RedisConfig {
                 "quests", "videos", "followRelationships"
         ));
         return cacheManager;
+    }
+
+    public static class ResponseEntityBodySerializer extends JsonSerializer<ResponseEntity<?>> {
+        @Override
+        public void serialize(ResponseEntity<?> value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            if (value.getBody() != null) {
+                serializers.defaultSerializeValue(value.getBody(), gen);
+            } else {
+                gen.writeNull();
+            }
+        }
+    }
+
+    public static class ResponseEntityBodyDeserializer extends JsonDeserializer<ResponseEntity<?>> {
+        @Override
+        public ResponseEntity<?> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+            Object body = p.readValueAs(Object.class);
+            return ResponseEntity.ok(body);
+        }
     }
 }
