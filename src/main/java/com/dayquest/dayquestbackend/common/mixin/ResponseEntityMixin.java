@@ -12,10 +12,22 @@ public abstract class ResponseEntityMixin<T> {
     @JsonCreator
     public ResponseEntityMixin(
             @JsonProperty("body") T body,
-            @JsonProperty("status") HttpStatus status,
-            @JsonProperty("headers") HttpHeaders headers) {}
+            @JsonProperty("status") HttpStatus status) {
+    }
 
+    @JsonCreator
+    public ResponseEntityMixin(
+            @JsonProperty("body") T body,
+            @JsonProperty("headers") HttpHeaders headers,
+            @JsonProperty("status") HttpStatus status) {
+    }
+
+    @JsonProperty("body")
     public abstract T getBody();
-    public abstract HttpStatus getStatus();
+
+    @JsonProperty("status")
+    public abstract HttpStatus getStatusCode();
+
+    @JsonProperty("headers")
     public abstract HttpHeaders getHeaders();
 }

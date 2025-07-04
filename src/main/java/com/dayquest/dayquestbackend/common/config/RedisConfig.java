@@ -24,6 +24,7 @@ import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSeriali
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.http.ResponseEntity;
 
 
 import java.time.Duration;
@@ -60,7 +61,7 @@ public class RedisConfig {
                 .allowIfSubType(Object.class)
                 .build();
 
-        objectMapper.addMixIn(Object.class, ResponseEntityMixin.class);
+        objectMapper.addMixIn(ResponseEntity.class, ResponseEntityMixin.class);
 
         objectMapper.activateDefaultTyping(ptv, ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
         objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
