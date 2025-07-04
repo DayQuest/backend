@@ -45,7 +45,7 @@ public class QuestController {
 
     @GetMapping
     @Async
-    @Cacheable(value = "quests", key = "#token + ':' + #page + ':' + #size + ':' + #sortBy + ':' + #sortDirection")
+    @Cacheable(value = "quests", key = "#page + ':' + #size + ':' + #sortBy + ':' + #sortDirection")
     public CompletableFuture<ResponseEntity<List<QuestDTO>>> getQuests(
             @RequestHeader("Authorization") String token,
             @RequestParam(defaultValue = "0") int page,
