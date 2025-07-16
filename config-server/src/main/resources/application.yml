@@ -1,0 +1,14 @@
+server:
+  port: 8888
+
+spring:
+  application:
+    name: config-server
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/DayQuest/dayquest-config
+          username: luc8020
+          password: ${GITHUB_TOKEN}
+          clone-on-start: true
