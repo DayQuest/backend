@@ -1,11 +1,8 @@
 HELP.md
 target/
-placeholer/
-.env
-!.mvn/wrapper/maven-wrapper.jar
+.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
-stack.env
 
 ### STS ###
 .apt_generated
@@ -34,4 +31,3 @@ build/
 
 ### VS Code ###
 .vscode/
-*.jar
