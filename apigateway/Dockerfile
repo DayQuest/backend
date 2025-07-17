@@ -13,6 +13,6 @@ WORKDIR /app
 
 COPY --from=build /app/target/*.jar app.jar
 
-EXPOSE ${SERVER_PORT}
+EXPOSE ${API_SERVER_PORT}
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -14,49 +14,69 @@ services:
       - dayquest-network
     restart: unless-stopped
 
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin4_container
+    restart: always
+    ports:
+      - "80:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+
   user-service:
     build:
-      context: .
-      dockerfile: user-service/Dockerfile
+      context: ./user-service
+      dockerfile: Dockerfile
     container_name: user-service
     ports:
       - "${USER_SERVER_PORT}:${USER_SERVER_PORT}"
     env_file:
       - stack.env
     restart: unless-stopped
+    depends_on:
+      - config-server
+      - eureka-server
     networks:
       - dayquest-network
 
   api-gateway:
     build:
-      context: .
-      dockerfile: apigateway/Dockerfile
+      context: ./apigateway
+      dockerfile: Dockerfile
     container_name: api-gateway
     ports:
       - "${API_SERVER_PORT}:${API_SERVER_PORT}"
     env_file:
       - stack.env
+    depends_on:
+      - config-server
+      - eureka-server
     restart: unless-stopped
     networks:
       - dayquest-network
 
   config-server:
     build:
-      context: .
-      dockerfile: config-server/Dockerfile
+      context: ./config-server
+      dockerfile: Dockerfile
     container_name: config-server
     ports:
       - "${CONFIG_SERVER_PORT}:${CONFIG_SERVER_PORT}"
     env_file:
       - stack.env
+    depends_on:
+      - eureka-server
     restart: unless-stopped
     networks:
       - dayquest-network
 
   eureka-server:
     build:
-      context: .
-      dockerfile: eureka-server/Dockerfile
+      context: ./eureka-server
+      dockerfile: Dockerfile
     container_name: eureka-server
     ports:
       - "${EUREKA_SERVER_PORT}:${EUREKA_SERVER_PORT}"
@@ -68,6 +88,7 @@ services:
 
 volumes:
   postgres:
+  pgadmin-data:
 
 networks:
   dayquest-network:

@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: config-server
+    name: configserver
   cloud:
     config:
       server:
@@ -12,3 +12,8 @@ spring:
           username: luc8020
           password: ${GITHUB_TOKEN}
           clone-on-start: true
+
+eureka:
+   client:
+     service-url:
+       defaultZone: http://eureka-server:8761/eureka
