@@ -48,7 +48,6 @@ public class VideoDTO {
         this.filePath = filePath;
         this.thumbnail = thumbnail;
         this.uuid = uuid;
-        this.quest = quest;
         this.liked = liked;
     }
 
