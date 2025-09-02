@@ -42,6 +42,22 @@ services:
     networks:
       - dayquest-network
 
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    ports:
+      - "${NOTIFICATION_SERVER_PORT}:${NOTIFICATION_SERVER_PORT}"
+    env_file:
+      - stack.env
+    restart: unless-stopped
+    depends_on:
+      - config-server
+      - eureka-server
+    networks:
+      - dayquest-network
+
   api-gateway:
     build:
       context: ./apigateway
@@ -86,9 +102,26 @@ services:
     networks:
       - dayquest-network
 
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - dayquest-network
+    restart: unless-stopped
+
+
 volumes:
   postgres:
   pgadmin-data:
+  rabbitmq_data:
 
 networks:
   dayquest-network:

@@ -18,7 +18,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-@RestController("/auth")
+@RestController
+@RequestMapping("/auth")
 public class AuthController {
     private final AuthService authService;
     private final UserRepository userRepository;

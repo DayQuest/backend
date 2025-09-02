@@ -29,7 +29,8 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-@RestController("/users")
+@RestController
+@RequestMapping("/users")
 public class UserController {
     private final JwtService jwtService;
     private final UserRepository userRepository;

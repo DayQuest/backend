@@ -1,5 +1,7 @@
 package com.dayquest.userservice.services;
 
+import com.dayquest.userservice.config.RabbitConfig;
+import com.dayquest.userservice.dto.EmailTemplate;
 import com.dayquest.userservice.enums.Punishments;
 import com.dayquest.userservice.exceptions.InvalidRequestException;
 import com.dayquest.userservice.exceptions.UserAlreadyExistsException;
@@ -7,6 +9,7 @@ import com.dayquest.userservice.models.User;
 import com.dayquest.userservice.repositories.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -32,6 +35,8 @@ public class AuthService {
     private JwtService jwtService;
 
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
 
     public AuthService(UserRepository userRepository) {
         this.userRepository = userRepository;
@@ -53,10 +58,34 @@ public class AuthService {
             newUser.setVerificationCodeExpiresAt(LocalDateTime.now().plusHours(1));
             newUser.setEnabled(false);
             newUser.setAuthorities(List.of("ROLE_USER"));
+            userRepository.save(newUser);
+            sendVerificationEmail(newUser);
+    }
+    private void sendVerificationEmail(User user) {
+        String subject = "Account Verification";
+        String verificationCode = user.getVerificationCode();
+        String htmlMessage = "<html>"
+                + "<body style=\"font-family: Arial, sans-serif;\">"
+                + "<div style=\"background-color: #f5f5f5; padding: 20px;\">"
+                + "<h2 style=\"color: #333;\">Willkommen bei DayQuest!</h2>"
+                + "<p style=\"font-size: 16px;\">Hier ist dein Code:</p>"
+                + "<div style=\"background-color: #fff; padding: 20px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1);\">"
+                + "<h3 style=\"color: #333;\">Verification Code:</h3>"
+                + "<p style=\"font-size: 18px; font-weight: bold; color: #007bff;\">" + verificationCode + "</p>"
+                + "</div>"
+                + "</div>"
+                + "</body>"
+                + "</html>";
 
-            //TODO: Send verification email
-            //TODO: Set Daily Quest
-
+        EmailTemplate emailTemplate = new EmailTemplate();
+        emailTemplate.setTo(user.getEmail());
+        emailTemplate.setSubject(subject);
+        emailTemplate.setBody(htmlMessage);
+        rabbitTemplate.convertAndSend(
+                RabbitConfig.EXCHANGE,
+                RabbitConfig.ROUTING_KEY,
+                emailTemplate
+        );
     }
     @Async
     public void verifyAccount(String verificationCode) {
@@ -102,7 +131,7 @@ public class AuthService {
     private void sendPasswordResetEmailInternal(User user, String token){
         String subject = "DayQuest Password Reset Request";
 
-        String frontendResetUrl = "https://apiv2.dayquest.de/api/users/reset-password?token=" + token;
+        String frontendResetUrl = "https://apiv2.dayquest.de/users/reset-password?token=" + token;
 
         String htmlMessage = String.format(
                 "<html><body style=\"font-family: Arial, sans-serif;\">" +
@@ -118,7 +147,15 @@ public class AuthService {
                         "</div></body></html>",
                 frontendResetUrl);
 
-        //TODO: Implement email sending logic
+        EmailTemplate emailTemplate = new EmailTemplate();
+        emailTemplate.setTo(user.getEmail());
+        emailTemplate.setSubject(subject);
+        emailTemplate.setBody(htmlMessage);
+        rabbitTemplate.convertAndSend(
+                RabbitConfig.EXCHANGE,
+                RabbitConfig.ROUTING_KEY,
+                emailTemplate
+        );
     }
 
     @Async
