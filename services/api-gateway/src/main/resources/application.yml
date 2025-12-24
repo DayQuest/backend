@@ -1,0 +1,85 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        # User Service Routes
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/users/**
+          filters:
+            - RewritePath=/api/users/(?<segment>.*), /${segment}
+
+        # Auth Service Routes
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - RewritePath=/api/auth/(?<segment>.*), /${segment}
+
+        # Video Service Routes
+        - id: video-service
+          uri: lb://video-service
+          predicates:
+            - Path=/api/videos/**
+          filters:
+            - RewritePath=/api/videos/(?<segment>.*), /${segment}
+
+        # Quest Service Routes
+        - id: quest-service
+          uri: lb://quest-service
+          predicates:
+            - Path=/api/quests/**
+          filters:
+            - RewritePath=/api/quests/(?<segment>.*), /${segment}
+
+        # Social Service Routes
+        - id: social-service
+          uri: lb://social-service
+          predicates:
+            - Path=/api/social/**
+          filters:
+            - RewritePath=/api/social/(?<segment>.*), /${segment}
+
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
+
+jwt:
+  secret: ${JWT_SECRET:your-secret-key}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+  endpoint:
+    gateway:
+      enabled: true
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    reactor.netty: DEBUG
