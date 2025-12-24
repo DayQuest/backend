@@ -1,6 +1,7 @@
 
 DEV_COMPOSE_FILE=docker-compose.dev.yml
 PROD_COMPOSE_FILE=docker-compose.yml
+MICROSERVICES_COMPOSE_FILE=docker-compose.microservices.yml
 
 
 help:
@@ -13,11 +14,13 @@ help:
 	@echo "Makefile for managing Docker Compose"
 	@echo ""
 	@echo "Usage:"
-	@echo "  make dev        # Run Docker Compose in development mode"
-	@echo "  make prod       # Run Docker Compose in production mode"
-	@echo "  make down       # Stop and remove containers"
-	@echo "  make build      # Build the containers"
-	@echo "  make logs       # Tail logs of the containers"
+	@echo "  make dev            # Run Docker Compose in development mode (monolith)"
+	@echo "  make prod           # Run Docker Compose in production mode (monolith)"
+	@echo "  make microservices  # Run Docker Compose with microservices architecture"
+	@echo "  make down           # Stop and remove containers"
+	@echo "  make build          # Build the containers"
+	@echo "  make logs           # Tail logs of the containers"
+	@echo "  make build-all      # Build all microservices with Maven"
 
 dev:
 	@echo " ____  _____ __ __ _____ _____ _____ _____ _____     "
@@ -60,4 +63,25 @@ logs:
 	@echo "Tailing logs of containers..."
 	docker-compose -f $(DEV_COMPOSE_FILE) logs -f
 
+microservices:
+	@echo " ____  _____ __ __ _____ _____ _____ _____ _____     "
+	@echo "|    \|  _  |  |  |     |  |  |   __|   __|_   _|    "
+	@echo "|  |  |     |_   _|  |  |  |  |   __|__   | | |      "
+	@echo "|____/|__|__| |_| |__  _|_____|_____|_____| |_|      "
+	@echo "                     |__|               by AgentP    "
+	@echo ""
+	@echo "Starting microservices architecture..."
+	docker-compose -f $(MICROSERVICES_COMPOSE_FILE) up --build
+
+microservices-down:
+	@echo "Stopping microservices..."
+	docker-compose -f $(MICROSERVICES_COMPOSE_FILE) down
+
+build-all:
+	@echo "Building all microservices with Maven..."
+	./mvnw clean package -DskipTests
+
+build-service:
+	@echo "Building specific service: $(SERVICE)"
+	./mvnw clean package -pl services/$(SERVICE) -am -DskipTests
 

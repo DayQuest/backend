@@ -1,0 +1,234 @@
+version: '3.8'
+
+services:
+  # Infrastructure Services
+  discovery-server:
+    build:
+      context: .
+      dockerfile: services/discovery-server/Dockerfile
+    container_name: dayquest-discovery
+    ports:
+      - "8761:8761"
+    networks:
+      - dayquest-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  config-server:
+    build:
+      context: .
+      dockerfile: services/config-server/Dockerfile
+    container_name: dayquest-config
+    ports:
+      - "8888:8888"
+    networks:
+      - dayquest-network
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    environment:
+      - EUREKA_URI=http://discovery-server:8761/eureka
+    restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: services/api-gateway/Dockerfile
+    container_name: dayquest-gateway
+    ports:
+      - "8080:8080"
+    networks:
+      - dayquest-network
+    depends_on:
+      - discovery-server
+      - config-server
+    environment:
+      - EUREKA_URI=http://discovery-server:8761/eureka
+      - JWT_SECRET=${JWT_SECRET}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    restart: unless-stopped
+
+  # Business Services
+  user-service:
+    build:
+      context: .
+      dockerfile: services/user-service/Dockerfile
+    container_name: dayquest-user-service
+    ports:
+      - "8081:8081"
+    networks:
+      - dayquest-network
+    depends_on:
+      - discovery-server
+      - postgres
+      - redis
+    environment:
+      - EUREKA_URI=http://discovery-server:8761/eureka
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/dayquest_users
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    restart: unless-stopped
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: services/auth-service/Dockerfile
+    container_name: dayquest-auth-service
+    ports:
+      - "8082:8082"
+    networks:
+      - dayquest-network
+    depends_on:
+      - discovery-server
+      - postgres
+      - redis
+    environment:
+      - EUREKA_URI=http://discovery-server:8761/eureka
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/dayquest_auth
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION=${JWT_EXPIRATION}
+      - SPRING_MAIL_HOST=${SPRING_MAIL_HOST}
+      - SPRING_MAIL_PORT=${SPRING_MAIL_PORT}
+      - SPRING_MAIL_USERNAME=${SPRING_MAIL_USERNAME}
+      - SPRING_MAIL_PASSWORD=${SPRING_MAIL_PASSWORD}
+    restart: unless-stopped
+
+  video-service:
+    build:
+      context: .
+      dockerfile: services/video-service/Dockerfile
+    container_name: dayquest-video-service
+    ports:
+      - "8083:8083"
+    volumes:
+      - video-processed:/opt/dayquestcdn/videos/processed
+      - video-unprocessed:/opt/dayquestcdn/videos/unprocessed
+    networks:
+      - dayquest-network
+    depends_on:
+      - discovery-server
+      - postgres
+      - redis
+      - minio
+    environment:
+      - EUREKA_URI=http://discovery-server:8761/eureka
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/dayquest_videos
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+    restart: unless-stopped
+
+  quest-service:
+    build:
+      context: .
+      dockerfile: services/quest-service/Dockerfile
+    container_name: dayquest-quest-service
+    ports:
+      - "8084:8084"
+    networks:
+      - dayquest-network
+    depends_on:
+      - discovery-server
+      - postgres
+      - redis
+    environment:
+      - EUREKA_URI=http://discovery-server:8761/eureka
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/dayquest_quests
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    restart: unless-stopped
+
+  social-service:
+    build:
+      context: .
+      dockerfile: services/social-service/Dockerfile
+    container_name: dayquest-social-service
+    ports:
+      - "8085:8085"
+    networks:
+      - dayquest-network
+    depends_on:
+      - discovery-server
+      - postgres
+      - redis
+    environment:
+      - EUREKA_URI=http://discovery-server:8761/eureka
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/dayquest_social
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    restart: unless-stopped
+
+  # Data Services
+  postgres:
+    image: postgres:15
+    container_name: dayquest-postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
+    environment:
+      - POSTGRES_USER=${SPRING_DATASOURCE_USERNAME}
+      - POSTGRES_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      - POSTGRES_DB=dayquest
+    networks:
+      - dayquest-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: dayquest-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - dayquest-network
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio
+    container_name: dayquest-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY}
+      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}
+    command: server /data --console-address ":9001"
+    networks:
+      - dayquest-network
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  redis-data:
+  minio-data:
+  video-processed:
+  video-unprocessed:
+
+networks:
+  dayquest-network:
+    name: dayquest-network
+    driver: bridge

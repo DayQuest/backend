@@ -14,18 +14,89 @@ This software is **private**. You are **not** allowed to copy, modify, distribut
 - Modifying and using this code in other projects without permission.
 - Using this software for commercial purposes.  
 
+---
+
+## 🏗️ Architecture
+
+This project supports both **monolithic** and **microservices** architectures.
+
+### Microservices Architecture
+
+The application is split into the following services:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                          API Gateway (8080)                         │
+│                    (Routing, Authentication, Rate Limiting)         │
+└─────────────────────────────────────────────────────────────────────┘
+                                    │
+        ┌───────────────────────────┼───────────────────────────┐
+        │                           │                           │
+        ▼                           ▼                           ▼
+┌───────────────┐         ┌───────────────┐         ┌───────────────┐
+│ User Service  │         │ Auth Service  │         │ Video Service │
+│    (8081)     │◄───────►│    (8082)     │         │    (8083)     │
+│               │         │               │         │               │
+│ - Profiles    │         │ - Login/JWT   │         │ - Upload      │
+│ - Followers   │         │ - 2FA         │         │ - Processing  │
+│ - Badges      │         │ - Password    │         │ - Streaming   │
+└───────────────┘         └───────────────┘         └───────────────┘
+        │                                                   │
+        │         ┌───────────────┐         ┌───────────────┤
+        │         │ Quest Service │         │ Social Service│
+        └────────►│    (8084)     │◄────────┤    (8085)     │
+                  │               │         │               │
+                  │ - Daily Quest │         │ - Comments    │
+                  │ - Ratings     │         │ - Notifications│
+                  │ - Rerolls     │         │ - Friends     │
+                  └───────────────┘         └───────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                     Infrastructure Services                          │
+├─────────────────┬─────────────────┬─────────────────┬───────────────┤
+│ Discovery Server│  Config Server  │    PostgreSQL   │    Redis      │
+│     (8761)      │     (8888)      │     (5432)      │    (6379)     │
+│    (Eureka)     │   (Centralized  │  (Data Store)   │   (Cache)     │
+│                 │    Config)      │                 │               │
+└─────────────────┴─────────────────┴─────────────────┴───────────────┘
+```
+
+### Service Communication
+
+- **Synchronous**: REST APIs via Feign Clients
+- **Service Discovery**: Netflix Eureka
+- **Configuration**: Spring Cloud Config Server
+- **Caching**: Redis for distributed caching
+- **Database**: PostgreSQL (separate databases per service)  
+
 
 ### Folder Structure:
 
 ```
 DayQuest-backend/
-├── docker-compose.dev.yml   # Docker Compose configuration for development with hot reload and volume mounts
-├── Dockerfile.dev           # Dockerfile for development environment with dependencies and hot reload
-├── docker-compose.yml       # Docker Compose configuration for production without mounts and volumes
-└── Dockerfile               # Multi-stage Dockerfile for production deployment, optimized for smaller images
+├── docker-compose.dev.yml           # Docker Compose for development (monolith)
+├── docker-compose.yml               # Docker Compose for production (monolith)
+├── docker-compose.microservices.yml # Docker Compose for microservices
+├── Dockerfile                       # Dockerfile for monolith
+├── Dockerfile.dev                   # Dockerfile for development
+├── pom.xml                          # Parent POM for multi-module Maven project
+├── init-databases.sql               # Database initialization script
+├── src/                             # Original monolithic source code
+└── services/                        # Microservices modules
+    ├── common/                      # Shared library (DTOs, exceptions, events)
+    ├── discovery-server/            # Eureka service discovery
+    ├── config-server/               # Centralized configuration
+    ├── api-gateway/                 # API Gateway with routing
+    ├── user-service/                # User management service
+    ├── auth-service/                # Authentication service
+    ├── video-service/               # Video upload/processing service
+    ├── quest-service/               # Quest management service
+    └── social-service/              # Comments, notifications service
 ```
 
 ### Commands:
+
+#### Monolithic Mode (Legacy)
 
 1. To start the development environment:
    ```bash
@@ -37,24 +108,84 @@ DayQuest-backend/
    make prod
    ```
 
-3. To stop and remove containers:
+#### Microservices Mode
+
+1. To start all microservices:
+   ```bash
+   make microservices
+   ```
+
+2. To stop microservices:
+   ```bash
+   make microservices-down
+   ```
+
+3. To build all services with Maven:
+   ```bash
+   make build-all
+   ```
+
+4. To build a specific service:
+   ```bash
+   make build-service SERVICE=user-service
+   ```
+
+#### Common Commands
+
+1. To stop and remove containers:
    ```bash
    make down
    ```
 
-4. To build the Docker images:
-   ```bash
-   make build
-   ```
-
-5. To view logs of running containers:
+2. To view logs of running containers:
    ```bash
    make logs
    ```
-6. Get a list of all available commands:
+
+3. Get a list of all available commands:
    ```bash
    make help
    ```
+
+### API Endpoints
+
+When running in microservices mode, all requests go through the API Gateway on port 8080:
+
+| Service        | Gateway Path         | Direct Port |
+|----------------|----------------------|-------------|
+| User Service   | `/api/users/**`      | 8081        |
+| Auth Service   | `/api/auth/**`       | 8082        |
+| Video Service  | `/api/videos/**`     | 8083        |
+| Quest Service  | `/api/quests/**`     | 8084        |
+| Social Service | `/api/social/**`     | 8085        |
+
+### Environment Variables
+
+Create a `.env` file with the following variables:
+
+```env
+# Database
+SPRING_DATASOURCE_USERNAME=postgres
+SPRING_DATASOURCE_PASSWORD=your_password
+
+# JWT
+JWT_SECRET=your_jwt_secret_key
+JWT_EXPIRATION=86400000
+
+# Redis
+REDIS_HOST=localhost
+REDIS_PORT=6379
+
+# MinIO (Video Storage)
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin
+
+# Email (for Auth Service)
+SPRING_MAIL_HOST=smtp.gmail.com
+SPRING_MAIL_PORT=587
+SPRING_MAIL_USERNAME=your_email
+SPRING_MAIL_PASSWORD=your_app_password
+```
 ---
 
 ## Contribution Rules for Feature Development:
