@@ -1,4 +1,6 @@
 package com.dayquest.notificationservice.email;
+
+import com.dayquest.common.dto.EmailTemplate;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
@@ -39,6 +41,10 @@ public class EmailService {
     }
 
     public boolean sendEmailSafely(EmailTemplate emailTemplate) {
+        if (emailTemplate == null) {
+            logger.warn("Cannot send email: emailTemplate is null");
+            return false;
+        }
         try {
             sendEmail(emailTemplate);
             return true;

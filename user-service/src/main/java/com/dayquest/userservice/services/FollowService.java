@@ -22,7 +22,7 @@ public class FollowService {
     private FollowRepository followRepository;
 
     @Autowired
-    private JwtService jwtService;
+    private UserServiceJwtService jwtService;
 
     @Autowired
     private UserRepository userRepository;
@@ -75,8 +75,7 @@ public class FollowService {
     }
 
     @Async
-    public CompletableFuture<List<UUID>> getFollowedPage(String token, int page, int size) {
-        UUID userId = jwtService.extractUserId(token);
+    public CompletableFuture<List<UUID>> getFollowedPage(UUID userId, int page, int size) {
         if (userId == null) {
             return CompletableFuture.completedFuture(null);
         }
@@ -97,8 +96,7 @@ public class FollowService {
     }
 
     @Async
-    public CompletableFuture<List<UUID>> getFollowerPage(String token, int page, int size) {
-        UUID userId = jwtService.extractUserId(token);
+    public CompletableFuture<List<UUID>> getFollowerPage(UUID userId, int page, int size) {
         if (userId == null) {
             return CompletableFuture.completedFuture(null);
         }
@@ -118,4 +116,3 @@ public class FollowService {
         return CompletableFuture.completedFuture(followerIds);
     }
 }
-

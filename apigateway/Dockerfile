@@ -1,18 +1,47 @@
-FROM openjdk:24-jdk-slim AS build
-RUN apt-get update && apt-get install -y maven
+FROM maven:3.9-eclipse-temurin-21-alpine AS build
 
 WORKDIR /app
 
-COPY . .
+# Copy parent pom and all modules
+COPY pom.xml .
+COPY common/pom.xml common/
+COPY eureka-server/pom.xml eureka-server/
+COPY config-server/pom.xml config-server/
+COPY apigateway/pom.xml apigateway/
+COPY user-service/pom.xml user-service/
+COPY quest-service/pom.xml quest-service/
+COPY notification-service/pom.xml notification-service/
+COPY video-service/pom.xml video-service/
+COPY social-service/pom.xml social-service/
+COPY content-service/pom.xml content-service/
 
-RUN --mount=type=cache,target=/root/.m2 mvn clean package -DskipTests
+# Download dependencies with retry logic
+RUN mvn dependency:go-offline -B -pl apigateway -am \
+    -Dmaven.wagon.http.retryHandler.count=5 \
+    -Dmaven.wagon.httpconnectionManager.ttlSeconds=120 \
+    || mvn dependency:go-offline -B -pl apigateway -am
 
-FROM openjdk:24-jdk-slim
+# Copy source code
+COPY common/src common/src
+COPY apigateway/src apigateway/src
+
+# Build
+RUN mvn clean package -Dmaven.test.skip=true -pl apigateway -am
+
+FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
-COPY --from=build /app/target/*.jar app.jar
+COPY --from=build /app/apigateway/target/*.jar app.jar
 
-EXPOSE ${API_SERVER_PORT}
+EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# JVM Optimizations for faster startup and better container support
+ENTRYPOINT ["java", \
+  "-XX:+UseContainerSupport", \
+  "-XX:MaxRAMPercentage=75.0", \
+  "-XX:TieredStopAtLevel=1", \
+  "-XX:+UseG1GC", \
+  "-Djava.security.egd=file:/dev/./urandom", \
+  "-Dspring.backgroundpreinitializer.ignore=true", \
+  "-jar", "app.jar"]

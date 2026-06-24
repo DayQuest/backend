@@ -1,14 +1,24 @@
 package com.dayquest.userservice.controllers;
 
+import com.dayquest.common.dto.UuidDTO;
+import com.dayquest.common.events.UserDeletedEvent;
+import com.dayquest.common.jwt.JwtService;
+import com.dayquest.common.messaging.RabbitMQConstants;
 import com.dayquest.userservice.dto.*;
 import com.dayquest.userservice.models.User;
 import com.dayquest.userservice.repositories.BadgeRepository;
 import com.dayquest.userservice.repositories.UserRepository;
 import com.dayquest.userservice.services.FollowService;
-import com.dayquest.userservice.services.JwtService;
+import com.dayquest.userservice.services.ProfilePictureService;
 import com.dayquest.userservice.services.UserService;
 import com.dayquest.userservice.utils.ImageUtil;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.domain.Page;
@@ -20,6 +30,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -31,7 +42,10 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/users")
+@Validated
 public class UserController {
+
+    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
     private final JwtService jwtService;
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
@@ -39,8 +53,13 @@ public class UserController {
     private final ImageUtil imageUtil;
     private final BadgeRepository badgeRepository;
     private final FollowService followService;
+    private final RabbitTemplate rabbitTemplate;
+    private final ProfilePictureService profilePictureService;
 
-    public UserController(JwtService jwtService, UserRepository userRepository, BCryptPasswordEncoder passwordEncoder, UserService userService, ImageUtil imageUtil, BadgeRepository badgeRepository, FollowService followService) {
+    public UserController(JwtService jwtService, UserRepository userRepository, BCryptPasswordEncoder passwordEncoder,
+                          UserService userService, ImageUtil imageUtil, BadgeRepository badgeRepository,
+                          FollowService followService, RabbitTemplate rabbitTemplate,
+                          ProfilePictureService profilePictureService) {
         this.jwtService = jwtService;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
@@ -48,9 +67,11 @@ public class UserController {
         this.imageUtil = imageUtil;
         this.badgeRepository = badgeRepository;
         this.followService = followService;
+        this.rabbitTemplate = rabbitTemplate;
+        this.profilePictureService = profilePictureService;
     }
 
-    @DeleteMapping
+    @DeleteMapping({"", "/"})
     @Async
     public CompletableFuture<ResponseEntity<?>> deleteUser(@RequestHeader("Authorization") String token, @RequestBody PasswordDTO passwordDTO) {
         String tokenWithoutBearer = token.substring(7);
@@ -59,6 +80,20 @@ public class UserController {
         if (user == null || !passwordEncoder.matches(passwordDTO.getPassword(), user.getPassword())) {
             return CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials"));
         }
+
+        String username = user.getUsername();
+        UserDeletedEvent event = new UserDeletedEvent(userId, username);
+        try {
+            rabbitTemplate.convertAndSend(
+                RabbitMQConstants.USER_EXCHANGE,
+                RabbitMQConstants.USER_DELETED_ROUTING_KEY,
+                event
+            );
+            logger.info("Published UserDeletedEvent for user: {} ({})", username, userId);
+        } catch (Exception e) {
+            logger.error("Failed to publish UserDeletedEvent for user: {} - {}", userId, e.getMessage());
+        }
+
         userRepository.delete(user);
         return CompletableFuture.completedFuture(ResponseEntity.ok("User deleted successfully"));
     }
@@ -92,9 +127,9 @@ public class UserController {
     @GetMapping("/search")
     @Async
     public CompletableFuture<ResponseEntity<Map<String, Object>>> searchUsers(
-            @RequestParam String query,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam @Size(min = 1, max = 100, message = "Query must be between 1 and 100 characters") String query,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size) {
             Page<User> userPage = userRepository.findUsersByUsernameContainingIgnoreCase(query, PageRequest.of(page, size));
             List<ProfileDTO> profileDTOs = userPage.getContent().stream()
                     .map(user -> userService.createProfileDTO(user, null).join())
@@ -128,18 +163,23 @@ public class UserController {
     public CompletableFuture<ResponseEntity<ByteArrayResource>> getDecodedImage(@PathVariable("username") String username) {
         try {
             User user = userRepository.findByUsername(username);
-            byte[] imageBytes;
+            byte[] imageBytes = null;
 
-            if (user == null || user.getProfilePicture() == null) {
+            if (user != null && profilePictureService.isMinioAvailable()) {
+                imageBytes = profilePictureService.getProfilePicture(user.getUuid());
+            }
+
+
+            // Default picture if nothing found
+            if (imageBytes == null) {
                 ClassPathResource defaultPicture = new ClassPathResource("pfp.jpg");
                 imageBytes = defaultPicture.getInputStream().readAllBytes();
-            } else {
-                imageBytes = user.getProfilePicture();
             }
 
             ByteArrayResource resource = new ByteArrayResource(imageBytes);
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.IMAGE_JPEG);
+            headers.setCacheControl("public, max-age=86400"); // Cache for 1 day
 
             return CompletableFuture.completedFuture(ResponseEntity.ok()
                     .headers(headers)
@@ -147,6 +187,7 @@ public class UserController {
                     .body(resource));
 
         } catch (IOException | IllegalArgumentException e) {
+            logger.error("Error retrieving profile picture for {}: {}", username, e.getMessage());
             return CompletableFuture.completedFuture(
                     ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                             .body(new ByteArrayResource(new byte[0])));
@@ -193,9 +234,6 @@ public class UserController {
         if (file.isEmpty()) {
             return CompletableFuture.completedFuture(ResponseEntity.badRequest().body("File is empty"));
         }
-        /*if (!userService.authenticateUserWith2FA(uuid, token, null).join()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
-        }*/
 
         try {
             Optional<User> userOptional = userRepository.findById(jwtService.extractUserId(token.substring(7)));
@@ -204,10 +242,22 @@ public class UserController {
             }
             User user = userOptional.get();
             byte[] fileBytes = imageUtil.compressImage(file).join();
-            user.setProfilePicture(fileBytes);
-            userRepository.save(user);
-            return CompletableFuture.completedFuture(ResponseEntity.ok("Profile picture uploaded successfully"));
+
+            // Try MinIO first, fallback to database
+            if (profilePictureService.isMinioAvailable()) {
+                String url = profilePictureService.uploadProfilePicture(user.getUuid(), fileBytes).join();
+                if (url != null) {
+                    user.setProfilePictureUrl(url);
+                    // Clear old DB blob to save space
+                    user.setProfilePicture(null);
+                    userRepository.save(user);
+                    logger.info("Profile picture uploaded to MinIO for user: {}", user.getUsername());
+                    return CompletableFuture.completedFuture(ResponseEntity.ok("Profile picture uploaded successfully"));
+                }
+            }
+            return CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Please try again later"));
         } catch (IOException e) {
+            logger.error("Failed to process profile picture: {}", e.getMessage());
             return CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to process the file"));
         }
     }
@@ -226,6 +276,8 @@ public class UserController {
         });
     }
 
+    //TODO: Move to admin microservice
+    //TODO: Test this endpoint and make sure it works correctly with the badge system. Also consider edge cases like adding a badge that doesn't exist or adding a badge to a user that doesn't exist.
     @PutMapping("/{uuid}/badge")
     @Async
     public CompletableFuture<ResponseEntity<String>> addBadge(@PathVariable UUID uuid, @RequestBody UUID badgeId, @RequestHeader("Authorization") String token) {
@@ -247,24 +299,28 @@ public class UserController {
             return CompletableFuture.completedFuture(ResponseEntity.ok("Badge added"));
     }
 
+    //TODO: refactor the return type of this endpoint to return more information about the badges instead of just the ids. Also consider edge cases like requesting badges for a user that doesn't exist.
     @GetMapping("/{uuid}/badges")
     @Async
     public CompletableFuture<ResponseEntity<List<UUID>>> getBadges(@PathVariable UUID uuid) {
         return CompletableFuture.supplyAsync(() -> ResponseEntity.ok(badgeRepository.findBadgeIdsByUserId(uuid)));
     }
 
+
+    //TODO: Add more Information like pfp url username etc. Also consider edge cases like requesting followers for a user that doesn't exist or requesting a page that is out of bounds.
     @GetMapping("/{uuid}/followers")
     @Async
     public CompletableFuture<ResponseEntity<List<UUID>>> getFollowers(@PathVariable UUID uuid, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size, @RequestHeader("Authorization") String token) {
-            CompletableFuture<List<UUID>> followersFuture = followService.getFollowerPage(token, page, size);
+            CompletableFuture<List<UUID>> followersFuture = followService.getFollowerPage(uuid, page, size);
             List<UUID> followers = followersFuture.join();
             return CompletableFuture.completedFuture(ResponseEntity.ok(followers));
     }
 
+    //TODO: Add more Information like pfp url username etc. Also consider edge cases like requesting followers for a user that doesn't exist or requesting a page that is out of bounds.
     @GetMapping("/{uuid}/following")
     @Async
     public CompletableFuture<ResponseEntity<List<UUID>>> getFollowing(@PathVariable UUID uuid, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size, @RequestHeader("Authorization") String token) {
-            CompletableFuture<List<UUID>> followingFuture = followService.getFollowedPage(token, page, size);
+            CompletableFuture<List<UUID>> followingFuture = followService.getFollowedPage(uuid, page, size);
             List<UUID> following = followingFuture.join();
             return CompletableFuture.completedFuture(ResponseEntity.ok(following));
     }
@@ -290,7 +346,7 @@ public class UserController {
             }
 
             userToFollow.setFollowers(userToFollow.getFollowers() + 1);
-            followService.followUser(token, uuid).join();
+            followService.followUser(token.substring(7), uuid).join();
             userRepository.save(userToFollow);
 
             return CompletableFuture.completedFuture(ResponseEntity.ok("User followed"));
@@ -301,7 +357,7 @@ public class UserController {
     public CompletableFuture<ResponseEntity<String>> unfollowUser(
             @PathVariable UUID uuid,
             @RequestHeader("Authorization") String token) {
-        return followService.unfollowUser(token, uuid)
+        return followService.unfollowUser(token.substring(7), uuid)
                 .thenApply(response -> {
                     if (response.getStatusCode() == HttpStatus.OK) {
                         User userToUnfollow = userRepository.findById(uuid).orElseThrow(() -> new RuntimeException("User not found"));
@@ -335,6 +391,7 @@ public class UserController {
                 : CompletableFuture.completedFuture(ResponseEntity.ok(false))).orElseGet(() -> CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.NOT_FOUND).body(false)));
     }
 
+    //TODO: Move to admin microservice
     @DeleteMapping("/{uuid}/badge")
     @Async
     public CompletableFuture<ResponseEntity<String>> removeBadge(@PathVariable UUID uuid, @RequestBody UUID badgeId, @RequestHeader("Authorization") String token) {

@@ -3,8 +3,8 @@ package com.dayquest.userservice.services;
 import com.dayquest.userservice.dto.ProfileDTO;
 import com.dayquest.userservice.enums.Punishments;
 import com.dayquest.userservice.models.User;
-import com.dayquest.userservice.models.UserWithVideos;
 import com.dayquest.userservice.repositories.BadgeRepository;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -24,14 +24,32 @@ public class UserService {
         this.badgeRepository = badgeRepository;
     }
 
+    /**
+     * Get the profile picture URL for a user.
+     * Priority: MinIO URL > DB BLOB endpoint > Default
+     */
+    private String getProfilePictureUrl(User user) {
+        // Prefer MinIO URL if available
+        if (user.getProfilePictureUrl() != null && !user.getProfilePictureUrl().isEmpty()) {
+            return user.getProfilePictureUrl();
+        }
+        // Fallback to API endpoint (which checks DB BLOB)
+        if (user.getProfilePicture() != null) {
+            return PROFILE_PICTURE_BASE_URL + user.getUsername();
+        }
+        // Default avatar
+        return DEFAULT_PROFILE_PICTURE_URL;
+    }
+
     @Async
+    @Cacheable(value = "userProfiles", key = "#userWithVideos.uuid", condition = "#requester == null")
     public CompletableFuture<ProfileDTO> createProfileDTO(User userWithVideos, User requester) {
+        String profilePictureUrl = getProfilePictureUrl(userWithVideos);
+
         if (requester == null) {
             return CompletableFuture.supplyAsync(() -> new ProfileDTO(
                     userWithVideos.getUsername(),
-                    userWithVideos.getProfilePicture() != null ?
-                            PROFILE_PICTURE_BASE_URL + userWithVideos.getUsername() :
-                            DEFAULT_PROFILE_PICTURE_URL,
+                    profilePictureUrl,
                     null,
                     userWithVideos.getPunishment() == Punishments.BANNED,
                     userWithVideos.getFollowers(),
@@ -50,9 +68,7 @@ public class UserService {
         return isFollowingFuture.thenCombine(badgesFuture, (isFollowing, badges) ->
                 new ProfileDTO(
                         userWithVideos.getUsername(),
-                        userWithVideos.getProfilePicture() != null ?
-                                PROFILE_PICTURE_BASE_URL + userWithVideos.getUsername() :
-                                DEFAULT_PROFILE_PICTURE_URL,
+                        profilePictureUrl,
                         null, // videos
                         userWithVideos.getPunishment() == Punishments.BANNED,
                         userWithVideos.getFollowers(),

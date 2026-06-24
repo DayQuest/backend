@@ -77,6 +77,9 @@ public class User implements UserDetails {
     @Column
     private byte[] profilePicture;
 
+    @Column(name = "profile_picture_url")
+    private String profilePictureUrl;
+
     private String adminComment;
 
     public byte[] getProfilePicture() {
@@ -85,6 +88,14 @@ public class User implements UserDetails {
 
     public void setProfilePicture(byte[] profilePicture) {
         this.profilePicture = profilePicture;
+    }
+
+    public String getProfilePictureUrl() {
+        return profilePictureUrl;
+    }
+
+    public void setProfilePictureUrl(String profilePictureUrl) {
+        this.profilePictureUrl = profilePictureUrl;
     }
 
     public UUID getUuid() {

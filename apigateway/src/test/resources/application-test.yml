@@ -1,0 +1,43 @@
+server:
+  port: 0
+
+spring:
+  application:
+    name: api-gateway-test
+  cloud:
+    config:
+      enabled: false
+    gateway:
+      enabled: true
+  main:
+    allow-bean-definition-overriding: true
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+# JWT Configuration for tests
+jwt:
+  secret: dGVzdC1zZWNyZXQta2V5LWZvci11bml0LXRlc3RzLW9ubHktbm90LWZvci1wcm9kdWN0aW9uLXVzZS10ZXN0LXNlY3JldC1rZXktZm9yLXVuaXQtdGVzdHM=
+
+# Disable security for tests
+security:
+  public-paths:
+    - /auth/**
+    - /actuator/**
+    - /swagger-ui/**
+    - /v3/api-docs/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    com.dayquest: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+

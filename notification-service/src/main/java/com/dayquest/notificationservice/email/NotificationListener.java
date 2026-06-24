@@ -1,5 +1,7 @@
 package com.dayquest.notificationservice.email;
 
+import com.dayquest.common.dto.EmailTemplate;
+import com.dayquest.common.messaging.RabbitMQConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -14,7 +16,7 @@ public class NotificationListener {
     @Autowired
     private EmailService emailService;
 
-    @RabbitListener(queues = RabbitConfig.QUEUE)
+    @RabbitListener(queues = RabbitMQConstants.EMAIL_QUEUE)
     public void handleEmailNotification(EmailTemplate emailTemplate) {
         logger.info("Received email notification: {}", emailTemplate);
 

@@ -1,24 +1,11 @@
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: dayquest-mysql-dev
-    volumes:
-      - mysql-data:/var/lib/mysql
-    ports:
-      - "3307:3306"
-    env_file:
-      - stack.env
-    restart: unless-stopped
-    networks:
-      - dayquest-network
-
-
   postgres:
-    container_name: postgres_container-dev
+    container_name: postgres_container
     image: postgres
     environment:
       POSTGRES_USER: ${SPRING_DATASOURCE_USERNAME}
       POSTGRES_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      POSTGRES_DB: dayquest
       PGDATA: /data/postgres
     volumes:
       - postgres:/data/postgres
@@ -27,64 +14,389 @@ services:
     networks:
       - dayquest-network
     restart: unless-stopped
-
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SPRING_DATASOURCE_USERNAME} -d dayquest"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   pgadmin:
     image: dpage/pgadmin4
     container_name: pgadmin4_container
     restart: always
     ports:
-      - "8888:80"
+      - "5050:80"
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
     volumes:
       - pgadmin-data:/var/lib/pgadmin
-
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    container_name: dayquest-phpmyadmin-dev
-    ports:
-      - ${PHPMYADMIN_PORT}:80
-    depends_on:
-      - mysql
-    volumes:
-      - /opt/docker/phpmyadmin/boodark-nord:/var/www/html/themes/boodark-nord
-      - /opt/docker/phpmyadmin/config.inc.php:/etc/phpmyadmin/config.user.inc.php
-    environment:
-        - PMA_THEME=BooDark
-    env_file:
-      - stack.env
-    restart: unless-stopped
     networks:
       - dayquest-network
 
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - dayquest-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  app:
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - dayquest-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - dayquest-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  eureka-server:
     build:
       context: .
-      dockerfile: Dockerfile
-    volumes:
-      - /opt/dayquestcdn/videos/processed:/opt/dayquestcdn/videos/processed
-      - /opt/dayquestcdn/videos/unprocessed:/opt/dayquestcdn/videos/unprocessed
-    container_name: dayquest-backend-dev
+      dockerfile: eureka-server/Dockerfile
+    container_name: eureka-server
     ports:
-      - "${SERVER_PORT}:${SERVER_PORT}"
-    depends_on:
-      - mysql
+      - "${EUREKA_SERVER_PORT}:8761"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_INSTANCE_HOSTNAME=eureka-server
     env_file:
       - stack.env
     restart: unless-stopped
-    pull_policy: build
+    networks:
+      - dayquest-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8761/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  config-server:
+    build:
+      context: .
+      dockerfile: config-server/Dockerfile
+    container_name: config-server
+    ports:
+      - "${CONFIG_SERVER_PORT}:8888"
+    environment:
+      - SPRING_PROFILES_ACTIVE=native,docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+    env_file:
+      - stack.env
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - dayquest-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8888/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: apigateway/Dockerfile
+    container_name: api-gateway
+    ports:
+      - "${API_SERVER_PORT}:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - JWT_SECRET=${JWT_SECRET}
+    env_file:
+      - stack.env
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    restart: unless-stopped
     networks:
       - dayquest-network
 
+  user-service:
+    build:
+      context: .
+      dockerfile: user-service/Dockerfile
+    container_name: user-service
+    ports:
+      - "${USER_SERVER_PORT}:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/dayquest
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - REDIS_ENABLED=${REDIS_ENABLED:-false}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+    env_file:
+      - stack.env
+    restart: unless-stopped
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - dayquest-network
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
+    container_name: notification-service
+    ports:
+      - "${NOTIFICATION_SERVER_PORT}:8085"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - RABBITMQ_USER=${RABBITMQ_USER}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+    env_file:
+      - stack.env
+    restart: unless-stopped
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - dayquest-network
+
+  quest-service:
+    build:
+      context: .
+      dockerfile: quest-service/Dockerfile
+    container_name: quest-service
+    ports:
+      - "${QUEST_SERVER_PORT}:8083"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/dayquest
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+    env_file:
+      - stack.env
+    restart: unless-stopped
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - dayquest-network
+
+  # Note: Auth functionality is handled by user-service (no separate auth-service needed)
+
+  video-service:
+    build:
+      context: .
+      dockerfile: video-service/Dockerfile
+    container_name: video-service
+    ports:
+      - "${VIDEO_SERVER_PORT:-8085}:8085"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/dayquest
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin}
+      - REDIS_ENABLED=${REDIS_ENABLED:-false}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+    env_file:
+      - stack.env
+    restart: unless-stopped
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - dayquest-network
+
+  social-service:
+    build:
+      context: .
+      dockerfile: social-service/Dockerfile
+    container_name: social-service
+    ports:
+      - "${SOCIAL_SERVER_PORT:-8086}:8086"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/dayquest
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+    env_file:
+      - stack.env
+    restart: unless-stopped
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - dayquest-network
+
+  content-service:
+    build:
+      context: .
+      dockerfile: content-service/Dockerfile
+    container_name: content-service
+    ports:
+      - "${CONTENT_SERVER_PORT:-8087}:8087"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/dayquest
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+    env_file:
+      - stack.env
+    restart: unless-stopped
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - dayquest-network
+
+  # ============================================
+  # MONITORING SERVICES
+  # ============================================
+
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - dayquest-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:10.2.2
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning
+      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards
+    networks:
+      - dayquest-network
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+
 volumes:
-  mysql-data:
-  video-processed:
-  pgadmin-data:
-  video-cache:
   postgres:
+  pgadmin-data:
+  rabbitmq_data:
+  redis_data:
+  minio_data:
+  prometheus_data:
+  grafana_data:
 
 networks:
   dayquest-network:

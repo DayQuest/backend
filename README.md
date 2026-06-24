@@ -1,91 +1,214 @@
-# DayQuest Backend
+# DayQuest - Microservices Architecture
 
-© 2025 DayQuest  
-All rights reserved.
+A social quest and video sharing platform built with Spring Boot microservices.
 
-This software is **private**. You are **not** allowed to copy, modify, distribute, or use this code in any way except for the following cases:  
-
-### ✅ Allowed:
-- Private use (for personal, non-public and non-commercial purposes).
-- Contributing to this project.  
-
-### ❌ Not Allowed:
-- Redistributing, sharing, or publishing this code in any form.
-- Modifying and using this code in other projects without permission.
-- Using this software for commercial purposes.  
-
-
-### Folder Structure:
+## Architecture Overview
 
 ```
-DayQuest-backend/
-├── docker-compose.dev.yml   # Docker Compose configuration for development with hot reload and volume mounts
-├── Dockerfile.dev           # Dockerfile for development environment with dependencies and hot reload
-├── docker-compose.yml       # Docker Compose configuration for production without mounts and volumes
-└── Dockerfile               # Multi-stage Dockerfile for production deployment, optimized for smaller images
+                                    ┌─────────────────┐
+                                    │   API Gateway   │
+                                    │     (8080)      │
+                                    └────────┬────────┘
+                                             │
+        ┌────────────────────────────────────┼────────────────────────────────────┐
+        │                    │               │               │                    │
+        ▼                    ▼               ▼               ▼                    ▼
+┌───────────────┐  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐
+│ User Service  │  │ Quest Service │  │ Video Service │  │Social Service │  │Content Service│
+│    (8081)     │  │    (8083)     │  │    (8085)     │  │    (8086)     │  │    (8087)     │
+└───────────────┘  └───────────────┘  └───────────────┘  └───────────────┘  └───────────────┘
+        │                    │               │               │                    │
+        └────────────────────┴───────────────┴───────────────┴────────────────────┘
+                                             │
+                    ┌────────────────────────┼────────────────────────┐
+                    │                        │                        │
+                    ▼                        ▼                        ▼
+            ┌───────────────┐       ┌───────────────┐        ┌───────────────┐
+            │  PostgreSQL   │       │    RabbitMQ   │        │     MinIO     │
+            │   (5432)      │       │    (5672)     │        │    (9000)     │
+            └───────────────┘       └───────────────┘        └───────────────┘
 ```
 
-### Commands:
+## Services
 
-1. To start the development environment:
-   ```bash
-   make dev
-   ```
+| Service | Port | Description |
+|---------|------|-------------|
+| **API Gateway** | 8080 | Entry point, JWT authentication, routing |
+| **User Service** | 8081 | User management, profiles, follows |
+| **Notification Service** | 8082 | Email notifications via RabbitMQ |
+| **Quest Service** | 8083 | Quest CRUD, daily quests, ratings |
+| **Auth Service** | 8084 | Token validation (internal) |
+| **Video Service** | 8085 | Video uploads, streaming, ratings |
+| **Social Service** | 8086 | Comments, friendships, hashtags |
+| **Content Service** | 8087 | Reports, badges, streaks |
+| **Eureka Server** | 8761 | Service discovery |
+| **Config Server** | 8888 | Centralized configuration |
 
-2. To start the production environment:
-   ```bash
-   make prod
-   ```
+## Infrastructure
 
-3. To stop and remove containers:
-   ```bash
-   make down
-   ```
+| Service | Port | Description |
+|---------|------|-------------|
+| PostgreSQL | 5432 | Main database |
+| RabbitMQ | 5672, 15672 | Message queue |
+| MinIO | 9000, 9001 | Object storage (S3-compatible) |
+| Redis | 6379 | Caching |
+| PgAdmin | 5050 | Database management UI |
 
-4. To build the Docker images:
-   ```bash
-   make build
-   ```
+## Quick Start
 
-5. To view logs of running containers:
-   ```bash
-   make logs
-   ```
-6. Get a list of all available commands:
-   ```bash
-   make help
-   ```
----
+### Prerequisites
 
-## Contribution Rules for Feature Development:
+- Docker & Docker Compose
+- Java 21 (for local development)
+- Maven 3.9+
 
-### 1. **Production Branch Rules**
+### Running with Docker
 
-The `production` branch is untouchable. You **must never** directly commit or push any changes to this branch. All production changes will be automatically deployed to the server from this branch, so it is critical that this branch remains stable and only reflects production ready code.
+```bash
+# Start all services
+docker-compose up -d
 
-### 2. **Development Branch Rules**
+# View logs
+docker-compose logs -f
 
-The `development` branch is semi touchable. You are allowed to create new feature branches from it, and you can merge them back into the `development` branch through a pull request. Follow these steps for creating a new feature:
+# Stop all services
+docker-compose down
 
-1. **Create a New Feature Branch**  
-   When starting a new feature, create a new branch from `development`. Naming conventions for branches should be clear and descriptive of the feature. Example:
-   ```bash
-   git checkout development
-   git checkout -b leck-eier-feature
-   ```
+# Rebuild and start
+docker-compose up -d --build
+```
 
-2. **Work on the Feature**  
-   Implement your feature on the new branch. Make sure to frequently commit your changes with meaningful commit messages.
+### Accessing the Application
 
-3. **Create a Pull Request**  
-   Once your feature is complete, create a pull request to merge your feature branch back into the `development` branch. The PR should be reviewed by another staff for safety.
+- **API Gateway:** http://localhost:8080
+- **Swagger UI:** http://localhost:8080/swagger-ui.html
+- **Eureka Dashboard:** http://localhost:8761
+- **RabbitMQ Management:** http://localhost:15672
+- **MinIO Console:** http://localhost:9001
+- **PgAdmin:** http://localhost:5050
 
-4. **Merge Back into Development**  
-   Once the PR is approved, merge it into the `development` branch. Ensure no direct commits are made to `development` outside of PR merges.
+## API Documentation
 
-5. **Deploy to Production**  
-   Only after the feature is fully tested and verified in the development branch, will it be merged into the `production` branch by an authorized team member, preferably `AgentP`, if possible. The `production` branch will automatically deploy to the server.
+See [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) for complete endpoint documentation.
 
-### 3. **Do Not Push Directly to Production**
+### Authentication
 
-- All changes to the `production` branch must go through the `development` branch via a PR.
+All protected endpoints require a JWT token:
+
+```bash
+# Login
+curl -X POST http://localhost:8080/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "user", "password": "pass"}'
+
+# Use token
+curl http://localhost:8080/users/me \
+  -H "Authorization: Bearer <token>"
+```
+
+## Development
+
+### Project Structure
+
+```
+dayquest/
+├── apigateway/          # API Gateway (routing, auth filter)
+├── auth-service/        # Auth validation service
+├── common/              # Shared DTOs, utilities
+├── config-server/       # Centralized configuration
+├── content-service/     # Reports, badges, streaks
+├── eureka-server/       # Service discovery
+├── notification-service/# Email notifications
+├── quest-service/       # Quest management
+├── social-service/      # Comments, friends, hashtags
+├── user-service/        # User management
+├── video-service/       # Video uploads & streaming
+├── docker/              # Docker configs
+└── docker-compose.yml   # Docker orchestration
+```
+
+### Building Locally
+
+```bash
+# Build all modules
+mvn clean install -DskipTests
+
+# Build specific service
+mvn clean package -pl video-service -am
+```
+
+### Running Services Locally
+
+Each service can be run independently:
+
+```bash
+cd user-service
+mvn spring-boot:run
+```
+
+## Environment Variables
+
+Copy `stack.env.example` to `stack.env` and configure:
+
+```env
+# Database
+SPRING_DATASOURCE_USERNAME=postgres
+SPRING_DATASOURCE_PASSWORD=secret
+
+# JWT
+JWT_SECRET=your-secret-key
+
+# RabbitMQ
+RABBITMQ_USER=admin
+RABBITMQ_PASSWORD=secret
+
+# MinIO
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin
+
+# Mail
+MAIL_USERNAME=your-email
+MAIL_PASSWORD=your-password
+```
+
+## Features
+
+### User Management
+- Registration & authentication
+- Profile management
+- Profile pictures
+- Follow system
+
+### Quests
+- Create and share quests
+- Daily quest assignments
+- Like/dislike system
+- Reroll functionality
+
+### Videos
+- Video uploads (MP4, WebM)
+- Automatic thumbnail generation
+- View tracking
+- Upvote/downvote system
+- TikTok-style feed
+
+### Social
+- Comments on videos & quests
+- Friend requests
+- Hashtag system
+- User blocking
+
+### Gamification
+- Daily streaks
+- Achievement badges
+- Leaderboards
+
+### Moderation
+- Content reporting
+- Admin review system
+- User punishment system
+
+## License
+
+MIT License - see [LICENSE](./LICENSE) for details.
+

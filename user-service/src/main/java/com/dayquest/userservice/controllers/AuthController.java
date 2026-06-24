@@ -1,13 +1,16 @@
 package com.dayquest.userservice.controllers;
 
+import com.dayquest.common.dto.AuthTokenResponse;
+import com.dayquest.common.dto.LoginResponse;
+import com.dayquest.common.dto.RefreshTokenRequest;
+import com.dayquest.common.exception.InvalidRequestException;
+import com.dayquest.common.exception.UserAlreadyExistsException;
 import com.dayquest.userservice.dto.*;
 import com.dayquest.userservice.enums.Punishments;
-import com.dayquest.userservice.exceptions.InvalidRequestException;
-import com.dayquest.userservice.exceptions.UserAlreadyExistsException;
 import com.dayquest.userservice.models.User;
 import com.dayquest.userservice.repositories.UserRepository;
 import com.dayquest.userservice.services.AuthService;
-import com.dayquest.userservice.services.JwtService;
+import com.dayquest.userservice.services.UserServiceJwtService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,9 +27,9 @@ public class AuthController {
     private final AuthService authService;
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
-    private final JwtService jwtService;
+    private final UserServiceJwtService jwtService;
 
-    public AuthController(AuthService authService, UserRepository userRepository, BCryptPasswordEncoder passwordEncoder, JwtService jwtService) {
+    public AuthController(AuthService authService, UserRepository userRepository, BCryptPasswordEncoder passwordEncoder, UserServiceJwtService jwtService) {
         this.authService = authService;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
@@ -44,38 +47,157 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginDTO loginDTO) {
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginDTO loginDTO) {
         User user = userRepository.findByUsername(loginDTO.getUsername());
         if (user == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new LoginResponseDTO(null, null, "User not found"));
+                    .body(LoginResponse.error("User not found"));
         }
         if (user.getPunishment() == Punishments.BANNED || user.getPunishment() == Punishments.TEMP_BANNED) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(new LoginResponseDTO(null, null, "User has been banned"));
+                    .body(LoginResponse.error("User has been banned"));
         }
 
         if (!passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new LoginResponseDTO(null, null, "Invalid password"));
+                    .body(LoginResponse.error("Invalid password"));
         }
 
         if (!user.isEnabled()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new LoginResponseDTO(null, null, "User not verified"));
+                    .body(LoginResponse.error("User not verified"));
         }
 
-        String token = jwtService.generateToken(user);
+        AuthTokenResponse tokens = jwtService.generateTokenPair(user);
+        return ResponseEntity.ok(LoginResponse.success(user.getUuid(), user.getUsername(), tokens));
+    }
 
-        return ResponseEntity.ok(new LoginResponseDTO(user.getUuid(), token, "Login successful"));
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refreshToken(@RequestBody RefreshTokenRequest request) {
+        try {
+            AuthTokenResponse tokens = jwtService.refreshTokens(request.getRefreshToken());
+            return ResponseEntity.ok(tokens);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(LoginResponse.error("Invalid or expired refresh token"));
+        }
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(@RequestHeader("Authorization") String authHeader) {
+        return ResponseEntity.ok("Logged out successfully");
+    }
+
+    /**
+     * Verify account via GET request with token parameter (clicked from email link)
+     */
+    @GetMapping("/verify")
+    public ResponseEntity<String> verifyViaLink(@RequestParam String token) {
+        try {
+            authService.verifyAccount(token);
+            String html = """
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>DayQuest - Account Verified</title>
+                    <style>
+                        body {
+                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                            background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%);
+                            min-height: 100vh;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                        }
+                        .container {
+                            background: white;
+                            padding: 40px;
+                            border-radius: 10px;
+                            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                            text-align: center;
+                            max-width: 400px;
+                        }
+                        h1 { color: #28a745; margin-bottom: 20px; }
+                        p { color: #666; margin-bottom: 20px; }
+                        .icon { font-size: 60px; margin-bottom: 20px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="icon">✓</div>
+                        <h1>Email Verified!</h1>
+                        <p>Your account has been successfully verified. You can now log in to DayQuest.</p>
+                    </div>
+                </body>
+                </html>
+                """;
+            return ResponseEntity.ok().header("Content-Type", "text/html").body(html);
+        } catch (InvalidRequestException e) {
+            String html = """
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>DayQuest - Verification Failed</title>
+                    <style>
+                        body {
+                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                            background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%);
+                            min-height: 100vh;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                        }
+                        .container {
+                            background: white;
+                            padding: 40px;
+                            border-radius: 10px;
+                            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                            text-align: center;
+                            max-width: 400px;
+                        }
+                        h1 { color: #dc3545; margin-bottom: 20px; }
+                        p { color: #666; margin-bottom: 20px; }
+                        .icon { font-size: 60px; margin-bottom: 20px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="icon">✗</div>
+                        <h1>Verification Failed</h1>
+                        <p>%s</p>
+                    </div>
+                </body>
+                </html>
+                """.formatted(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .header("Content-Type", "text/html")
+                    .body(html);
+        }
     }
 
     @PostMapping("/verify")
-    public ResponseEntity<?> verify(@RequestParam String code) {
-        try{
-            authService.verifyAccount(code);
-            return ResponseEntity.ok().build();
-        }catch (InvalidRequestException e){
+    public ResponseEntity<?> verify(@RequestParam String token) {
+        try {
+            authService.verifyAccount(token);
+            return ResponseEntity.ok("Account verified successfully");
+        } catch (InvalidRequestException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
+     * Resend verification email
+     */
+    @PostMapping("/resend-verification")
+    public ResponseEntity<String> resendVerification(@RequestBody @Valid EmailDTO request) {
+        try {
+            authService.resendVerificationEmail(request.getEmail());
+            return ResponseEntity.ok("If an unverified account with this email exists, a new verification email has been sent.");
+        } catch (InvalidRequestException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
@@ -89,7 +211,7 @@ public class AuthController {
 
     @PostMapping("/forgot-password")
     @Async
-    public CompletableFuture<ResponseEntity<String>> forgotPassword(@RequestBody @Valid ForgotPasswordDTO forgotPasswordRequestDTO) {
+    public CompletableFuture<ResponseEntity<String>> forgotPassword(@RequestBody @Valid EmailDTO forgotPasswordRequestDTO) {
         return authService.handleForgotPasswordRequest(forgotPasswordRequestDTO.getEmail())
                 .thenApply(success -> ResponseEntity.ok("If an account with this email exists, a password reset link has been sent."))
                 .exceptionally(ex -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing request: " + ex.getMessage()));
@@ -328,7 +450,7 @@ public class AuthController {
                 messageDiv.innerHTML = '';
                 
                 try {
-                    const response = await fetch('/api/users/reset-password', {
+                    const response = await fetch('/auth/reset-password', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

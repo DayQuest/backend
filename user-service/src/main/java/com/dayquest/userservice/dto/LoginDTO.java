@@ -3,6 +3,12 @@ package com.dayquest.userservice.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
+
+@lombok.Getter
+@lombok.Setter
+@lombok.NoArgsConstructor
+@lombok.AllArgsConstructor
+@lombok.Builder
 public class LoginDTO {
     @NotBlank
     private String username;
@@ -12,15 +18,9 @@ public class LoginDTO {
         return username;
     }
 
-    public void setUsername(@NotBlank String username) {
-        this.username = username;
-    }
 
-    public String getPassword() {
-        return password;
-    }
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
+
+
+
 }

@@ -1,0 +1,33 @@
+# Build artifacts
+**/target/
+
+# IDE files
+**/.idea/
+**/*.iml
+**/.vscode/
+**/.settings/
+**/.project
+**/.classpath
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+LICENSE
+HELP.md
+
+# Logs
+**/*.log
+**/logs/
+
+# Maven wrapper (not needed in container)
+**/.mvn/
+**/mvnw
+**/mvnw.cmd
+
+# OS files
+.DS_Store
+Thumbs.db
+
