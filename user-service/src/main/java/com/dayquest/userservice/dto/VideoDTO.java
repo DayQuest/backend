@@ -1,6 +1,5 @@
 package com.dayquest.userservice.dto;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.Transient;
 

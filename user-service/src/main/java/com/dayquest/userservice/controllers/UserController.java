@@ -195,7 +195,8 @@ public class UserController {
     }
     @PutMapping("/email")
     @Async
-    public CompletableFuture<ResponseEntity<?>> updateEmail (@RequestBody @Valid UpdateEmailDTO updateEmailDTO, @RequestHeader("Authorization") String token){
+    public CompletableFuture<ResponseEntity<?>> updateEmail (@RequestBody @Valid UpdateEmailDTO updateEmailDTO, 
+                                                             @RequestHeader("Authorization") String token){
         Optional<User> userOptional = userRepository.findById(jwtService.extractUserId(token.substring(7)));
         if (userOptional.isEmpty()) {
             return CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found"));
@@ -214,7 +215,8 @@ public class UserController {
 
     @PutMapping("/password")
     @Async
-    public CompletableFuture<ResponseEntity<String>> updatePassword(@RequestBody @Valid UpdatePasswordDTO updatePasswordDTO, @RequestHeader("Authorization") String token) {
+    public CompletableFuture<ResponseEntity<String>> updatePassword(@RequestBody @Valid UpdatePasswordDTO updatePasswordDTO, 
+                                                                    @RequestHeader("Authorization") String token) {
         Optional<User> userOptional = userRepository.findById(jwtService.extractUserId(token.substring(7)));
         if (userOptional.isEmpty()) {
             return CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found"));
@@ -230,7 +232,8 @@ public class UserController {
 
     @PostMapping("/setprofilepicture")
     @Async
-    public CompletableFuture<ResponseEntity<String>> setProfilePicture(@RequestParam("file") MultipartFile file, @RequestHeader("Authorization") String token) {
+    public CompletableFuture<ResponseEntity<String>> setProfilePicture(@RequestParam("file") MultipartFile file, 
+                                                                       @RequestHeader("Authorization") String token) {
         if (file.isEmpty()) {
             return CompletableFuture.completedFuture(ResponseEntity.badRequest().body("File is empty"));
         }
@@ -270,15 +273,18 @@ public class UserController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(0);
             }
             User user = userOptional.get();
-            return user.getLastReroll() == null || user.getLastReroll().plusDays(1).isBefore(LocalDateTime.now()) ? ResponseEntity.ok(3) : ResponseEntity.ok(user.getLeftRerolls());
+            return user.getLastReroll() == null || user.getLastReroll().plusDays(1).isBefore(LocalDateTime.now()) 
+                    ? ResponseEntity.ok(3) : ResponseEntity.ok(user.getLeftRerolls());
         });
     }
 
     //TODO: Move to admin microservice
-    //TODO: Test this endpoint and make sure it works correctly with the badge system. Also consider edge cases like adding a badge that doesn't exist or adding a badge to a user that doesn't exist.
+    //TODO: Test this endpoint and make sure it works correctly with the badge system. 
+    // Also consider edge cases like adding a badge that doesn't exist or adding a badge to a user that doesn't exist.
     @PutMapping("/{uuid}/badge")
     @Async
-    public CompletableFuture<ResponseEntity<String>> addBadge(@PathVariable UUID uuid, @RequestBody UUID badgeId, @RequestHeader("Authorization") String token) {
+    public CompletableFuture<ResponseEntity<String>> addBadge(@PathVariable UUID uuid, @RequestBody UUID badgeId, 
+                                                              @RequestHeader("Authorization") String token) {
             UUID userId = jwtService.extractUserId(token.substring(7));
             Optional<User> userOptional = userRepository.findById(userId);
             if (userOptional.isEmpty()) {
@@ -297,7 +303,8 @@ public class UserController {
             return CompletableFuture.completedFuture(ResponseEntity.ok("Badge added"));
     }
 
-    //TODO: refactor the return type of this endpoint to return more information about the badges instead of just the ids. Also consider edge cases like requesting badges for a user that doesn't exist.
+    //TODO: refactor the return type of this endpoint to return more information about the badges instead of just the ids. 
+    // Also consider edge cases like requesting badges for a user that doesn't exist.
     @GetMapping("/{uuid}/badges")
     @Async
     public CompletableFuture<ResponseEntity<List<UUID>>> getBadges(@PathVariable UUID uuid) {
@@ -305,19 +312,25 @@ public class UserController {
     }
 
 
-    //TODO: Add more Information like pfp url username etc. Also consider edge cases like requesting followers for a user that doesn't exist or requesting a page that is out of bounds.
+    //TODO: Add more Information like pfp url username etc. 
+    // Also consider edge cases like requesting followers for a user that doesn't exist or requesting a page that is out of bounds.
     @GetMapping("/{uuid}/followers")
     @Async
-    public CompletableFuture<ResponseEntity<List<UUID>>> getFollowers(@PathVariable UUID uuid, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size, @RequestHeader("Authorization") String token) {
+    public CompletableFuture<ResponseEntity<List<UUID>>> getFollowers(@PathVariable UUID uuid, @RequestParam(defaultValue = "0") int page, 
+                                                                      @RequestParam(defaultValue = "10") int size, 
+                                                                      @RequestHeader("Authorization") String token) {
             CompletableFuture<List<UUID>> followersFuture = followService.getFollowerPage(uuid, page, size);
             List<UUID> followers = followersFuture.join();
             return CompletableFuture.completedFuture(ResponseEntity.ok(followers));
     }
 
-    //TODO: Add more Information like pfp url username etc. Also consider edge cases like requesting followers for a user that doesn't exist or requesting a page that is out of bounds.
+    //TODO: Add more Information like pfp url username etc. 
+    // Also consider edge cases like requesting followers for a user that doesn't exist or requesting a page that is out of bounds.
     @GetMapping("/{uuid}/following")
     @Async
-    public CompletableFuture<ResponseEntity<List<UUID>>> getFollowing(@PathVariable UUID uuid, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size, @RequestHeader("Authorization") String token) {
+    public CompletableFuture<ResponseEntity<List<UUID>>> getFollowing(@PathVariable UUID uuid, @RequestParam(defaultValue = "0") int page, 
+                                                                      @RequestParam(defaultValue = "10") int size, 
+                                                                      @RequestHeader("Authorization") String token) {
             CompletableFuture<List<UUID>> followingFuture = followService.getFollowedPage(uuid, page, size);
             List<UUID> following = followingFuture.join();
             return CompletableFuture.completedFuture(ResponseEntity.ok(following));
@@ -386,13 +399,15 @@ public class UserController {
         Optional<User> user = userRepository.findById(username);
         return user.map(value -> followService.isFollowing(value.getUuid(), uuid).join()
                 ? CompletableFuture.completedFuture(ResponseEntity.ok(true))
-                : CompletableFuture.completedFuture(ResponseEntity.ok(false))).orElseGet(() -> CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.NOT_FOUND).body(false)));
+                : CompletableFuture.completedFuture(ResponseEntity.ok(false)))
+                .orElseGet(() -> CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.NOT_FOUND).body(false)));
     }
 
     //TODO: Move to admin microservice
     @DeleteMapping("/{uuid}/badge")
     @Async
-    public CompletableFuture<ResponseEntity<String>> removeBadge(@PathVariable UUID uuid, @RequestBody UUID badgeId, @RequestHeader("Authorization") String token) {
+    public CompletableFuture<ResponseEntity<String>> removeBadge(@PathVariable UUID uuid, @RequestBody UUID badgeId, 
+                                                                 @RequestHeader("Authorization") String token) {
         return CompletableFuture.supplyAsync(() -> {
             UUID userId = jwtService.extractUserId(token.substring(7));
             Optional<User> userOptional = userRepository.findById(userId);

@@ -77,7 +77,8 @@ public class AuthService {
                 + "<div style=\"background-color: #f5f5f5; padding: 20px; text-align: center;\">"
                 + "<h2 style=\"color: #333;\">Welcome to DayQuest!</h2>"
                 + "<p style=\"font-size: 16px;\">Thank you for registering. Please verify your email address to activate your account.</p>"
-                + "<div style=\"background-color: #fff; padding: 20px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1); display: inline-block; margin: 20px 0;\">"
+                + "<div style=\"background-color: #fff; padding: 20px; border-radius: 5px; "
+                + "box-shadow: 0 0 10px rgba(0,0,0,0.1); display: inline-block; margin: 20px 0;\">"
                 + "<p style=\"margin-top: 20px; margin-bottom: 20px;\">"
                 + "<a href=\"" + verificationUrl + "\" style=\"background-color: #007bff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold;\">Verify Email Address</a>"
                 + "</p>"
@@ -85,7 +86,8 @@ public class AuthService {
                 + "<p style=\"font-size: 14px; color: #777;\">Or copy and paste this link into your browser:</p>"
                 + "<p style=\"font-size: 12px; color: #007bff; word-break: break-all;\">" + verificationUrl + "</p>"
                 + "<p style=\"font-size: 14px; color: #777; margin-top: 20px;\">This link is valid for 24 hours.</p>"
-                + "<p style=\"font-size: 12px; color: #999; margin-top: 30px;\">If you didn't create an account, you can safely ignore this email.</p>"
+                + "<p style=\"font-size: 12px; color: #999; margin-top: 30px;\">"
+                + "If you didn't create an account, you can safely ignore this email.</p>"
                 + "</div>"
                 + "</body>"
                 + "</html>";
@@ -240,7 +242,8 @@ public class AuthService {
 
     public boolean tokenUuidValid(String token, UUID uuid) {
         Optional<User> userOptional = userRepository.findById(uuid);
-        if (userOptional.isEmpty() || userOptional.get().getPunishment() == Punishments.TEMP_BANNED || userOptional.get().getPunishment() == Punishments.BANNED) {
+        if (userOptional.isEmpty() || userOptional.get().getPunishment() == Punishments.TEMP_BANNED 
+                || userOptional.get().getPunishment() == Punishments.BANNED) {
             return false;
         }
         User user = userOptional.get();

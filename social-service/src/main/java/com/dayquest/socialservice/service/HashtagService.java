@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 public class HashtagService {
@@ -60,7 +59,9 @@ public class HashtagService {
     }
 
     private String normalizeHashtag(String name) {
-        if (name == null) return "";
+        if (name == null) {
+            return "";
+        }
         String normalized = name.toLowerCase().trim();
         if (normalized.startsWith("#")) {
             normalized = normalized.substring(1);

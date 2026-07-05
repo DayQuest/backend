@@ -13,7 +13,8 @@ public class ProfileDTO {
     private boolean isBanned;
     private List<UUID> badges;
 
-    public ProfileDTO(String username, String profilePicture, List<VideoDTO> videos, boolean isBanned, int followers, boolean isFollowing, List<UUID> badges) {
+    public ProfileDTO(String username, String profilePicture, List<VideoDTO> videos,
+                      boolean isBanned, int followers, boolean isFollowing, List<UUID> badges) {
         this.username = username;
         this.profilePicture = profilePicture;
         this.videos = new ArrayList<>();

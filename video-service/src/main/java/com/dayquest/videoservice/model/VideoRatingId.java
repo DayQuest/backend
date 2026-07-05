@@ -18,8 +18,12 @@ public class VideoRatingId implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         VideoRatingId that = (VideoRatingId) o;
         return Objects.equals(userUuid, that.userUuid) && Objects.equals(videoUuid, that.videoUuid);
     }
@@ -29,4 +33,3 @@ public class VideoRatingId implements Serializable {
         return Objects.hash(userUuid, videoUuid);
     }
 }
-

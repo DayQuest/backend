@@ -26,7 +26,7 @@ import java.util.concurrent.CompletableFuture;
 public class QuestService {
 
     private static final Logger logger = LoggerFactory.getLogger(QuestService.class);
-    private static final Random random = new Random();
+    private static final Random RANDOM = new Random();
 
     @Autowired
     private QuestRepository questRepository;
@@ -100,7 +100,7 @@ public class QuestService {
                 return null;
             }
 
-            return quests.get(random.nextInt(quests.size()));
+            return quests.get(RANDOM.nextInt(quests.size()));
         });
     }
 

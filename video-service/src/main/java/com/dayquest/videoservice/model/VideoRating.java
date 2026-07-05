@@ -1,8 +1,6 @@
 package com.dayquest.videoservice.model;
 
 import jakarta.persistence.*;
-import java.io.Serializable;
-import java.util.Objects;
 import java.util.UUID;
 
 @Entity

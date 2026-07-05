@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -133,7 +132,9 @@ public class StorageService {
     }
 
     private String getFileExtension(String filename) {
-        if (filename == null) return ".mp4";
+        if (filename == null) {
+            return ".mp4";
+        }
         int dotIndex = filename.lastIndexOf('.');
         return (dotIndex == -1) ? ".mp4" : filename.substring(dotIndex);
     }

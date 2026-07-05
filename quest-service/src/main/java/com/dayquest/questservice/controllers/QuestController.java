@@ -1,6 +1,5 @@
 package com.dayquest.questservice.controllers;
 
-import com.dayquest.questservice.dto.InteractionDTO;
 import com.dayquest.questservice.dto.QuestDTO;
 import com.dayquest.questservice.dto.CreateQuestDTO;
 import com.dayquest.questservice.models.Quest;
