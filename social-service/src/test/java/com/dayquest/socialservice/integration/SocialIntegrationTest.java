@@ -50,15 +50,15 @@ class SocialIntegrationTest extends AbstractIntegrationTest {
         UUID receiverUuid = UUID.randomUUID();
 
         Friendship friendship = new Friendship();
-        friendship.setRequesterUuid(requesterUuid);
-        friendship.setReceiverUuid(receiverUuid);
+        friendship.setUserUuid(requesterUuid);
+        friendship.setFriendUuid(receiverUuid);
         friendship.setStatus(FriendshipStatus.PENDING);
         friendship.setCreatedAt(LocalDateTime.now());
         friendship.setUpdatedAt(LocalDateTime.now());
 
         friendship = friendshipRepository.save(friendship);
 
-        mockMvc.perform(post("/friends/" + friendship.getUuid() + "/accept")
+        mockMvc.perform(post("/friends/" + friendship.getId() + "/accept")
                 .header("X-User-Id", receiverUuid.toString()))
                 .andExpect(status().isOk());
     }
@@ -69,8 +69,8 @@ class SocialIntegrationTest extends AbstractIntegrationTest {
         UUID friendUuid = UUID.randomUUID();
 
         Friendship friendship = new Friendship();
-        friendship.setRequesterUuid(userUuid);
-        friendship.setReceiverUuid(friendUuid);
+        friendship.setUserUuid(userUuid);
+        friendship.setFriendUuid(friendUuid);
         friendship.setStatus(FriendshipStatus.ACCEPTED);
         friendship.setCreatedAt(LocalDateTime.now());
         friendship.setUpdatedAt(LocalDateTime.now());
