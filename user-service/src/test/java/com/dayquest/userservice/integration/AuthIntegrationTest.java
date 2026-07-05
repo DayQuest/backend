@@ -57,9 +57,13 @@ class AuthIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk());
 
         // Then (Verify User Created)
-        User user = userRepository.findByUsername("testuser");
+        User user = userRepository.findByEmailIgnoreCase("test@example.com").orElse(null);
         assertThat(user).isNotNull();
         assertThat(user.getEmail()).isEqualTo("test@example.com");
+
+        // Manually verify user so login works
+        user.setEnabled(true);
+        userRepository.save(user);
 
         // Given (Login)
         LoginDTO loginDTO = new LoginDTO();
@@ -93,6 +97,11 @@ class AuthIntegrationTest extends AbstractIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(registerDTO)))
                 .andExpect(status().isOk());
+
+        // Manually verify user so login returns 401 instead of 404
+        User user = userRepository.findByEmailIgnoreCase("test@example.com").orElseThrow();
+        user.setEnabled(true);
+        userRepository.save(user);
 
         // When
         LoginDTO loginDTO = new LoginDTO();
