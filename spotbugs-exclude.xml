@@ -4,4 +4,9 @@
     <Match>
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
     </Match>
+    
+    <!-- Ignore catching Exception, common when wrapping third-party SDKs like MinIO -->
+    <Match>
+        <Bug pattern="REC_CATCH_EXCEPTION" />
+    </Match>
 </FindBugsFilter>
