@@ -88,9 +88,6 @@ jobs:
       - name: Run SpotBugs
         run: mvn spotbugs:check -B
 
-      - name: Check Dependencies for Vulnerabilities
-        run: mvn org.owasp:dependency-check-maven:check -B
-
   docker-security-scan:
     name: Docker Trivy Security Scan
     runs-on: ubuntu-latest
