@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, implement-auth-service ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, implement-auth-service ]
   workflow_dispatch:
 
 jobs:
