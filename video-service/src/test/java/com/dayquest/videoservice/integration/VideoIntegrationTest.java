@@ -36,7 +36,6 @@ class VideoIntegrationTest extends AbstractIntegrationTest {
         UUID questUuid = UUID.randomUUID();
 
         Video video = new Video();
-        video.setUuid(UUID.randomUUID());
         video.setUserUuid(userUuid);
         video.setQuestUuid(questUuid);
         video.setTitle("Integration Test Video");
@@ -46,7 +45,7 @@ class VideoIntegrationTest extends AbstractIntegrationTest {
         video.setCreatedAt(LocalDateTime.now());
         video.setUpdatedAt(LocalDateTime.now());
         
-        videoRepository.save(video);
+        video = videoRepository.save(video);
 
         // When & Then
         mockMvc.perform(get("/videos")

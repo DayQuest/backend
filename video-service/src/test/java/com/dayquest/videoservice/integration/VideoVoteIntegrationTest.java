@@ -33,7 +33,6 @@ class VideoVoteIntegrationTest extends AbstractIntegrationTest {
         // Given
         UUID userUuid = UUID.randomUUID();
         Video video = new Video();
-        video.setUuid(UUID.randomUUID());
         video.setUserUuid(UUID.randomUUID());
         video.setTitle("Vote Test Video");
         video.setFilePath("http://localhost/minio/test2.mp4");
@@ -41,7 +40,7 @@ class VideoVoteIntegrationTest extends AbstractIntegrationTest {
         video.setCreatedAt(LocalDateTime.now());
         video.setUpdatedAt(LocalDateTime.now());
         
-        videoRepository.save(video);
+        video = videoRepository.save(video);
 
         // When & Then
         mockMvc.perform(post("/videos/" + video.getUuid() + "/vote")
