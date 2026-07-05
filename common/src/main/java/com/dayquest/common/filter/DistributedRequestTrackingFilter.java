@@ -164,7 +164,8 @@ public class DistributedRequestTrackingFilter extends OncePerRequestFilter {
         try {
             String key = "trace:request:" + requestId;
             String value = String.format(
-                    "{\"correlationId\":\"%s\",\"traceId\":\"%s\",\"method\":\"%s\",\"path\":\"%s\",\"clientIp\":\"%s\",\"userId\":\"%s\",\"timestamp\":\"%s\",\"service\":\"%s\"}",
+                    "{\"correlationId\":\"%s\",\"traceId\":\"%s\",\"method\":\"%s\",\"path\":\"%s\","
+                    + "\"clientIp\":\"%s\",\"userId\":\"%s\",\"timestamp\":\"%s\",\"service\":\"%s\"}",
                     correlationId,
                     traceId,
                     request.getMethod(),

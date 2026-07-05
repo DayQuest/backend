@@ -74,7 +74,8 @@ public class RedisRateLimitFilter extends OncePerRequestFilter {
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
             String errorResponse = String.format(
-                    "{\"error\": \"Too Many Requests\", \"message\": \"Rate limit exceeded. Try again in %d seconds.\", \"status\": 429, \"retryAfter\": %d}",
+                    "{\"error\": \"Too Many Requests\", \"message\": \"Rate limit exceeded. "
+                    + "Try again in %d seconds.\", \"status\": 429, \"retryAfter\": %d}",
                     waitTimeSeconds, waitTimeSeconds
             );
 

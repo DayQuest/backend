@@ -112,7 +112,9 @@ public class RedisRateLimitConfig {
 
             // Count current requests
             Long count = redisTemplate.opsForZSet().zCard(redisKey);
-            if (count == null) count = 0L;
+            if (count == null) {
+                count = 0L;
+            }
 
             if (count < limit) {
                 // Add current request
