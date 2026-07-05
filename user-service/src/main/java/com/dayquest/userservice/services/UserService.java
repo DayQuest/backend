@@ -33,10 +33,6 @@ public class UserService {
         if (user.getProfilePictureUrl() != null && !user.getProfilePictureUrl().isEmpty()) {
             return user.getProfilePictureUrl();
         }
-        // Fallback to API endpoint (which checks DB BLOB)
-        if (user.getProfilePicture() != null) {
-            return PROFILE_PICTURE_BASE_URL + user.getUsername();
-        }
         // Default avatar
         return DEFAULT_PROFILE_PICTURE_URL;
     }

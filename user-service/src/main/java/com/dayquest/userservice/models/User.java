@@ -65,7 +65,7 @@ public class User implements UserDetails {
 
     private boolean enabled;
 
-    @ElementCollection(fetch = FetchType.EAGER)
+    @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "user_authorities", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "authority")
     private List<String> authorities = new ArrayList<>();
@@ -73,22 +73,10 @@ public class User implements UserDetails {
     private int followers;
 
 
-    @Lob
-    @Column
-    private byte[] profilePicture;
-
     @Column(name = "profile_picture_url")
     private String profilePictureUrl;
 
     private String adminComment;
-
-    public byte[] getProfilePicture() {
-        return profilePicture;
-    }
-
-    public void setProfilePicture(byte[] profilePicture) {
-        this.profilePicture = profilePicture;
-    }
 
     public String getProfilePictureUrl() {
         return profilePictureUrl;

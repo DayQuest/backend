@@ -223,28 +223,6 @@ services:
     networks:
       - dayquest-network
 
-  auth-service:
-    build:
-      context: .
-      dockerfile: auth-service/Dockerfile
-    container_name: auth-service
-    ports:
-      - "${AUTH_SERVER_PORT}:8084"
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
-      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
-      - JWT_SECRET=${JWT_SECRET}
-    env_file:
-      - stack.env
-    restart: unless-stopped
-    depends_on:
-      config-server:
-        condition: service_started
-      eureka-server:
-        condition: service_started
-    networks:
-      - dayquest-network
 
   minio:
     image: minio/minio
@@ -296,7 +274,7 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/dayquest_videos
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/dayquest
       - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
       - MINIO_ENDPOINT=http://minio:9000
@@ -331,7 +309,7 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/dayquest_social
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/dayquest
       - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
     env_file:
@@ -358,7 +336,7 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/dayquest_content
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/dayquest
       - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
     env_file:

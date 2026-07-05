@@ -47,6 +47,7 @@ public class ReportController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    //TODO: Make admin only
     @GetMapping
     @Operation(summary = "Get all reports (admin)")
     public ResponseEntity<Page<Report>> getReports(
@@ -58,6 +59,7 @@ public class ReportController {
         return ResponseEntity.ok(reportService.getReports(status, type, PageRequest.of(page, size)));
     }
 
+    //TODO: Make admin only
     @PostMapping("/{id}/resolve")
     @Operation(summary = "Resolve a report (admin)")
     public ResponseEntity<?> resolveReport(
