@@ -63,7 +63,8 @@ class QuestServiceTest {
         CompletableFuture<Quest> result = questService.createQuest(
                 "Test Quest Title",
                 "Test Quest Description with sufficient length",
-                testUserId
+                testUserId,
+                "testuser"
         );
 
         Quest quest = result.get();
@@ -79,7 +80,8 @@ class QuestServiceTest {
         CompletableFuture<Quest> result = questService.createQuest(
                 "",
                 "Test Quest Description",
-                testUserId
+                testUserId,
+                "testuser"
         );
 
         Quest quest = result.get();
@@ -93,7 +95,8 @@ class QuestServiceTest {
         CompletableFuture<Quest> result = questService.createQuest(
                 "Test Quest Title",
                 "",
-                testUserId
+                testUserId,
+                "testuser"
         );
 
         Quest quest = result.get();
@@ -107,7 +110,8 @@ class QuestServiceTest {
         CompletableFuture<Quest> result = questService.createQuest(
                 null,
                 "Test Quest Description",
-                testUserId
+                testUserId,
+                "testuser"
         );
 
         Quest quest = result.get();
