@@ -56,6 +56,10 @@ public class StreakService {
             streak.setLastActivityDate(LocalDateTime.now());
         }
 
+        if (streak.getCurrentStreak() > streak.getLongestStreak()) {
+            streak.setLongestStreak(streak.getCurrentStreak());
+        }
+
         return streakRepository.save(streak);
     }
 
