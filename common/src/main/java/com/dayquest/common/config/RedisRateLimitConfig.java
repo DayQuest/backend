@@ -108,9 +108,6 @@ public class RedisRateLimitConfig {
             long windowStart = now - window.toMillis();
 
             org.springframework.data.redis.core.ZSetOperations<String, String> zSetOps = redisTemplate.opsForZSet();
-            if (zSetOps == null) {
-                return new RateLimitResult(true, limit - 1, 0);
-            }
 
             // Remove old entries
             zSetOps.removeRangeByScore(redisKey, 0, windowStart);
