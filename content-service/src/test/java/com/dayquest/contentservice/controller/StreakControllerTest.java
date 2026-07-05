@@ -12,6 +12,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -36,6 +37,9 @@ class StreakControllerTest {
 
     @MockBean
     private StreakService streakService;
+
+    @MockBean
+    private StringRedisTemplate stringRedisTemplate;
 
     private Streak testStreak;
     private UUID testUserId;
