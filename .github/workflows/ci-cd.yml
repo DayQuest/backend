@@ -216,22 +216,6 @@ jobs:
           push: true
           tags: dayquest/notification-service:${{ github.ref_name }}
 
-  notify:
-    name: Send Notifications
-    runs-on: ubuntu-latest
-    needs: [build-and-test, code-quality, docker-build-push]
-    if: always()
-
-    steps:
-      - name: Send Slack Notification
-        uses: 8398a7/action-slack@v3
-        if: always()
-        with:
-          status: ${{ job.status }}
-          text: 'CI/CD Pipeline ${{ job.status }}'
-          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
 
 #  deploy-staging:
 #    name: Deploy to Staging
