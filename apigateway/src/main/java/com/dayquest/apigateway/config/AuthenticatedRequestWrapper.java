@@ -29,7 +29,9 @@ public class AuthenticatedRequestWrapper extends HttpServletRequestWrapper {
     public Enumeration<String> getHeaders(String name) {
         if (customHeaders.containsKey(name)) {
             String value = customHeaders.get(name);
-            if (value == null) return Collections.emptyEnumeration();
+            if (value == null) {
+                return Collections.emptyEnumeration();
+            }
             return Collections.enumeration(Collections.singletonList(value));
         }
         return super.getHeaders(name);
