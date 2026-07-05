@@ -41,8 +41,8 @@ class VideoIntegrationTest extends AbstractIntegrationTest {
         video.setQuestUuid(questUuid);
         video.setTitle("Integration Test Video");
         video.setDescription("Integration Description");
-        video.setStorageUrl("http://localhost/minio/test.mp4");
-        video.setStatus(VideoStatus.READY);
+        video.setFilePath("http://localhost/minio/test.mp4");
+        video.setStatus(VideoStatus.ACTIVE);
         video.setCreatedAt(LocalDateTime.now());
         video.setUpdatedAt(LocalDateTime.now());
         
