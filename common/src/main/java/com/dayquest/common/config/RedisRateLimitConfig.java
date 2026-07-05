@@ -107,26 +107,36 @@ public class RedisRateLimitConfig {
             long now = System.currentTimeMillis();
             long windowStart = now - window.toMillis();
 
-            // Remove old entries
-            redisTemplate.opsForZSet().removeRangeByScore(redisKey, 0, windowStart);
-
-            // Count current requests
-            Long count = redisTemplate.opsForZSet().zCard(redisKey);
-            if (count == null) {
-                count = 0L;
+            org.springframework.data.redis.core.ZSetOperations<String, String> zSetOps = redisTemplate.opsForZSet();
+            if (zSetOps == null) {
+                return new RateLimitResult(true, limit - 1, 0);
             }
 
-            if (count < limit) {
+            // Remove old entries
+            zSetOps.removeRangeByScore(redisKey, 0, windowStart);
+
+            // Count current requests
+            Long count = zSetOps.zCard(redisKey);
+            long actualCount = (count != null) ? count : 0L;
+
+            if (actualCount < limit) {
                 // Add current request
-                redisTemplate.opsForZSet().add(redisKey, String.valueOf(now), now);
+                zSetOps.add(redisKey, String.valueOf(now), now);
                 redisTemplate.expire(redisKey, window);
-                return new RateLimitResult(true, limit - count.intValue() - 1, 0);
+                return new RateLimitResult(true, limit - (int) actualCount - 1, 0);
             } else {
                 // Rate limited - calculate wait time
-                Double oldestScore = redisTemplate.opsForZSet().score(redisKey,
-                        redisTemplate.opsForZSet().range(redisKey, 0, 0).iterator().next());
-                long waitTime = oldestScore != null ?
-                        (long) (oldestScore + window.toMillis() - now) / 1000 : window.getSeconds();
+                java.util.Set<String> oldestSet = zSetOps.range(redisKey, 0, 0);
+                long waitTime = window.getSeconds();
+                if (oldestSet != null && !oldestSet.isEmpty()) {
+                    String oldestElement = oldestSet.iterator().next();
+                    if (oldestElement != null) {
+                        Double score = zSetOps.score(redisKey, oldestElement);
+                        if (score != null) {
+                            waitTime = (long) (score.doubleValue() + window.toMillis() - now) / 1000;
+                        }
+                    }
+                }
                 return new RateLimitResult(false, 0, waitTime);
             }
         }
