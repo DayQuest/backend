@@ -45,6 +45,7 @@ class UserIntegrationTest extends AbstractIntegrationTest {
         user.setEmail("testprofile@example.com");
         user.setPassword("hashedpassword");
         user.setCreatedAt(LocalDateTime.now());
+        user.setEnabled(true);
         user = userRepository.save(user);
 
         String token = jwtService.generateToken(user.getUuid());
@@ -69,12 +70,14 @@ class UserIntegrationTest extends AbstractIntegrationTest {
         user1.setEmail("one@example.com");
         user1.setPassword("pwd");
         user1.setCreatedAt(LocalDateTime.now());
+        user1.setEnabled(true);
         
         User user2 = new User();
         user2.setUsername("searchable_two");
         user2.setEmail("two@example.com");
         user2.setPassword("pwd");
         user2.setCreatedAt(LocalDateTime.now());
+        user2.setEnabled(true);
         
         userRepository.save(user1);
         userRepository.save(user2);
