@@ -4,7 +4,9 @@ import com.dayquest.common.messaging.RabbitMQConstants;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.core.TopicExchange;
+import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
@@ -17,7 +19,24 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RabbitMQProducerConfig {
 
-    // Notification Exchange
+    // --- Dead Letter Exchange & Queue ---
+    @Bean
+    public DirectExchange deadLetterExchange() {
+        return new DirectExchange(RabbitMQConstants.DLX_EXCHANGE, true, false);
+    }
+
+    @Bean
+    public Queue globalDeadLetterQueue() {
+        return QueueBuilder.durable(RabbitMQConstants.GLOBAL_DLQ).build();
+    }
+
+    @Bean
+    public Binding deadLetterBinding(Queue globalDeadLetterQueue, DirectExchange deadLetterExchange) {
+        // Bind without routing key specifics so it catches all dead letters routed to this exchange
+        return BindingBuilder.bind(globalDeadLetterQueue).to(deadLetterExchange).with("#");
+    }
+
+    // --- Notification Exchange ---
     @Bean
     public TopicExchange notificationExchange() {
         return new TopicExchange(RabbitMQConstants.NOTIFICATION_EXCHANGE, true, false);
@@ -25,7 +44,9 @@ public class RabbitMQProducerConfig {
 
     @Bean
     public Queue emailQueue() {
-        return new Queue(RabbitMQConstants.EMAIL_QUEUE, true);
+        return QueueBuilder.durable(RabbitMQConstants.EMAIL_QUEUE)
+                .withArgument("x-dead-letter-exchange", RabbitMQConstants.DLX_EXCHANGE)
+                .build();
     }
 
     @Bean
@@ -33,7 +54,7 @@ public class RabbitMQProducerConfig {
         return BindingBuilder.bind(emailQueue).to(notificationExchange).with(RabbitMQConstants.EMAIL_ROUTING_KEY);
     }
 
-    // User Exchange - for user lifecycle events
+    // --- User Exchange - for user lifecycle events ---
     @Bean
     public TopicExchange userExchange() {
         return new TopicExchange(RabbitMQConstants.USER_EXCHANGE, true, false);
@@ -41,17 +62,23 @@ public class RabbitMQProducerConfig {
 
     @Bean
     public Queue userDeletedVideoQueue() {
-        return new Queue(RabbitMQConstants.USER_DELETED_VIDEO_QUEUE, true);
+        return QueueBuilder.durable(RabbitMQConstants.USER_DELETED_VIDEO_QUEUE)
+                .withArgument("x-dead-letter-exchange", RabbitMQConstants.DLX_EXCHANGE)
+                .build();
     }
 
     @Bean
     public Queue userDeletedQuestQueue() {
-        return new Queue(RabbitMQConstants.USER_DELETED_QUEST_QUEUE, true);
+        return QueueBuilder.durable(RabbitMQConstants.USER_DELETED_QUEST_QUEUE)
+                .withArgument("x-dead-letter-exchange", RabbitMQConstants.DLX_EXCHANGE)
+                .build();
     }
 
     @Bean
     public Queue userDeletedSocialQueue() {
-        return new Queue(RabbitMQConstants.USER_DELETED_SOCIAL_QUEUE, true);
+        return QueueBuilder.durable(RabbitMQConstants.USER_DELETED_SOCIAL_QUEUE)
+                .withArgument("x-dead-letter-exchange", RabbitMQConstants.DLX_EXCHANGE)
+                .build();
     }
 
     @Bean

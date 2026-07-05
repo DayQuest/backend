@@ -248,8 +248,6 @@ public class UserController {
                 String url = profilePictureService.uploadProfilePicture(user.getUuid(), fileBytes).join();
                 if (url != null) {
                     user.setProfilePictureUrl(url);
-                    // Clear old DB blob to save space
-                    user.setProfilePicture(null);
                     userRepository.save(user);
                     logger.info("Profile picture uploaded to MinIO for user: {}", user.getUsername());
                     return CompletableFuture.completedFuture(ResponseEntity.ok("Profile picture uploaded successfully"));

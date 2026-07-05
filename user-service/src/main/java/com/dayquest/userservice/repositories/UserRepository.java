@@ -58,7 +58,4 @@ public interface UserRepository extends JpaRepository<User, UUID> {
         return findUsersByUsernameContainingIgnoreCaseAndEnabledTrue(query, pageable);
     }
 
-    // Find users with profile pictures in DB (for migration to MinIO)
-    @Query("SELECT u FROM User u WHERE u.profilePicture IS NOT NULL AND u.enabled = true")
-    Page<User> findUsersWithProfilePicture(Pageable pageable);
 }

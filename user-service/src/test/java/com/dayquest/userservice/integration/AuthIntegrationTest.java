@@ -24,15 +24,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Integration tests for Auth endpoints.
- * These tests require a running database and are skipped by default.
- * Run with: mvn test -Dgroups=integration
  */
-@SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
-@Tag("integration")
-@EnabledIfEnvironmentVariable(named = "RUN_INTEGRATION_TESTS", matches = "true")
-public class AuthIntegrationTest {
+class AuthIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;

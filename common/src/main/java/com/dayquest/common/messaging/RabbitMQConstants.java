@@ -12,6 +12,10 @@ public final class RabbitMQConstants {
     // Exchange names
     public static final String NOTIFICATION_EXCHANGE = "notification.exchange";
     public static final String USER_EXCHANGE = "user.exchange";
+    public static final String DLX_EXCHANGE = "dlx.exchange";
+
+    // Dead Letter Queue
+    public static final String GLOBAL_DLQ = "global.dlq";
 
     // Queue names
     public static final String EMAIL_QUEUE = "notification.email.queue";

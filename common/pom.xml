@@ -76,6 +76,12 @@
             <artifactId>commons-pool2</artifactId>
         </dependency>
 
+        <!-- OpenFeign for Service-to-Service communication -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+
         <!-- Test dependencies -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

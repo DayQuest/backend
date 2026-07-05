@@ -12,35 +12,6 @@ jobs:
     name: Build and Test All Services
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: dayquest_test
-          POSTGRES_USER: dayquest
-          POSTGRES_PASSWORD: testpassword
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-      rabbitmq:
-        image: rabbitmq:3.13-management-alpine
-        env:
-          RABBITMQ_DEFAULT_USER: admin
-          RABBITMQ_DEFAULT_PASS: testpassword
-        ports:
-          - 5672:5672
-          - 15672:15672
-        options: >-
-          --health-cmd "rabbitmq-diagnostics -q ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -62,17 +33,10 @@ jobs:
       - name: Build with Maven
         run: mvn clean compile -B -V
 
-      - name: Run Unit Tests
+      - name: Run Unit & Integration Tests (Testcontainers)
         run: mvn test -B
         env:
           SPRING_PROFILES_ACTIVE: test
-          DATABASE_URL: jdbc:postgresql://localhost:5432/dayquest_test
-          DATABASE_USERNAME: dayquest
-          DATABASE_PASSWORD: testpassword
-          RABBITMQ_HOST: localhost
-          RABBITMQ_PORT: 5672
-          RABBITMQ_USERNAME: admin
-          RABBITMQ_PASSWORD: testpassword
 
       - name: Generate Test Coverage Report
         run: mvn jacoco:report -B
@@ -101,7 +65,6 @@ jobs:
   code-quality:
     name: Code Quality Analysis
     runs-on: ubuntu-latest
-    needs: build-and-test
 
     steps:
       - name: Checkout code
@@ -117,72 +80,50 @@ jobs:
           cache: maven
 
       - name: Run Checkstyle
-        run: mvn checkstyle:check -B || true
+        run: mvn checkstyle:check -B
 
       - name: Run SpotBugs
-        run: mvn spotbugs:check -B || true
+        run: mvn spotbugs:check -B
 
       - name: Check Dependencies for Vulnerabilities
-        run: mvn org.owasp:dependency-check-maven:check -B || true
+        run: mvn org.owasp:dependency-check-maven:check -B
 
-  integration-tests:
-    name: Integration Tests
+  docker-security-scan:
+    name: Docker Trivy Security Scan
     runs-on: ubuntu-latest
     needs: build-and-test
-
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: dayquest_integration
-          POSTGRES_USER: dayquest
-          POSTGRES_PASSWORD: testpassword
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-      rabbitmq:
-        image: rabbitmq:3.13-management-alpine
-        env:
-          RABBITMQ_DEFAULT_USER: admin
-          RABBITMQ_DEFAULT_PASS: testpassword
-        ports:
-          - 5672:5672
-        options: >-
-          --health-cmd "rabbitmq-diagnostics -q ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
         with:
-          java-version: '21'
-          distribution: 'temurin'
-          cache: maven
+          name: application-jars
+          
+      - name: Build local images for scanning
+        run: |
+          docker build -t dayquest/user-service:test ./user-service
+          docker build -t dayquest/quest-service:test ./quest-service
+          docker build -t dayquest/video-service:test ./video-service
+          # Add more services here as needed
+          
+      - name: Run Trivy vulnerability scanner on user-service
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'dayquest/user-service:test'
+          format: 'table'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
 
-      - name: Run Integration Tests
-        run: mvn verify -P integration-tests -B
-        env:
-          SPRING_PROFILES_ACTIVE: test
-          DATABASE_URL: jdbc:postgresql://localhost:5432/dayquest_integration
-          DATABASE_USERNAME: dayquest
-          DATABASE_PASSWORD: testpassword
-          RABBITMQ_HOST: localhost
-          RABBITMQ_PORT: 5672
-
-  docker-build:
-    name: Build Docker Images
+  docker-build-push:
+    name: Build & Push Docker Images
     runs-on: ubuntu-latest
-    needs: [build-and-test, code-quality]
+    needs: [docker-security-scan, code-quality]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
 
     steps:
@@ -275,45 +216,10 @@ jobs:
           push: true
           tags: dayquest/notification-service:${{ github.ref_name }}
 
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: docker-build
-    if: github.ref == 'refs/heads/develop'
-    environment:
-      name: staging
-      url: https://staging.dayquest.app
-
-    steps:
-      - name: Deploy to Staging Server
-        run: |
-          echo "Deploying to staging..."
-          # Add your deployment script here
-          # Example: kubectl, docker-compose, or custom deployment
-
-  deploy-production:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: docker-build
-    if: github.ref == 'refs/heads/main'
-    environment:
-      name: production
-      url: https://dayquest.app
-
-    steps:
-      - name: Deploy to Production Server
-        run: |
-          echo "Deploying to production..."
-          # Add your deployment script here
-          # Should include:
-          # - Health checks
-          # - Rolling deployment
-          # - Rollback strategy
-
   notify:
     name: Send Notifications
     runs-on: ubuntu-latest
-    needs: [build-and-test, code-quality]
+    needs: [build-and-test, code-quality, docker-build-push]
     if: always()
 
     steps:
@@ -327,3 +233,32 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
 
+#  deploy-staging:
+#    name: Deploy to Staging
+#    runs-on: ubuntu-latest
+#    needs: docker-build-push
+#    if: github.ref == 'refs/heads/develop'
+#    environment:
+#      name: staging
+#      url: https://staging.dayquest.app
+#
+#    steps:
+#      - name: Deploy Placeholder
+#        run: |
+#          echo "Deploying to staging (currently disabled)..."
+#          # Will be implemented using Watchtower or Webhooks
+
+#  deploy-production:
+#    name: Deploy to Production
+#    runs-on: ubuntu-latest
+#    needs: docker-build-push
+#    if: github.ref == 'refs/heads/main'
+#    environment:
+#      name: production
+#      url: https://dayquest.app
+#
+#    steps:
+#      - name: Deploy Placeholder
+#        run: |
+#          echo "Deploying to production (currently disabled)..."
+#          # Will be implemented using Watchtower or Webhooks

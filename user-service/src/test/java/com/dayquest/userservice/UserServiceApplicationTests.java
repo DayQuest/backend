@@ -18,8 +18,6 @@ class UserServiceApplicationTests {
 
 	@Test
 	void contextLoads() {
-		// This test verifies that the Spring context loads correctly
-		// It requires a running database, so it's marked as an integration test
 	}
 
 }

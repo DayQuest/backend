@@ -82,12 +82,9 @@ class UserServiceTest {
 
     @Test
     void createProfileDTO_WithoutRequester_ShouldReturnProfileWithoutFollowStatus() throws ExecutionException, InterruptedException {
-        // Given
         List<UUID> badges = List.of(UUID.randomUUID());
 
-        // Use lenient because this might not be called significantly in some implementations,
-        // but it is called inside the method.
-        // However, since requester is null, followService.isFollowing should NOT be called.
+
 
         when(badgeRepository.findBadgeIdsByUserId(testUserUuid))
                 .thenReturn(badges);
@@ -109,7 +106,7 @@ class UserServiceTest {
     @Test
     void createProfileDTO_WithProfilePicture_ShouldReturnCorrectUrl() throws ExecutionException, InterruptedException {
         // Given
-        testUser.setProfilePicture(new byte[]{1, 2, 3});
+        testUser.setProfilePictureUrl("https://apiv2.dayquest.de/api/users/profilepicture/testuser");
 
         when(followService.isFollowing(requesterUuid, testUserUuid))
                 .thenReturn(CompletableFuture.completedFuture(false));
@@ -128,7 +125,7 @@ class UserServiceTest {
     @Test
     void createProfileDTO_WithoutProfilePicture_ShouldReturnDefaultUrl() throws ExecutionException, InterruptedException {
         // Given
-        testUser.setProfilePicture(null);
+        testUser.setProfilePictureUrl(null);
 
         when(followService.isFollowing(requesterUuid, testUserUuid))
                 .thenReturn(CompletableFuture.completedFuture(false));
