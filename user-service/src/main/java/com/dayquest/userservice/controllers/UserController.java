@@ -12,6 +12,13 @@ import com.dayquest.userservice.services.FollowService;
 import com.dayquest.userservice.services.ProfilePictureService;
 import com.dayquest.userservice.services.UserService;
 import com.dayquest.userservice.utils.ImageUtil;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -43,6 +50,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/users")
 @Validated
+@Tag(name = "Users", description = "User profile management, follows, profile pictures, and badge assignments")
 public class UserController {
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
@@ -73,6 +81,11 @@ public class UserController {
 
     @DeleteMapping({"", "/"})
     @Async
+    @Operation(summary = "Delete account", description = "Permanently deletes the authenticated user's account. Requires current password confirmation. Publishes a UserDeletedEvent to remove data across services.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Account deleted successfully"),
+            @ApiResponse(responseCode = "401", description = "Invalid credentials")
+    })
     public CompletableFuture<ResponseEntity<?>> deleteUser(@RequestHeader("Authorization") String token, @RequestBody PasswordDTO passwordDTO) {
         String tokenWithoutBearer = token.substring(7);
         UUID userId = jwtService.extractUserId(tokenWithoutBearer);
@@ -100,7 +113,14 @@ public class UserController {
 
     @GetMapping("/{uuid}")
     @Async
-    public CompletableFuture<ResponseEntity<ProfileDTO>> getUserByUuid(@PathVariable UUID uuid, @RequestHeader("Authorization") String token) {
+    @Operation(summary = "Get user by UUID", description = "Returns the full profile of the user with the given UUID, including follow status relative to the requester.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "User profile returned"),
+            @ApiResponse(responseCode = "404", description = "User not found")
+    })
+    public CompletableFuture<ResponseEntity<ProfileDTO>> getUserByUuid(
+            @Parameter(description = "UUID of the user to retrieve", required = true) @PathVariable UUID uuid,
+            @RequestHeader("Authorization") String token) {
         Optional<User> userWithVideos = userRepository.findById(uuid);
         if (userWithVideos.isEmpty()) {
             return CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.NOT_FOUND).body(null));
@@ -114,8 +134,14 @@ public class UserController {
     @GetMapping("/profile/{username}")
     @Async
     @Transactional(readOnly = true)
+    @Operation(summary = "Get user profile by username", description = "Returns the full profile of the user with the given username.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "User profile returned"),
+            @ApiResponse(responseCode = "404", description = "User not found")
+    })
     public CompletableFuture<ResponseEntity<ProfileDTO>> getUserByUsername(
-            @PathVariable String username, @RequestHeader("Authorization") String token) {
+            @Parameter(description = "Username to look up", required = true) @PathVariable String username,
+            @RequestHeader("Authorization") String token) {
             User userWithVideos = userRepository.findByUsername(username);
             Optional<User> user = userRepository.findById(jwtService.extractUserId(token.substring(7)));
             if (userWithVideos == null) {
@@ -126,10 +152,16 @@ public class UserController {
 
     @GetMapping("/search")
     @Async
+    @Operation(summary = "Search users by username", description = "Searches for users whose username contains the given query string. Supports pagination.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Search results returned"),
+            @ApiResponse(responseCode = "404", description = "No users found")
+    })
     public CompletableFuture<ResponseEntity<Map<String, Object>>> searchUsers(
+            @Parameter(description = "Search query (1–100 characters)", required = true)
             @RequestParam @Size(min = 1, max = 100, message = "Query must be between 1 and 100 characters") String query,
-            @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size) {
+            @Parameter(description = "Page index (0-based)") @RequestParam(defaultValue = "0") @Min(0) int page,
+            @Parameter(description = "Page size (1–100)") @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size) {
             Page<User> userPage = userRepository.findUsersByUsernameContainingIgnoreCase(query, PageRequest.of(page, size));
             List<ProfileDTO> profileDTOs = userPage.getContent().stream()
                     .map(user -> userService.createProfileDTO(user, null).join())
@@ -150,7 +182,13 @@ public class UserController {
 
     @GetMapping("/{username}/uuid")
     @Async
-    public CompletableFuture<ResponseEntity<UUID>> getUuidByUsername(@PathVariable String username) {
+    @Operation(summary = "Get UUID by username", description = "Returns the UUID of the user with the given username. Useful for service-to-service lookups.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "UUID returned"),
+            @ApiResponse(responseCode = "404", description = "User not found")
+    })
+    public CompletableFuture<ResponseEntity<UUID>> getUuidByUsername(
+            @Parameter(description = "Username to resolve", required = true) @PathVariable String username) {
         User user = userRepository.findByUsername(username);
         if (user == null) {
             return CompletableFuture.completedFuture(ResponseEntity.notFound().build());
@@ -160,7 +198,13 @@ public class UserController {
 
     @GetMapping("/profilepicture/{username}")
     @Async
-    public CompletableFuture<ResponseEntity<ByteArrayResource>> getDecodedImage(@PathVariable("username") String username) {
+    @Operation(summary = "Get profile picture", description = "Returns the profile picture of the user as a JPEG image. Falls back to a default image if none is set. This endpoint is public.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Profile picture returned (image/jpeg)"),
+            @ApiResponse(responseCode = "500", description = "Error retrieving image")
+    })
+    public CompletableFuture<ResponseEntity<ByteArrayResource>> getDecodedImage(
+            @Parameter(description = "Username of the profile picture owner", required = true) @PathVariable("username") String username) {
         try {
             User user = userRepository.findByUsername(username);
             byte[] imageBytes = null;
@@ -195,7 +239,14 @@ public class UserController {
     }
     @PutMapping("/email")
     @Async
-    public CompletableFuture<ResponseEntity<?>> updateEmail (@RequestBody @Valid UpdateEmailDTO updateEmailDTO, 
+    @Operation(summary = "Update email address", description = "Changes the authenticated user's email address. Requires current password confirmation.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Email updated successfully"),
+            @ApiResponse(responseCode = "401", description = "Invalid password"),
+            @ApiResponse(responseCode = "404", description = "User not found"),
+            @ApiResponse(responseCode = "409", description = "Email already in use")
+    })
+    public CompletableFuture<ResponseEntity<?>> updateEmail (@RequestBody @Valid UpdateEmailDTO updateEmailDTO,
                                                              @RequestHeader("Authorization") String token){
         Optional<User> userOptional = userRepository.findById(jwtService.extractUserId(token.substring(7)));
         if (userOptional.isEmpty()) {
@@ -215,7 +266,13 @@ public class UserController {
 
     @PutMapping("/password")
     @Async
-    public CompletableFuture<ResponseEntity<String>> updatePassword(@RequestBody @Valid UpdatePasswordDTO updatePasswordDTO, 
+    @Operation(summary = "Update password", description = "Changes the authenticated user's password. Requires the current password.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Password updated successfully"),
+            @ApiResponse(responseCode = "401", description = "Invalid old password"),
+            @ApiResponse(responseCode = "404", description = "User not found")
+    })
+    public CompletableFuture<ResponseEntity<String>> updatePassword(@RequestBody @Valid UpdatePasswordDTO updatePasswordDTO,
                                                                     @RequestHeader("Authorization") String token) {
         Optional<User> userOptional = userRepository.findById(jwtService.extractUserId(token.substring(7)));
         if (userOptional.isEmpty()) {
@@ -232,8 +289,16 @@ public class UserController {
 
     @PostMapping("/setprofilepicture")
     @Async
-    public CompletableFuture<ResponseEntity<String>> setProfilePicture(@RequestParam("file") MultipartFile file, 
-                                                                       @RequestHeader("Authorization") String token) {
+    @Operation(summary = "Upload profile picture", description = "Uploads and sets a new profile picture for the authenticated user. The image is compressed and stored in MinIO. Supported formats: JPEG, PNG.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Profile picture uploaded successfully"),
+            @ApiResponse(responseCode = "400", description = "File is empty"),
+            @ApiResponse(responseCode = "404", description = "User not found"),
+            @ApiResponse(responseCode = "500", description = "Upload failed")
+    })
+    public CompletableFuture<ResponseEntity<String>> setProfilePicture(
+            @Parameter(description = "Image file to upload (JPEG/PNG)", required = true) @RequestParam("file") MultipartFile file,
+            @RequestHeader("Authorization") String token) {
         if (file.isEmpty()) {
             return CompletableFuture.completedFuture(ResponseEntity.badRequest().body("File is empty"));
         }
@@ -338,8 +403,15 @@ public class UserController {
 
     @PostMapping("/{uuid}/follow")
     @Async
+    @Operation(summary = "Follow a user", description = "Follows the user with the given UUID. Cannot follow yourself or a user you already follow.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "User followed"),
+            @ApiResponse(responseCode = "404", description = "User not found"),
+            @ApiResponse(responseCode = "409", description = "Already following this user"),
+            @ApiResponse(responseCode = "422", description = "Cannot follow yourself")
+    })
     public CompletableFuture<ResponseEntity<String>> followUser(
-            @PathVariable UUID uuid,
+            @Parameter(description = "UUID of the user to follow", required = true) @PathVariable UUID uuid,
             @RequestHeader("Authorization") String token,
             @RequestBody(required = false) UuidDTO videoUuid) {
             UUID userId = jwtService.extractUserId(token.substring(7));
@@ -365,8 +437,13 @@ public class UserController {
 
     @DeleteMapping("/{uuid}/follow")
     @Async
+    @Operation(summary = "Unfollow a user", description = "Unfollows the user with the given UUID.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "User unfollowed"),
+            @ApiResponse(responseCode = "404", description = "User not found or not following")
+    })
     public CompletableFuture<ResponseEntity<String>> unfollowUser(
-            @PathVariable UUID uuid,
+            @Parameter(description = "UUID of the user to unfollow", required = true) @PathVariable UUID uuid,
             @RequestHeader("Authorization") String token) {
         return followService.unfollowUser(token.substring(7), uuid)
                 .thenApply(response -> {

@@ -47,25 +47,33 @@ public class ReportController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    //TODO: Make admin only
     @GetMapping
     @Operation(summary = "Get all reports (admin)")
-    public ResponseEntity<Page<Report>> getReports(
+    public ResponseEntity<?> getReports(
             @RequestParam(required = false) ReportStatus status,
             @RequestParam(required = false) ReportType type,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "20") int size,
+            @RequestHeader(value = "X-User-Roles", defaultValue = "") String roles) {
+
+        if (!roles.contains("ROLE_ADMIN")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         return ResponseEntity.ok(reportService.getReports(status, type, PageRequest.of(page, size)));
     }
 
-    //TODO: Make admin only
     @PostMapping("/{id}/resolve")
     @Operation(summary = "Resolve a report (admin)")
     public ResponseEntity<?> resolveReport(
             @PathVariable UUID id,
             @RequestBody Map<String, String> body,
-            @RequestHeader("X-User-Id") String userIdHeader) {
+            @RequestHeader("X-User-Id") String userIdHeader,
+            @RequestHeader(value = "X-User-Roles", defaultValue = "") String roles) {
+
+        if (!roles.contains("ROLE_ADMIN")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         UUID modUuid = UUID.fromString(userIdHeader);
         ReportStatus newStatus = ReportStatus.valueOf(body.getOrDefault("status", "RESOLVED"));

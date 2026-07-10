@@ -11,6 +11,14 @@ import com.dayquest.userservice.models.User;
 import com.dayquest.userservice.repositories.UserRepository;
 import com.dayquest.userservice.services.AuthService;
 import com.dayquest.userservice.services.UserServiceJwtService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +31,7 @@ import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/auth")
+@Tag(name = "Authentication", description = "User registration, login, token management, and password reset")
 public class AuthController {
     private final AuthService authService;
     private final UserRepository userRepository;
@@ -38,6 +47,20 @@ public class AuthController {
     }
 
     @PostMapping("/register")
+    @Operation(
+            summary = "Register a new user",
+            description = "Creates a new user account. A verification email is sent to the provided address. " +
+                    "The account must be verified before login is possible.",
+            security = {}
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Registration successful — verification email sent",
+                    content = @Content(schema = @Schema(implementation = String.class))),
+            @ApiResponse(responseCode = "400", description = "Validation error or invalid request",
+                    content = @Content(schema = @Schema(implementation = String.class))),
+            @ApiResponse(responseCode = "409", description = "Username or email already in use",
+                    content = @Content(schema = @Schema(implementation = String.class)))
+    })
     public ResponseEntity<String> register(@Valid @RequestBody RegisterDTO registerDTO) {
         try{
             authService.register(registerDTO.getUsername(), registerDTO.getEmail(), registerDTO.getPassword());
@@ -48,6 +71,22 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @Operation(
+            summary = "Login and obtain JWT tokens",
+            description = "Authenticates the user with username and password. Returns an access token (15 min TTL) " +
+                    "and a refresh token (7 day TTL). Banned users cannot log in.",
+            security = {}
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Login successful — returns access and refresh tokens",
+                    content = @Content(schema = @Schema(implementation = LoginResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Invalid password or unverified account",
+                    content = @Content(schema = @Schema(implementation = LoginResponse.class))),
+            @ApiResponse(responseCode = "403", description = "Account is banned",
+                    content = @Content(schema = @Schema(implementation = LoginResponse.class))),
+            @ApiResponse(responseCode = "404", description = "User not found",
+                    content = @Content(schema = @Schema(implementation = LoginResponse.class)))
+    })
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginDTO loginDTO) {
         User user = userRepository.findByUsername(loginDTO.getUsername());
         if (user == null) {
@@ -74,6 +113,17 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
+    @Operation(
+            summary = "Refresh access token",
+            description = "Exchanges a valid refresh token for a new access token and refresh token pair. " +
+                    "Use this when the access token has expired.",
+            security = {}
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "New token pair issued",
+                    content = @Content(schema = @Schema(implementation = AuthTokenResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Refresh token is invalid or expired")
+    })
     public ResponseEntity<?> refreshToken(@RequestBody RefreshTokenRequest request) {
         try {
             AuthTokenResponse tokens = jwtService.refreshTokens(request.getRefreshToken());
@@ -85,6 +135,16 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
+    @Operation(
+            summary = "Logout (invalidate session)",
+            description = "Logs out the currently authenticated user. The client should discard stored tokens.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Logged out successfully",
+                    content = @Content(schema = @Schema(implementation = String.class))),
+            @ApiResponse(responseCode = "401", description = "Missing or invalid token")
+    })
     public ResponseEntity<String> logout(@RequestHeader("Authorization") String authHeader) {
         return ResponseEntity.ok("Logged out successfully");
     }
@@ -93,7 +153,19 @@ public class AuthController {
      * Verify account via GET request with token parameter (clicked from email link)
      */
     @GetMapping("/verify")
-    public ResponseEntity<String> verifyViaLink(@RequestParam String token) {
+    @Operation(
+            summary = "Verify email address (link click)",
+            description = "Verifies the user's email address using the token from the verification email. " +
+                    "This endpoint is intended for email link clicks and returns an HTML page.",
+            security = {}
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Account verified — HTML confirmation page returned"),
+            @ApiResponse(responseCode = "400", description = "Invalid or expired verification token — HTML error page returned")
+    })
+    public ResponseEntity<String> verifyViaLink(
+            @Parameter(description = "Verification token from email link", required = true)
+            @RequestParam String token) {
         try {
             authService.verifyAccount(token);
             String html = """
@@ -181,7 +253,19 @@ public class AuthController {
     }
 
     @PostMapping("/verify")
-    public ResponseEntity<?> verify(@RequestParam String token) {
+    @Operation(
+            summary = "Verify email address (API)",
+            description = "Verifies the user's email address using the token from the verification email. " +
+                    "This endpoint is for programmatic use and returns a plain text response.",
+            security = {}
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Account verified successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid or expired verification token")
+    })
+    public ResponseEntity<?> verify(
+            @Parameter(description = "Verification token from email", required = true)
+            @RequestParam String token) {
         try {
             authService.verifyAccount(token);
             return ResponseEntity.ok("Account verified successfully");
@@ -194,6 +278,16 @@ public class AuthController {
      * Resend verification email
      */
     @PostMapping("/resend-verification")
+    @Operation(
+            summary = "Resend verification email",
+            description = "Resends the email verification link to the given address if an unverified account exists. " +
+                    "Always returns 200 to prevent email enumeration.",
+            security = {}
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "If account exists, a new verification email was sent"),
+            @ApiResponse(responseCode = "400", description = "Invalid request")
+    })
     public ResponseEntity<String> resendVerification(@RequestBody @Valid EmailDTO request) {
         try {
             authService.resendVerificationEmail(request.getEmail());
@@ -204,7 +298,21 @@ public class AuthController {
     }
 
     @PostMapping("/token/validate")
-    public ResponseEntity<Boolean> validateToken(@RequestHeader("Authorization") String token, @RequestBody UUID uuid) {
+    @Operation(
+            summary = "Validate a JWT token",
+            description = "Validates that a given JWT token is authentic and belongs to the specified user UUID. " +
+                    "Used internally by other services to verify token authenticity.",
+            security = {}
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Returns true if valid, false otherwise",
+                    content = @Content(schema = @Schema(implementation = Boolean.class)))
+    })
+    public ResponseEntity<Boolean> validateToken(
+            @Parameter(description = "Bearer token to validate", required = true)
+            @RequestHeader("Authorization") String token,
+            @Parameter(description = "User UUID that the token should belong to", required = true)
+            @RequestBody UUID uuid) {
         boolean isValid = authService.tokenUuidValid(token.substring(7), uuid);
         return ResponseEntity.ok(isValid);
     }
@@ -212,6 +320,15 @@ public class AuthController {
 
     @PostMapping("/forgot-password")
     @Async
+    @Operation(
+            summary = "Request password reset email",
+            description = "Sends a password reset link to the provided email address if an account exists. " +
+                    "Always returns 200 to prevent email enumeration.",
+            security = {}
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "If account exists, a password reset link was sent")
+    })
     public CompletableFuture<ResponseEntity<String>> forgotPassword(@RequestBody @Valid EmailDTO forgotPasswordRequestDTO) {
         return authService.handleForgotPasswordRequest(forgotPasswordRequestDTO.getEmail())
                 .thenApply(success -> ResponseEntity.ok("If an account with this email exists, a password reset link has been sent."))
@@ -220,6 +337,16 @@ public class AuthController {
 
     @PostMapping("/reset-password")
     @Async
+    @Operation(
+            summary = "Reset password using token",
+            description = "Resets the user's password using the token from the password reset email.",
+            security = {}
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Password reset successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid or expired reset token, or weak password"),
+            @ApiResponse(responseCode = "500", description = "Internal error during reset")
+    })
     public CompletableFuture<ResponseEntity<String>> resetPassword(@RequestBody ResetPasswordRequestDTO resetPasswordDTO) {
         return authService.handleResetPassword(resetPasswordDTO.getToken(), resetPasswordDTO.getNewPassword())
                 .thenApply(ResponseEntity::ok)
@@ -233,6 +360,14 @@ public class AuthController {
     }
 
     @GetMapping("/reset-password")
+    @Operation(
+            summary = "Password reset form (HTML)",
+            description = "Returns an HTML page with a password reset form. Intended to be opened via browser link from the reset email.",
+            security = {}
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "HTML form returned")
+    })
     public ResponseEntity<String> resetPasswordPage(@RequestParam(required = false) String token) {
         String html = """
     <!DOCTYPE html>

@@ -40,11 +40,15 @@ public class SecurityProperties {
             "/swagger-resources/**",
             "/swagger-config",
             "/api-docs/**",
-            // Service API docs (only services defined in docker-compose.dev.yml)
+            "/redoc",
+            // Service API docs
             "/auth-service/v3/api-docs",
             "/user-service/v3/api-docs",
             "/quest-service/v3/api-docs",
-            "/notification-service/v3/api-docs"
+            "/notification-service/v3/api-docs",
+            "/video-service/v3/api-docs",
+            "/social-service/v3/api-docs",
+            "/content-service/v3/api-docs"
     );
 
     @PostConstruct

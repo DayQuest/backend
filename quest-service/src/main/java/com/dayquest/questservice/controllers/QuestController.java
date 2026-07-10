@@ -6,6 +6,11 @@ import com.dayquest.questservice.models.Quest;
 import com.dayquest.questservice.repositories.QuestRepository;
 import com.dayquest.questservice.services.QuestService;
 import com.dayquest.questservice.services.RatingService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +32,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/quests")
+@Tag(name = "Quests", description = "Quest creation, discovery, rating, and the daily quest system")
 public class QuestController {
 
     private static final Logger logger = LoggerFactory.getLogger(QuestController.class);
@@ -46,12 +52,17 @@ public class QuestController {
     @GetMapping
     @Async
     @Cacheable(value = "quests", key = "#page + ':' + #size + ':' + #sortBy + ':' + #sortDirection")
+    @Operation(summary = "Get quests (paginated)", description = "Returns a paginated and sortable list of active quests. Includes like/dislike status for the requesting user.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "List of quests returned"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     public CompletableFuture<ResponseEntity<List<QuestDTO>>> getQuests(
             @RequestHeader("X-User-Id") UUID userId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "DESC") Sort.Direction sortDirection) {
+            @Parameter(description = "Page index (0-based)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size (max 50)") @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "Sort field: createdAt, score, likes, title") @RequestParam(defaultValue = "createdAt") String sortBy,
+            @Parameter(description = "Sort direction: ASC or DESC") @RequestParam(defaultValue = "DESC") Sort.Direction sortDirection) {
 
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -88,8 +99,13 @@ public class QuestController {
     @GetMapping("/{uuid}")
     @Async
     @Cacheable(value = "quest", key = "#uuid", unless = "#result == null")
+    @Operation(summary = "Get quest by UUID", description = "Returns a single quest by its UUID, including like/dislike status for the requesting user.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Quest returned"),
+            @ApiResponse(responseCode = "404", description = "Quest not found")
+    })
     public CompletableFuture<ResponseEntity<QuestDTO>> getQuest(
-            @PathVariable UUID uuid,
+            @Parameter(description = "UUID of the quest", required = true) @PathVariable UUID uuid,
             @RequestHeader("X-User-Id") UUID userId) {
 
         return CompletableFuture.supplyAsync(() -> {
@@ -109,6 +125,11 @@ public class QuestController {
     @PostMapping
     @Async
     @CacheEvict(value = {"quests", "topQuests"}, allEntries = true)
+    @Operation(summary = "Create a new quest", description = "Creates a new quest. The creator UUID and username are extracted from the gateway-injected headers.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Quest created"),
+            @ApiResponse(responseCode = "400", description = "Validation error")
+    })
     public CompletableFuture<ResponseEntity<QuestDTO>> createQuest(
             @Valid @RequestBody CreateQuestDTO createQuestDTO,
             @RequestHeader("X-User-Id") UUID userId,
@@ -137,8 +158,14 @@ public class QuestController {
     @DeleteMapping("/{uuid}")
     @Async
     @CacheEvict(value = {"quests", "quest", "topQuests"}, allEntries = true)
+    @Operation(summary = "Delete a quest", description = "Soft-deletes a quest. Only the creator can delete their own quest.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Quest deleted"),
+            @ApiResponse(responseCode = "403", description = "Not the quest creator"),
+            @ApiResponse(responseCode = "404", description = "Quest not found")
+    })
     public CompletableFuture<ResponseEntity<String>> deleteQuest(
-            @PathVariable UUID uuid,
+            @Parameter(description = "UUID of the quest to delete", required = true) @PathVariable UUID uuid,
             @RequestHeader("X-User-Id") UUID userId) {
 
         return CompletableFuture.supplyAsync(() -> {
@@ -163,8 +190,14 @@ public class QuestController {
      */
     @PostMapping("/{uuid}/like")
     @CacheEvict(value = {"quests", "quest", "userRatings"}, allEntries = true)
+    @Operation(summary = "Like a quest", description = "Likes the quest with the given UUID on behalf of the authenticated user.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Quest liked"),
+            @ApiResponse(responseCode = "404", description = "Quest not found"),
+            @ApiResponse(responseCode = "409", description = "Already rated")
+    })
     public CompletableFuture<ResponseEntity<String>> likeQuestPath(
-            @PathVariable UUID uuid,
+            @Parameter(description = "UUID of the quest", required = true) @PathVariable UUID uuid,
             @RequestHeader("X-User-Id") UUID userId) {
 
         return ratingService.rateQuest(userId, uuid, true);
@@ -268,6 +301,11 @@ public class QuestController {
      */
     @GetMapping("/daily")
     @Async
+    @Operation(summary = "Get daily quest", description = "Returns the daily quest assigned to the authenticated user. Assigns a new random quest if none exists for today.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Daily quest returned"),
+            @ApiResponse(responseCode = "404", description = "No quest available")
+    })
     public CompletableFuture<ResponseEntity<QuestDTO>> getDailyQuest(
             @RequestHeader("X-User-Id") UUID userId) {
 
@@ -284,6 +322,11 @@ public class QuestController {
      */
     @PostMapping("/daily/reroll")
     @Async
+    @Operation(summary = "Reroll daily quest", description = "Replaces the current daily quest with a new random one. Limited to 3 rerolls per day.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "New daily quest returned"),
+            @ApiResponse(responseCode = "429", description = "No rerolls remaining today")
+    })
     public CompletableFuture<ResponseEntity<?>> rerollDailyQuest(
             @RequestHeader("X-User-Id") UUID userId) {
 
@@ -296,7 +339,18 @@ public class QuestController {
         });
     }
 
-    //TODO: add endpoint to get left rerolls for user
+    @GetMapping("/daily/rerolls")
+    @Async
+    @Operation(summary = "Get remaining rerolls", description = "Returns the number of daily quest rerolls used and remaining for the authenticated user.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Reroll status returned")
+    })
+    public CompletableFuture<ResponseEntity<?>> getRemainingRerolls(
+            @RequestHeader("X-User-Id") UUID userId) {
+
+        return questService.getRemainingRerolls(userId)
+                .thenApply(ResponseEntity::ok);
+    }
 
     private QuestDTO toQuestDTO(Quest quest, Set<UUID> likedQuests, Set<UUID> dislikedQuests) {
         QuestDTO dto = new QuestDTO();

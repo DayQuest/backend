@@ -5,6 +5,9 @@ import com.dayquest.videoservice.dto.VideoUploadRequest;
 import com.dayquest.videoservice.model.Video;
 import com.dayquest.videoservice.service.VideoService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -133,6 +136,11 @@ public class VideoController {
 
     //TODO: Return right success Message
     @PostMapping("/{uuid}/vote")
+    @Operation(summary = "Vote on a video (upvote/downvote)", description = "Casts a vote (upvote or downvote) on a video. Pass `isUpvote=true` to upvote or `isUpvote=false` to downvote.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Vote recorded"),
+            @ApiResponse(responseCode = "404", description = "Video not found")
+    })
     public ResponseEntity<?> voteVideo(
             @PathVariable UUID uuid,
             @RequestHeader("X-User-Id") String userIdHeader,

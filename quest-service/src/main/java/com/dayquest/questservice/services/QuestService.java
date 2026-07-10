@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -198,6 +199,27 @@ public class QuestService {
                     userId, newQuest.getUuid(), assignment.getRerollsUsed());
 
             return newQuest;
+        });
+    }
+
+    /**
+     * Get remaining rerolls for a user's daily quest
+     */
+    @Async
+    public CompletableFuture<Map<String, Integer>> getRemainingRerolls(UUID userId) {
+        return CompletableFuture.supplyAsync(() -> {
+            LocalDate today = LocalDate.now();
+            Optional<DailyQuestAssignment> assignment =
+                    dailyQuestAssignmentRepository.findByUserIdAndAssignedDate(userId, today);
+
+            if (assignment.isEmpty()) {
+                return Map.of("rerollsUsed", 0, "rerollsRemaining", 3, "maxRerolls", 3);
+            }
+
+            DailyQuestAssignment dailyQuest = assignment.get();
+            int used = dailyQuest.getRerollsUsed();
+            int max = dailyQuest.getMaxRerolls();
+            return Map.of("rerollsUsed", used, "rerollsRemaining", max - used, "maxRerolls", max);
         });
     }
 
