@@ -12,6 +12,8 @@ public interface ViewedVideoRepository extends JpaRepository<ViewedVideo, Viewed
 
     boolean existsByUserUuidAndVideoUuid(UUID userUuid, UUID videoUuid);
 
+    /** Removes all view records for a video — called during video deletion cascade. */
+    void deleteByVideoUuid(UUID videoUuid);
+
     void deleteByUserUuid(UUID userUuid);
 }
-

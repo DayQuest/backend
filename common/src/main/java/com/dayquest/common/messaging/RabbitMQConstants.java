@@ -15,13 +15,13 @@ public final class RabbitMQConstants {
     public static final String DLX_EXCHANGE = "dlx.exchange";
 
     // Dead Letter Queue
-    public static final String GLOBAL_DLQ = "global.dlq";
+    public static final String GLOBAL_DLQ = "global.dlq.v2";
 
     // Queue names
-    public static final String EMAIL_QUEUE = "notification.email.queue";
-    public static final String USER_DELETED_VIDEO_QUEUE = "user.deleted.video.queue";
-    public static final String USER_DELETED_QUEST_QUEUE = "user.deleted.quest.queue";
-    public static final String USER_DELETED_SOCIAL_QUEUE = "user.deleted.social.queue";
+    public static final String EMAIL_QUEUE = "notification.email.queue.v2";
+    public static final String USER_DELETED_VIDEO_QUEUE = "user.deleted.video.queue.v2";
+    public static final String USER_DELETED_QUEST_QUEUE = "user.deleted.quest.queue.v2";
+    public static final String USER_DELETED_SOCIAL_QUEUE = "user.deleted.social.queue.v2";
 
     // Routing keys
     public static final String EMAIL_ROUTING_KEY = "email.send";

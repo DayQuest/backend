@@ -65,12 +65,17 @@ import java.net.URI;
 
                         ### Services
                         Use the **dropdown** in Swagger UI to switch between individual service docs:
-                        - **user-service** — Auth, users, profiles, follows
-                        - **quest-service** — Quest CRUD, ratings, daily quest
-                        - **video-service** — Video upload, feed, voting
-                        - **social-service** — Comments, friendships, hashtags
-                        - **content-service** — Reports, badges, streaks
-                        - **notification-service** — Email notifications (internal)
+
+                        | Service | Focus |
+                        |---|---|
+                        | `user-service` | Authentication, users, profiles, follows |
+                        | `quest-service` | Quest CRUD, ratings, daily quests |
+                        | `video-service` | Uploads, feed, voting, video lifecycle |
+                        | `social-service` | Comments, friendships, hashtags |
+                        | `content-service` | Badges, streaks, moderation reports |
+                        | `notification-service` | Async email notifications |
+
+                        > There is no standalone `auth-service`; authentication lives in `user-service`.
                         """,
                 contact = @Contact(name = "DayQuest Team")
         ),
@@ -138,7 +143,7 @@ public class SwaggerConfig {
                                         .bearerFormat("JWT")
                                         .description("JWT access token from POST /auth/login. Format: Bearer <token>")))
                 .addTagsItem(new Tag().name("Authentication")
-                        .description("Registration, login, token refresh, email verification, and password reset"))
+                        .description("Registration, login, token refresh, email verification, and password reset (user-service)"))
                 .addTagsItem(new Tag().name("Users")
                         .description("User profiles, follow/unfollow, profile pictures, and badge management"))
                 .addTagsItem(new Tag().name("Quests")
@@ -156,7 +161,9 @@ public class SwaggerConfig {
                 .addTagsItem(new Tag().name("Streaks")
                         .description("Daily activity streaks and leaderboards"))
                 .addTagsItem(new Tag().name("Reports")
-                        .description("Content moderation reports and admin resolution"));
+                        .description("Content moderation reports and admin resolution"))
+                .addTagsItem(new Tag().name("Notifications")
+                        .description("Transactional and asynchronous email notifications"));
     }
 
     /**

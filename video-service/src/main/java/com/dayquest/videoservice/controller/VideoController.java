@@ -97,10 +97,8 @@ public class VideoController {
 
         Page<VideoDTO> dtos = videos.map(v -> videoService.toDTO(v, currentUserUuid));
 
-
         return ResponseEntity.ok(dtos);
     }
-
 
     @PostMapping("/next")
     @Operation(summary = "Get next video for user feed")
@@ -115,10 +113,17 @@ public class VideoController {
         return ResponseEntity.ok(videoService.toDTO(videoOpt.get(), userUuid));
     }
 
-
-    //TODO: When deleted start deleting comments and votes finally delete db entry
     @DeleteMapping("/{uuid}")
-    @Operation(summary = "Delete a video")
+    @Operation(
+            summary = "Delete a video",
+            description = "Soft-deletes a video and removes associated ratings and view records. " +
+                    "Cross-service comment cleanup (social-service) is handled asynchronously " +
+                    "via RabbitMQ — planned future enhancement."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Video deleted"),
+            @ApiResponse(responseCode = "403", description = "Not the video owner")
+    })
     public ResponseEntity<?> deleteVideo(
             @PathVariable UUID uuid,
             @RequestHeader("X-User-Id") String userIdHeader) {
@@ -134,9 +139,12 @@ public class VideoController {
         return ResponseEntity.ok(Map.of("message", "Video deleted"));
     }
 
-    //TODO: Return right success Message
     @PostMapping("/{uuid}/vote")
-    @Operation(summary = "Vote on a video (upvote/downvote)", description = "Casts a vote (upvote or downvote) on a video. Pass `isUpvote=true` to upvote or `isUpvote=false` to downvote.")
+    @Operation(
+            summary = "Vote on a video (upvote/downvote)",
+            description = "Casts a vote (upvote or downvote) on a video. Pass `isUpvote=true` to upvote or `isUpvote=false` to downvote. " +
+                    "Voting again with the same type removes the existing vote (toggle)."
+    )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Vote recorded"),
             @ApiResponse(responseCode = "404", description = "Video not found")
@@ -144,26 +152,21 @@ public class VideoController {
     public ResponseEntity<?> voteVideo(
             @PathVariable UUID uuid,
             @RequestHeader("X-User-Id") String userIdHeader,
-            @RequestParam() boolean isUpvote )
-    {
+            @RequestParam boolean isUpvote) {
+
         UUID userUuid = UUID.fromString(userIdHeader);
-        boolean success;
-        if(isUpvote) {
-            success = videoService.upvoteVideo(uuid, userUuid);
-        } else {
-            success = videoService.downvoteVideo(uuid, userUuid);
+        boolean success = isUpvote
+                ? videoService.upvoteVideo(uuid, userUuid)
+                : videoService.downvoteVideo(uuid, userUuid);
+
+        if (!success) {
+            return ResponseEntity.notFound().build();
         }
 
-        //Only reason for this rn is that the video doesn't exist anymore
-        if(!success) {
-            return ResponseEntity.notFound().build();
-        } else {
-            return ResponseEntity.ok(Map.of("message", "Vote upvoted"));
-        }
+        String voteType = isUpvote ? "upvote" : "downvote";
+        return ResponseEntity.ok(Map.of("message", "Vote recorded", "voteType", voteType));
     }
 
-
-    //TODO: Include either in algorithm or CDN
     @PostMapping("/{uuid}/view")
     @Operation(summary = "Mark video as viewed")
     public ResponseEntity<?> markAsViewed(
@@ -176,4 +179,3 @@ public class VideoController {
         return ResponseEntity.ok(Map.of("message", "Marked as viewed"));
     }
 }
-

@@ -205,7 +205,7 @@ services:
       dockerfile: notification-service/Dockerfile
     container_name: notification-service
     ports:
-      - "${NOTIFICATION_SERVER_PORT}:8085"
+      - "${NOTIFICATION_SERVER_PORT}:8082"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
@@ -307,6 +307,10 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/dayquest
       - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
     env_file:
       - stack.env
     restart: unless-stopped
@@ -316,6 +320,8 @@ services:
       eureka-server:
         condition: service_healthy
       postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     networks:
       - dayquest-network

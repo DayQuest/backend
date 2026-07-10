@@ -6,7 +6,6 @@ import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.core.TopicExchange;
-import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
@@ -21,8 +20,8 @@ public class RabbitMQProducerConfig {
 
     // --- Dead Letter Exchange & Queue ---
     @Bean
-    public DirectExchange deadLetterExchange() {
-        return new DirectExchange(RabbitMQConstants.DLX_EXCHANGE, true, false);
+    public TopicExchange deadLetterExchange() {
+        return new TopicExchange(RabbitMQConstants.DLX_EXCHANGE, true, false);
     }
 
     @Bean
@@ -31,8 +30,8 @@ public class RabbitMQProducerConfig {
     }
 
     @Bean
-    public Binding deadLetterBinding(Queue globalDeadLetterQueue, DirectExchange deadLetterExchange) {
-        // Bind without routing key specifics so it catches all dead letters routed to this exchange
+    public Binding deadLetterBinding(Queue globalDeadLetterQueue, TopicExchange deadLetterExchange) {
+        // Catch all dead letters regardless of the original routing key.
         return BindingBuilder.bind(globalDeadLetterQueue).to(deadLetterExchange).with("#");
     }
 
@@ -99,6 +98,14 @@ public class RabbitMQProducerConfig {
     @Bean
     public Jackson2JsonMessageConverter jsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
+    }
+
+    @Bean
+    public Queue socialDeleteQueue() {
+        return QueueBuilder.durable(RabbitMQConstants.USER_DELETED_SOCIAL_QUEUE)
+                .withArgument("x-dead-letter-exchange", "dlx.exchange")
+                .withArgument("x-dead-letter-routing-key", "deadLetter")
+                .build();
     }
 
     @Bean

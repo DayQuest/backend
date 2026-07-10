@@ -15,7 +15,6 @@ import static org.springframework.cloud.gateway.server.mvc.filter.FilterFunction
 /**
  * Gateway routing configuration for all microservices.
  * Routes requests to the appropriate backend services via Eureka service discovery.
- *
  * Note: Swagger UI paths (/swagger-ui/**, /v3/api-docs/**) are excluded and handled by SpringDoc.
  */
 @Configuration
@@ -31,7 +30,6 @@ public class GatewayRoutingConfig {
      * POST /auth/forgot-password - Request password reset
      * POST /auth/reset-password - Reset password
      * POST /auth/token/validate - Validate token
-     *
      * Note: Auth endpoints are handled by user-service
      */
     @Bean
@@ -43,7 +41,7 @@ public class GatewayRoutingConfig {
                 .build();
     }
 
-    // Note: auth-service API docs are not needed since auth is part of user-service
+    // Note: authentication lives in user-service; there is no standalone auth-service module
 
     /**
      * Routes for User endpoints (authenticated)

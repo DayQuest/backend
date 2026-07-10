@@ -15,8 +15,9 @@ public interface VideoRatingRepository extends JpaRepository<VideoRating, VideoR
 
     void deleteByUserUuidAndVideoUuid(UUID userUuid, UUID videoUuid);
 
+    void deleteByVideoUuid(UUID videoUuid);
+
     void deleteByUserUuid(UUID userUuid);
 
     long countByVideoUuidAndIsUpvote(UUID videoUuid, boolean isUpvote);
 }
-

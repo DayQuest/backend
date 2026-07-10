@@ -141,13 +141,20 @@ public class VideoService {
         }
     }
 
-    //TODO: make this Atomic
+    /**
+     * Atomically increments the view counter using a single UPDATE query,
+     * avoiding a read-modify-write race condition.
+     */
     @Transactional
     public void incrementViews(Video video) {
-        video.setViews(video.getViews() + 1);
-        videoRepository.save(video);
+        videoRepository.incrementViews(video.getUuid());
     }
 
+    /**
+     * Soft-deletes a video and cascades deletion of all local ratings and view records.
+     * Cross-service cleanup (comments in social-service) should be triggered via a
+     * RabbitMQ {@code video.deleted} event consumed by social-service — planned future enhancement.
+     */
     @Transactional
     public boolean deleteVideo(UUID videoUuid, UUID userUuid) {
         Optional<Video> videoOpt = videoRepository.findById(videoUuid);
@@ -167,6 +174,12 @@ public class VideoService {
 
         video.setStatus(VideoStatus.DELETED);
         videoRepository.save(video);
+
+        // Cascade: remove all ratings and view records for this video
+        videoRatingRepository.deleteByVideoUuid(videoUuid);
+        viewedVideoRepository.deleteByVideoUuid(videoUuid);
+
+        logger.info("Video {} deleted — ratings and view records removed", videoUuid);
         return true;
     }
 
@@ -183,7 +196,7 @@ public class VideoService {
         if (existingRating.isPresent()) {
             VideoRating rating = existingRating.get();
             if (rating.isUpvote()) {
-                // Already upvoted - remove vote
+                // Already upvoted — remove vote
                 videoRatingRepository.delete(rating);
                 video.setUpVotes(video.getUpVotes() - 1);
             } else {
@@ -216,7 +229,7 @@ public class VideoService {
         if (existingRating.isPresent()) {
             VideoRating rating = existingRating.get();
             if (!rating.isUpvote()) {
-                // Already downvoted - remove vote
+                // Already downvoted — remove vote
                 videoRatingRepository.delete(rating);
                 video.setDownVotes(video.getDownVotes() - 1);
             } else {
@@ -272,4 +285,3 @@ public class VideoService {
         return dto;
     }
 }
-

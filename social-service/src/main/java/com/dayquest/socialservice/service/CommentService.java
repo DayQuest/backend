@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -40,8 +41,11 @@ public class CommentService {
         return commentRepository.save(comment);
     }
 
+    /**
+     * Returns paginated top-level comments, excluding soft-deleted ones.
+     */
     public Page<Comment> getComments(UUID entityId, CommentEntityType entityType, Pageable pageable) {
-        return commentRepository.findByEntityIdAndEntityTypeAndParentCommentIsNull(
+        return commentRepository.findByEntityIdAndEntityTypeAndParentCommentIsNullAndDeletedFalse(
                 entityId, entityType, pageable);
     }
 
@@ -66,7 +70,15 @@ public class CommentService {
         return true;
     }
 
-    //TODO: Just mark as deleted for moderation purposes and fully delete in 7 days also process answers
+    /**
+     * Soft-deletes a comment for moderation purposes.
+     * <p>
+     * The comment content is replaced with {@code "[deleted]"} so replies can still render
+     * with context, and the {@code deleted} flag is set with a timestamp. The record is
+     * permanently hard-deleted by
+     * {@link com.dayquest.socialservice.scheduler.CommentCleanupScheduler} after 7 days,
+     * which also cascades to any replies.
+     */
     @Transactional
     public boolean deleteComment(UUID commentId, UUID userUuid) {
         Optional<Comment> commentOpt = commentRepository.findById(commentId);
@@ -79,12 +91,18 @@ public class CommentService {
             return false;
         }
 
-        commentRepository.delete(comment);
+        comment.setDeleted(true);
+        comment.setDeletedAt(LocalDateTime.now());
+        comment.setContent("[deleted]");
+        commentRepository.save(comment);
         return true;
     }
 
+    /**
+     * Returns the count of non-soft-deleted comments for the given entity.
+     */
     public long getCommentCount(UUID entityId, CommentEntityType entityType) {
-        return commentRepository.countByEntityIdAndEntityType(entityId, entityType);
+        return commentRepository.countByEntityIdAndEntityTypeAndDeletedFalse(entityId, entityType);
     }
 
     public CommentDTO toDTO(Comment comment) {
@@ -103,4 +121,3 @@ public class CommentService {
         return dto;
     }
 }
-

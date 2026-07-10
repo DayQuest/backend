@@ -98,9 +98,9 @@ public class UserController {
         UserDeletedEvent event = new UserDeletedEvent(userId, username);
         try {
             rabbitTemplate.convertAndSend(
-                RabbitMQConstants.USER_EXCHANGE,
-                RabbitMQConstants.USER_DELETED_ROUTING_KEY,
-                event
+                    RabbitMQConstants.USER_EXCHANGE,
+                    RabbitMQConstants.USER_DELETED_ROUTING_KEY,
+                    event
             );
             logger.info("Published UserDeletedEvent for user: {} ({})", username, userId);
         } catch (Exception e) {
@@ -142,12 +142,12 @@ public class UserController {
     public CompletableFuture<ResponseEntity<ProfileDTO>> getUserByUsername(
             @Parameter(description = "Username to look up", required = true) @PathVariable String username,
             @RequestHeader("Authorization") String token) {
-            User userWithVideos = userRepository.findByUsername(username);
-            Optional<User> user = userRepository.findById(jwtService.extractUserId(token.substring(7)));
-            if (userWithVideos == null) {
-                return CompletableFuture.completedFuture(ResponseEntity.notFound().build());
-            }
-            return CompletableFuture.completedFuture(ResponseEntity.ok(userService.createProfileDTO(userWithVideos, user.get()).join()));
+        User userWithVideos = userRepository.findByUsername(username);
+        Optional<User> user = userRepository.findById(jwtService.extractUserId(token.substring(7)));
+        if (userWithVideos == null) {
+            return CompletableFuture.completedFuture(ResponseEntity.notFound().build());
+        }
+        return CompletableFuture.completedFuture(ResponseEntity.ok(userService.createProfileDTO(userWithVideos, user.get()).join()));
     }
 
     @GetMapping("/search")
@@ -162,22 +162,22 @@ public class UserController {
             @RequestParam @Size(min = 1, max = 100, message = "Query must be between 1 and 100 characters") String query,
             @Parameter(description = "Page index (0-based)") @RequestParam(defaultValue = "0") @Min(0) int page,
             @Parameter(description = "Page size (1–100)") @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size) {
-            Page<User> userPage = userRepository.findUsersByUsernameContainingIgnoreCase(query, PageRequest.of(page, size));
-            List<ProfileDTO> profileDTOs = userPage.getContent().stream()
-                    .map(user -> userService.createProfileDTO(user, null).join())
-                    .collect(Collectors.toList());
+        Page<User> userPage = userRepository.findUsersByUsernameContainingIgnoreCase(query, PageRequest.of(page, size));
+        List<ProfileDTO> profileDTOs = userPage.getContent().stream()
+                .map(user -> userService.createProfileDTO(user, null).join())
+                .collect(Collectors.toList());
 
-            if (profileDTOs.isEmpty()) {
-                return CompletableFuture.completedFuture(ResponseEntity.notFound().build());
-            }
+        if (profileDTOs.isEmpty()) {
+            return CompletableFuture.completedFuture(ResponseEntity.notFound().build());
+        }
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("users", profileDTOs);
-            response.put("currentPage", userPage.getNumber());
-            response.put("totalItems", userPage.getTotalElements());
-            response.put("totalPages", userPage.getTotalPages());
+        Map<String, Object> response = new HashMap<>();
+        response.put("users", profileDTOs);
+        response.put("currentPage", userPage.getNumber());
+        response.put("totalItems", userPage.getTotalElements());
+        response.put("totalPages", userPage.getTotalPages());
 
-            return CompletableFuture.completedFuture(ResponseEntity.ok(response));
+        return CompletableFuture.completedFuture(ResponseEntity.ok(response));
     }
 
     @GetMapping("/{username}/uuid")
@@ -213,7 +213,6 @@ public class UserController {
                 imageBytes = profilePictureService.getProfilePicture(user.getUuid());
             }
 
-
             // Default picture if nothing found
             if (imageBytes == null) {
                 ClassPathResource defaultPicture = new ClassPathResource("pfp.jpg");
@@ -237,6 +236,7 @@ public class UserController {
                             .body(new ByteArrayResource(new byte[0])));
         }
     }
+
     @PutMapping("/email")
     @Async
     @Operation(summary = "Update email address", description = "Changes the authenticated user's email address. Requires current password confirmation.")
@@ -246,8 +246,8 @@ public class UserController {
             @ApiResponse(responseCode = "404", description = "User not found"),
             @ApiResponse(responseCode = "409", description = "Email already in use")
     })
-    public CompletableFuture<ResponseEntity<?>> updateEmail (@RequestBody @Valid UpdateEmailDTO updateEmailDTO,
-                                                             @RequestHeader("Authorization") String token){
+    public CompletableFuture<ResponseEntity<?>> updateEmail(@RequestBody @Valid UpdateEmailDTO updateEmailDTO,
+                                                            @RequestHeader("Authorization") String token) {
         Optional<User> userOptional = userRepository.findById(jwtService.extractUserId(token.substring(7)));
         if (userOptional.isEmpty()) {
             return CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found"));
@@ -305,13 +305,12 @@ public class UserController {
 
         try {
             Optional<User> userOptional = userRepository.findById(jwtService.extractUserId(token.substring(7)));
-            if(userOptional.isEmpty()){
+            if (userOptional.isEmpty()) {
                 return CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found"));
             }
             User user = userOptional.get();
             byte[] fileBytes = imageUtil.compressImage(file).join();
 
-            // Try MinIO first, fallback to database
             if (profilePictureService.isMinioAvailable()) {
                 String url = profilePictureService.uploadProfilePicture(user.getUuid(), fileBytes).join();
                 if (url != null) {
@@ -338,67 +337,113 @@ public class UserController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(0);
             }
             User user = userOptional.get();
-            return user.getLastReroll() == null || user.getLastReroll().plusDays(1).isBefore(LocalDateTime.now()) 
+            return user.getLastReroll() == null || user.getLastReroll().plusDays(1).isBefore(LocalDateTime.now())
                     ? ResponseEntity.ok(3) : ResponseEntity.ok(user.getLeftRerolls());
         });
     }
 
-    //TODO: Move to admin microservice
-    //TODO: Test this endpoint and make sure it works correctly with the badge system. 
-    // Also consider edge cases like adding a badge that doesn't exist or adding a badge to a user that doesn't exist.
+    // Admin endpoint — planned for migration to dedicated admin-service
     @PutMapping("/{uuid}/badge")
     @Async
-    public CompletableFuture<ResponseEntity<String>> addBadge(@PathVariable UUID uuid, @RequestBody UUID badgeId, 
-                                                              @RequestHeader("Authorization") String token) {
+    @Operation(summary = "Add badge to user (admin)", description = "Awards a badge to the specified user. Requires ROLE_ADMIN authority.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Badge added"),
+            @ApiResponse(responseCode = "403", description = "Caller is not an admin"),
+            @ApiResponse(responseCode = "404", description = "User or badge not found"),
+            @ApiResponse(responseCode = "409", description = "User already has this badge")
+    })
+    public CompletableFuture<ResponseEntity<String>> addBadge(
+            @Parameter(description = "UUID of the user to award the badge to", required = true) @PathVariable UUID uuid,
+            @RequestBody UUID badgeId,
+            @RequestHeader("Authorization") String token) {
+        return CompletableFuture.supplyAsync(() -> {
             UUID userId = jwtService.extractUserId(token.substring(7));
-            Optional<User> userOptional = userRepository.findById(userId);
-            if (userOptional.isEmpty()) {
-                return CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found"));
+            Optional<User> callerOptional = userRepository.findById(userId);
+            if (callerOptional.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Caller user not found");
             }
-            User user = userOptional.get();
-            if (user.getAuthorities().stream().noneMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"))) {
-                return CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.FORBIDDEN).body("User is not an admin"));
+            User caller = callerOptional.get();
+            if (caller.getAuthorities().stream().noneMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"))) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User is not an admin");
             }
-            User userToAddBadge = userRepository.findById(uuid).orElseThrow(() -> new RuntimeException("User not found"));
+
+            // Verify badge exists before adding
+            if (!badgeRepository.existsById(badgeId)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Badge not found");
+            }
+
+            Optional<User> targetOptional = userRepository.findById(uuid);
+            if (targetOptional.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Target user not found");
+            }
+            User userToAddBadge = targetOptional.get();
+
             if (userToAddBadge.getBadges().contains(badgeId)) {
-                return CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.CONFLICT).body("Badge already added"));
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("Badge already added");
             }
             userToAddBadge.getBadges().add(badgeId);
             userRepository.save(userToAddBadge);
-            return CompletableFuture.completedFuture(ResponseEntity.ok("Badge added"));
+            return ResponseEntity.ok("Badge added");
+        });
     }
 
-    //TODO: refactor the return type of this endpoint to return more information about the badges instead of just the ids. 
-    // Also consider edge cases like requesting badges for a user that doesn't exist.
     @GetMapping("/{uuid}/badges")
     @Async
-    public CompletableFuture<ResponseEntity<List<UUID>>> getBadges(@PathVariable UUID uuid) {
-        return CompletableFuture.supplyAsync(() -> ResponseEntity.ok(badgeRepository.findBadgeIdsByUserId(uuid)));
+    @Operation(summary = "Get user badges", description = "Returns full badge details (id, name, description) for all badges awarded to the user.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Badge list returned"),
+            @ApiResponse(responseCode = "404", description = "User not found")
+    })
+    public CompletableFuture<ResponseEntity<List<BadgeDTO>>> getBadges(
+            @Parameter(description = "UUID of the user", required = true) @PathVariable UUID uuid) {
+        return CompletableFuture.supplyAsync(() -> {
+            if (!userRepository.existsById(uuid)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).<List<BadgeDTO>>build();
+            }
+            List<UUID> badgeIds = badgeRepository.findBadgeIdsByUserId(uuid);
+            List<BadgeDTO> badges = badgeRepository.findAllById(badgeIds).stream()
+                    .map(badge -> new BadgeDTO(badge.getId(), badge.getName(), badge.getDescription()))
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(badges);
+        });
     }
 
-
-    //TODO: Add more Information like pfp url username etc. 
-    // Also consider edge cases like requesting followers for a user that doesn't exist or requesting a page that is out of bounds.
     @GetMapping("/{uuid}/followers")
     @Async
-    public CompletableFuture<ResponseEntity<List<UUID>>> getFollowers(@PathVariable UUID uuid, @RequestParam(defaultValue = "0") int page, 
-                                                                      @RequestParam(defaultValue = "10") int size, 
-                                                                      @RequestHeader("Authorization") String token) {
-            CompletableFuture<List<UUID>> followersFuture = followService.getFollowerPage(uuid, page, size);
-            List<UUID> followers = followersFuture.join();
-            return CompletableFuture.completedFuture(ResponseEntity.ok(followers));
+    @Operation(summary = "Get followers", description = "Returns a paginated list of users following the given user, with username and profile picture.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Follower list returned"),
+            @ApiResponse(responseCode = "404", description = "User not found")
+    })
+    public CompletableFuture<ResponseEntity<List<FollowUserDTO>>> getFollowers(
+            @Parameter(description = "UUID of the user", required = true) @PathVariable UUID uuid,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestHeader("Authorization") String token) {
+        if (!userRepository.existsById(uuid)) {
+            return CompletableFuture.completedFuture(ResponseEntity.notFound().build());
+        }
+        List<FollowUserDTO> followers = followService.getFollowerPage(uuid, page, size).join();
+        return CompletableFuture.completedFuture(ResponseEntity.ok(followers));
     }
 
-    //TODO: Add more Information like pfp url username etc. 
-    // Also consider edge cases like requesting followers for a user that doesn't exist or requesting a page that is out of bounds.
     @GetMapping("/{uuid}/following")
     @Async
-    public CompletableFuture<ResponseEntity<List<UUID>>> getFollowing(@PathVariable UUID uuid, @RequestParam(defaultValue = "0") int page, 
-                                                                      @RequestParam(defaultValue = "10") int size, 
-                                                                      @RequestHeader("Authorization") String token) {
-            CompletableFuture<List<UUID>> followingFuture = followService.getFollowedPage(uuid, page, size);
-            List<UUID> following = followingFuture.join();
-            return CompletableFuture.completedFuture(ResponseEntity.ok(following));
+    @Operation(summary = "Get following", description = "Returns a paginated list of users that the given user is following, with username and profile picture.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Following list returned"),
+            @ApiResponse(responseCode = "404", description = "User not found")
+    })
+    public CompletableFuture<ResponseEntity<List<FollowUserDTO>>> getFollowing(
+            @Parameter(description = "UUID of the user", required = true) @PathVariable UUID uuid,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestHeader("Authorization") String token) {
+        if (!userRepository.existsById(uuid)) {
+            return CompletableFuture.completedFuture(ResponseEntity.notFound().build());
+        }
+        List<FollowUserDTO> following = followService.getFollowedPage(uuid, page, size).join();
+        return CompletableFuture.completedFuture(ResponseEntity.ok(following));
     }
 
     @PostMapping("/{uuid}/follow")
@@ -414,25 +459,25 @@ public class UserController {
             @Parameter(description = "UUID of the user to follow", required = true) @PathVariable UUID uuid,
             @RequestHeader("Authorization") String token,
             @RequestBody(required = false) UuidDTO videoUuid) {
-            UUID userId = jwtService.extractUserId(token.substring(7));
-            Optional<User> userOptional = userRepository.findById(userId);
-            User userToFollow = userRepository.findById(uuid).orElseThrow(() -> new RuntimeException("User not found"));
-            if (userOptional.isEmpty()) {
-                return CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found"));
-            }
-            User user = userOptional.get();
-            if (uuid.equals(user.getUuid())) {
-                return CompletableFuture.completedFuture(ResponseEntity.unprocessableEntity().body("Cannot follow yourself"));
-            }
-            if (followService.isFollowing(user.getUuid(), uuid).join()) {
-                return CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.CONFLICT).body("User already followed"));
-            }
+        UUID userId = jwtService.extractUserId(token.substring(7));
+        Optional<User> userOptional = userRepository.findById(userId);
+        User userToFollow = userRepository.findById(uuid).orElseThrow(() -> new RuntimeException("User not found"));
+        if (userOptional.isEmpty()) {
+            return CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found"));
+        }
+        User user = userOptional.get();
+        if (uuid.equals(user.getUuid())) {
+            return CompletableFuture.completedFuture(ResponseEntity.unprocessableEntity().body("Cannot follow yourself"));
+        }
+        if (followService.isFollowing(user.getUuid(), uuid).join()) {
+            return CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.CONFLICT).body("User already followed"));
+        }
 
-            userToFollow.setFollowers(userToFollow.getFollowers() + 1);
-            followService.followUser(token.substring(7), uuid).join();
-            userRepository.save(userToFollow);
+        userToFollow.setFollowers(userToFollow.getFollowers() + 1);
+        followService.followUser(token.substring(7), uuid).join();
+        userRepository.save(userToFollow);
 
-            return CompletableFuture.completedFuture(ResponseEntity.ok("User followed"));
+        return CompletableFuture.completedFuture(ResponseEntity.ok("User followed"));
     }
 
     @DeleteMapping("/{uuid}/follow")
@@ -459,11 +504,11 @@ public class UserController {
     @GetMapping("{username}/followersAsInt")
     @Async
     public CompletableFuture<ResponseEntity<Integer>> getFollowersAsInt(@PathVariable String username) {
-            User user = userRepository.findByUsername(username);
-            if (user == null) {
-                return CompletableFuture.completedFuture(ResponseEntity.notFound().build());
-            }
-            return CompletableFuture.completedFuture(ResponseEntity.ok(user.getFollowers()));
+        User user = userRepository.findByUsername(username);
+        if (user == null) {
+            return CompletableFuture.completedFuture(ResponseEntity.notFound().build());
+        }
+        return CompletableFuture.completedFuture(ResponseEntity.ok(user.getFollowers()));
     }
 
     @GetMapping("{uuid}/isFollowed")
@@ -475,38 +520,47 @@ public class UserController {
         UUID username = jwtService.extractUserId(token.substring(7));
         Optional<User> user = userRepository.findById(username);
         return user.map(value -> followService.isFollowing(value.getUuid(), uuid).join()
-                ? CompletableFuture.completedFuture(ResponseEntity.ok(true))
-                : CompletableFuture.completedFuture(ResponseEntity.ok(false)))
+                        ? CompletableFuture.completedFuture(ResponseEntity.ok(true))
+                        : CompletableFuture.completedFuture(ResponseEntity.ok(false)))
                 .orElseGet(() -> CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.NOT_FOUND).body(false)));
     }
 
-    //TODO: Move to admin microservice
+    // Admin endpoint — planned for migration to dedicated admin-service
     @DeleteMapping("/{uuid}/badge")
     @Async
-    public CompletableFuture<ResponseEntity<String>> removeBadge(@PathVariable UUID uuid, @RequestBody UUID badgeId, 
-                                                                 @RequestHeader("Authorization") String token) {
+    @Operation(summary = "Remove badge from user (admin)", description = "Revokes a badge from the specified user. Requires ROLE_ADMIN authority.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Badge removed"),
+            @ApiResponse(responseCode = "403", description = "Caller is not an admin"),
+            @ApiResponse(responseCode = "404", description = "User or badge not found"),
+            @ApiResponse(responseCode = "409", description = "User does not have this badge")
+    })
+    public CompletableFuture<ResponseEntity<String>> removeBadge(
+            @Parameter(description = "UUID of the user to revoke the badge from", required = true) @PathVariable UUID uuid,
+            @RequestBody UUID badgeId,
+            @RequestHeader("Authorization") String token) {
         return CompletableFuture.supplyAsync(() -> {
             UUID userId = jwtService.extractUserId(token.substring(7));
-            Optional<User> userOptional = userRepository.findById(userId);
-            if (userOptional.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+            Optional<User> callerOptional = userRepository.findById(userId);
+            if (callerOptional.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Caller user not found");
             }
-            User user = userOptional.get();
-            if (user.getAuthorities().stream()
+            User caller = callerOptional.get();
+            if (caller.getAuthorities().stream()
                     .noneMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"))) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User is not an admin");
             }
-            User userToRemoveBadge = userRepository.findById(uuid).orElse(null);
-            if (userToRemoveBadge == null) {
-                return ResponseEntity.notFound().build();
+            Optional<User> targetOptional = userRepository.findById(uuid);
+            if (targetOptional.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Target user not found");
             }
+            User userToRemoveBadge = targetOptional.get();
             if (!userToRemoveBadge.getBadges().contains(badgeId)) {
-                return ResponseEntity.status(HttpStatus.CONFLICT).body("Badge not found");
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("Badge not found on user");
             }
             userToRemoveBadge.getBadges().remove(badgeId);
             userRepository.save(userToRemoveBadge);
             return ResponseEntity.ok("Badge removed");
         });
     }
-
 }

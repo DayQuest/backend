@@ -42,7 +42,6 @@ public class SecurityProperties {
             "/api-docs/**",
             "/redoc",
             // Service API docs
-            "/auth-service/v3/api-docs",
             "/user-service/v3/api-docs",
             "/quest-service/v3/api-docs",
             "/notification-service/v3/api-docs",
