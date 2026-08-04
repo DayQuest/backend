@@ -2,6 +2,9 @@ package com.dayquest.userservice.models;
 
 import com.dayquest.userservice.enums.Punishments;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.GenericGenerator;
 import org.springframework.security.core.GrantedAuthority;
@@ -15,6 +18,9 @@ import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "user_data")
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class User implements UserDetails {
 
     @Id
@@ -72,6 +78,26 @@ public class User implements UserDetails {
     private List<String> authorities = new ArrayList<>();
 
     private int followers;
+
+    @Column(name = "referral_code", length = 10, unique = true)
+    private String referralCode;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "referred_by_id")
+    private User referredBy;
+
+    @Column(name = "streak_freezers", nullable = false)
+    private int streakFreezers = 0;
+
+
+
+    @OneToMany(mappedBy = "inviter", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Referral> sentReferrals = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<UserMilestone> unlockedMilestones = new ArrayList<>();
 
 
     @Column(name = "profile_picture_url")
