@@ -29,6 +29,7 @@ public class User implements UserDetails {
     private String username;
 
     private int interactions;
+
     @Column(nullable = false)
     private String email;
 
