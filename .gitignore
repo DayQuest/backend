@@ -1,10 +1,19 @@
 HELP.md
 target/
+placeholer/
 .env
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
 stack.env
+
+### Log Files ###
+*.log
+test-*.txt
+test-*.log
+full-test*.log
+test-output*.txt
+test-result*.log
 
 ### STS ###
 .apt_generated
