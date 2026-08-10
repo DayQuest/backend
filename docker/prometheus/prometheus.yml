@@ -7,19 +7,26 @@ alerting:
     - static_configs:
         - targets: []
 
-rule_files: []
+rule_files:
+  - /etc/prometheus/alerts/*.yml
 
 scrape_configs:
   # Prometheus self-monitoring
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
+        labels:
+          service: prometheus
+          environment: docker
 
   # API Gateway
   - job_name: 'api-gateway'
     metrics_path: '/actuator/prometheus'
     static_configs:
       - targets: ['api-gateway:8080']
+        labels:
+          service: api-gateway
+          environment: docker
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
@@ -30,26 +37,22 @@ scrape_configs:
     metrics_path: '/actuator/prometheus'
     static_configs:
       - targets: ['user-service:8081']
+        labels:
+          service: user-service
+          environment: docker
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
         replacement: 'user-service'
-
-  # Auth Service
-  - job_name: 'auth-service'
-    metrics_path: '/actuator/prometheus'
-    static_configs:
-      - targets: ['auth-service:8084']
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: instance
-        replacement: 'auth-service'
 
   # Quest Service
   - job_name: 'quest-service'
     metrics_path: '/actuator/prometheus'
     static_configs:
       - targets: ['quest-service:8083']
+        labels:
+          service: quest-service
+          environment: docker
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
@@ -60,6 +63,9 @@ scrape_configs:
     metrics_path: '/actuator/prometheus'
     static_configs:
       - targets: ['notification-service:8082']
+        labels:
+          service: notification-service
+          environment: docker
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
@@ -70,6 +76,9 @@ scrape_configs:
     metrics_path: '/actuator/prometheus'
     static_configs:
       - targets: ['eureka-server:8761']
+        labels:
+          service: eureka-server
+          environment: docker
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
@@ -80,10 +89,52 @@ scrape_configs:
     metrics_path: '/actuator/prometheus'
     static_configs:
       - targets: ['config-server:8888']
+        labels:
+          service: config-server
+          environment: docker
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
         replacement: 'config-server'
+
+  # Video Service
+  - job_name: 'video-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['video-service:8085']
+        labels:
+          service: video-service
+          environment: docker
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'video-service'
+
+  # Social Service
+  - job_name: 'social-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['social-service:8086']
+        labels:
+          service: social-service
+          environment: docker
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'social-service'
+
+  # Content Service
+  - job_name: 'content-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['content-service:8087']
+        labels:
+          service: content-service
+          environment: docker
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'content-service'
 
   # PostgreSQL Exporter (optional, if you add postgres-exporter)
   # - job_name: 'postgres'
@@ -94,4 +145,6 @@ scrape_configs:
   - job_name: 'rabbitmq'
     static_configs:
       - targets: ['rabbitmq:15692']
-
+        labels:
+          service: rabbitmq
+          environment: docker

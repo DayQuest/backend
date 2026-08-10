@@ -45,6 +45,10 @@
    ```
    http://localhost:3000
    ```
+5. **Check active Prometheus alerts**:
+   ```
+   http://localhost:9090/alerts
+   ```
 
 ---
 
@@ -196,3 +200,16 @@
 | Infrastructure failure | DevOps |
 | Application bug | Service owning team |
 | Security incident | Security team + engineering lead |
+
+---
+
+## Alert Response Baseline
+
+1. Open Prometheus alerts page and identify firing alert(s): `http://localhost:9090/alerts`
+2. In Grafana, apply `Environment` and `Service` filters matching the alert labels
+3. Correlate:
+   - `DayQuestHighErrorRate` / `DayQuestHighP95Latency` → API Performance + Error Tracking sections
+   - `DayQuestJvmMemoryPressure` → Infrastructure Health section
+   - `DayQuestDbConnectionTimeouts` / `DayQuestRabbitMQQueueBacklog` → Database/Dependencies section
+4. Capture timestamp, impacted service, and likely dependency in incident notes
+5. Escalate using the ownership table above if recovery is not immediate
